@@ -37,4 +37,4 @@ external interface ChipboxVgmModule {
 private external val chipboxVgm: () -> Promise<ChipboxVgmModule>
 
 suspend fun loadChipboxVgm(): ChipboxVgmModule =
-    loadWasmModule("vgm", "/wasm/chipbox_vgm.js") { chipboxVgm() }
+    loadWasmModule("vgm", "/wasm/chipbox_vgm.js", "chipboxVgm") { chipboxVgm() }

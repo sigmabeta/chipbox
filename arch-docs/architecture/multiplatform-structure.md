@@ -16,7 +16,8 @@ cbox/
   android/   Android-only system glue + the :native CMake companions
   native/    C/C++ emulator source trees (built by both Android NDK and host CMake)
 features/    user-facing screens, all KMP (api/real/screenshot)
-build-logic/ chipbox-specific convention plugins (id "chipbox.*")
+build-logic/ chipbox-specific convention plugins (id "chipbox.*"); `git/` is the
+             dependency-free build-identity leaf (see its README)
 sage/        vendored SAGE submodule: convention plugins + version catalog + libs
 scripts/     helpers, grouped by role: ci/ (CI entry points), dev/ (local dev tools),
              and per-harness dirs (abrender/, benchmark/) — see the testing systems
@@ -91,6 +92,10 @@ Chipbox plugins (in `build-logic/convention/src/main/kotlin/`, applied as
   directory name.
 - `chipbox.screenshot` — `sage.android` + `sage.compose.android` + Paparazzi.
 - `chipbox.kmp.test` — adds `kotlin("test")` + coroutines-test to `commonTest`.
+- `chipbox.build.identity` (in `build-logic/git/`, no dependencies) — exposes
+  `buildIdentity.branch()` / `buildIdentity.shortCommit(dir)` read from `.git`
+  files. Use it instead of `providers.exec { git … }`: configuration-time
+  processes re-run even on a configuration-cache hit and fail without `.git`.
 
 Namespaces are set per-module in `kotlin { androidLibrary { namespace = "…" } }`
 (derived from the Gradle path, e.g. `:cbox:common:player:director:real` →
@@ -144,7 +149,14 @@ not a top-level `dependencies {}` block (the common KMP gotcha). For
   + JVM impls (`JvmStorage`, `JvmStringProvider`, etc.).
 - `apps/cli` — Mordant TUI scanner/organizer; reuses the jvm app's vgmstream
   native task.
-- `apps/js`, `apps/server` — minimal/experimental targets.
+- `apps/js` — browser client: Compose UI + client-side WASM emulation, talking to
+  `apps/server` over HTTP. Gated behind `-Psage.js=true`. See
+  [web-app.md](web-app.md) and ADR-0003.
+- `apps/server` — headless Ktor library server: scans a configured library root,
+  serves the JSON API, file bytes, covers, and the bundled browser app. It stores
+  no user state and has no authentication; it is for loopback/trusted-LAN use
+  until an auth story exists. Browser audio additionally requires a secure
+  origin (HTTPS or localhost) — see [web-app.md](web-app.md).
 
 ## Native code
 

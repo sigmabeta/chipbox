@@ -8,6 +8,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -406,6 +407,15 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         // before the next step (well under the context menu's 5s auto-dismiss).
         compose.mainClock.advanceTimeBy(CLICK_SETTLE_MS)
         compose.waitForIdle()
+    }
+
+    /**
+     * Assert the node tagged [tag] carries [description] as its content description — the text
+     * assistive tech announces for an icon-only control. Reads the merged tree, where the icon's
+     * description merges into the clickable button node.
+     */
+    fun assertContentDescription(tag: String, description: String) {
+        compose.onNode(hasTestTag(tag) and hasContentDescription(description)).assertExists()
     }
 
     /**

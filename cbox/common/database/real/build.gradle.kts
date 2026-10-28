@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.ksp)
+    alias(chipbox.plugins.kmp.test)
 }
 
 // KMP Room database. The `@Database` class + DAOs are shared between Android

@@ -28,6 +28,16 @@ plugins {
 plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
     the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().download.set(false)
 }
+// The per-project NodeJsEnvSpec built by NodeJsPluginApplier takes its `download` convention from
+// the ROOT NodeJsRootExtension's deprecated field, not from the root project's NodeJsEnvSpec above.
+// Without this, every JS project still resolves node to ~/.gradle/nodejs/node-v…/bin/node even
+// though `kotlinNodeJsSetup` is skipped — webpack then fails launching a binary that was never
+// downloaded. Setting the root extension is the only global switch in Kotlin 2.3 (the field is
+// deprecated at ERROR level, hence the suppression).
+plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
+    @Suppress("DEPRECATION_ERROR")
+    the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().download = false
+}
 
 // Force-bump npm transitives the Kotlin/JS toolchain drags in that Dependabot flags. yarn won't
 // pick these up on its own because the parents declare older ranges, so each needs an explicit
@@ -46,6 +56,10 @@ plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
 //    (package.json `exports.node.require` + `main` both point at dist/cjs), so sockjs is unaffected.
 plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
     the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().download.set(false)
+    // Same per-project convention problem as Node: the root YarnRootExtension is what each
+    // project's YarnEnvSpec reads. Without it Kotlin looks for a downloaded yarn in ~/.gradle/yarn.
+    @Suppress("DEPRECATION_ERROR")
+    the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().download = false
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
         resolution("serialize-javascript", "^7.0.5")
         resolution("diff", "^8.0.4")

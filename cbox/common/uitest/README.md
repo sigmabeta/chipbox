@@ -17,7 +17,7 @@ both places.
 ## Contents
 
 **Base harness / DSL**
-- `ChipboxUiTest.kt` — the entry point `runChipboxUiTest { ... }` and the `ChipboxUiTest` class. Launches the shell, then exposes the verbs specs use: navigation (`startAtScreen`, `startFromSession`), seeding (`seedGame`, `seedPlaylist`, `favoriteTrack`, lookups like `gameId`/`trackId`/`artistId`), scan driving (`beginScan`/`scanReadingFile`/`completeScan`/`failScan`), interaction (`click*`, `typeSearch`, `clickTag`), and typed assertions (`assertTitle`, `assert*ItemDisplayed`, `assertSectionHeader`, `assertNavigationEvent*`, `assertDirectorReceived*`, `assertStartedSession`).
+- `ChipboxUiTest.kt` — the entry point `runChipboxUiTest { ... }` and the `ChipboxUiTest` class. Launches the shell, then exposes the verbs specs use: navigation (`startAtScreen`, `startFromSession`), seeding (`seedGame`, `seedPlaylist`, `favoriteTrack`, lookups like `gameId`/`trackId`/`artistId`), scan driving (`beginScan`/`scanReadingFile`/`completeScan`/`failScan`), interaction (`click*`, `typeSearch`, `clickTag`), and typed assertions (`assertTitle`, `assert*ItemDisplayed`, `assertSectionHeader`, `assertContentDescription`, `assertNavigationEvent*`, `assertDirectorReceived*`, `assertStartedSession`).
 
 **Test app graph + DI**
 - `harness/TestAppGraph.kt` — a Metro `@DependencyGraph(AppScope::class)` (extends `ViewModelGraph`) that provides the leaf bindings a real screen's ViewModel needs, all backed by fakes: `RandomMemoryRepository` (deterministic seed-1234 library of 10 games / 50 tracks / 5 artists), `FakeDirector`, `CountingScanner`, fake favorites/playlists/settings/debug repos, a `FakeFileSystem`, the **real** `ChipboxStringProvider` (preloaded via `loadChipboxStrings()`), and `ScanRefreshInterval(0)` (disables the Home scan-status card's `sample` throttle so scan assertions don't race the next sampled frame). `createTestAppGraph()` builds a fresh one per test.
@@ -30,7 +30,7 @@ both places.
 - `harness/PlatformSeam.kt` (`jvmTestPlatform`, desktop) and `harness/PlatformSeam.kt` (`androidDeviceTest`, on-device) — `platformArtifactDir()` (where failure artifacts go: desktop `build/` dir / tmpdir, device AGP `additionalTestOutputDir` / external files) and `platformTestArgument(key)` (system property on desktop, instrumentation arg on-device). The desktop seam is in `src/jvmTestPlatform` and added only to `jvmTest`, not mirrored to the device tree.
 
 **Test specs** (`src/jvmTest/*Test.kt`, mirrored to `androidDeviceTest`)
-- The actual UI test cases — do not modify them. They cover browse flows (`BrowseAllTracksTest`, `BrowseByArtistTest`, `BrowseByGameTest`, `BrowseByPlatformTest`, `GamesForPlatformTest`, `GameDetailHarnessTest`), playlists (`PlaylistsTest`, `PlaylistDetailTest`, `AddToPlaylistTest`), playback (`NowPlayingTest`, `PlaybackStatusTest`, `DirectorRequestTest`), `SearchTest`, `FavoritesTest`, `SettingsTest`, library/management (`LibraryTest`, `ManageLibraryTest`, `FolderPickerTest`), scan status (`RescanStatusTest`, `ScanStatusModuleTest`), debug screens (`CrashLogTest`, `ErrorLogTest`, `ComponentLibraryTest`/`ComponentLibraryModeTest`), the full shell (`FullShellHarnessTest`, `StartAtScreenTest`, `SmokeTest`), and supporting fixtures (`SectionHeaderTest`, `ClickItemTest`, `SecondScreenDataTest`, `RandomMemoryRepositoryTest`).
+- The actual UI test cases — do not modify them. They cover browse flows (`BrowseAllTracksTest`, `BrowseByArtistTest`, `BrowseByGameTest`, `BrowseByPlatformTest`, `GamesForPlatformTest`, `GameDetailHarnessTest`), playlists (`PlaylistsTest`, `PlaylistDetailTest`, `AddToPlaylistTest`), playback (`NowPlayingTest`, `NowPlayingTransportTest`, `MiniPlayerTransportTest`, `PlaybackStatusTest`, `DirectorRequestTest`), `SearchTest`, `FavoritesTest`, `SettingsTest`, library/management (`LibraryTest`, `ManageLibraryTest`, `FolderPickerTest`), scan status (`RescanStatusTest`, `ScanStatusModuleTest`), debug screens (`CrashLogTest`, `ErrorLogTest`, `ComponentLibraryTest`/`ComponentLibraryModeTest`), the full shell (`FullShellHarnessTest`, `StartAtScreenTest`, `SmokeTest`), and supporting fixtures (`SectionHeaderTest`, `ClickItemTest`, `SecondScreenDataTest`, `RandomMemoryRepositoryTest`).
 
 ## Why depend on this module
 
@@ -73,7 +73,7 @@ instrumentation arg on-device). On desktop, failure artifacts land in
 - **Source set:** `jvmTest` (canonical specs + harness, mirrored to
   `androidDeviceTest`), `jvmTestPlatform` (desktop platform seam, JVM only),
   `androidDeviceTest` (device platform seam)
-- **SAGE/module dependencies:** `appui.api`; feature `:real`/`:api`
+- **SAGE/module dependencies:** `appui.api`; `capabilities.api`; feature `:real`/`:api`
   (`gameDetail`, `artistDetail`, `favorites`, `playlists`, `playlistDetail`);
   the `:api` + `:fake` pairs for repository, history, favorites, playlists,
   director, settings, contentsource, scanner, debug, debugInfo; `strings:api` +

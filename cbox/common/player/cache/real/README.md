@@ -15,7 +15,8 @@ module — the factory is wired elsewhere).
 Grouped by role:
 
 - **Factories** — `RealPcmTrackSourceFactory` (production: emulator-by-extension
-  selection, source hashing, cache-hit vs render-ahead decision, janitor wiring)
+  selection through `EmulatorSelector`, source hashing, cache-hit vs render-ahead
+  decision, janitor wiring)
   and `UncachedPcmTrackSourceFactory` (cache-bypass fallback: live emulator per
   track, no read-through, no writer, no janitor — not wired in today).
 - **`PcmTrackSource` implementations** — `CachedFilePcmSource` (cache **hit**:

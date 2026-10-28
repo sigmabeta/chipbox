@@ -6,14 +6,16 @@ The `:real` implementation of the notification API: `RealNotifManager` stores th
 `Storage` (one JSON value), drops one-time notices on the next launch, and keeps the in-memory
 `StateFlow` authoritative so a producer writing during startup can't be overwritten by the older
 stored snapshot. `RealScanFailureNotifRecorder` turns a `ScannerState.Failed` into a one-time
-`ERROR` notification on Home.
+`ERROR` notification on Home; `InsecureOriginNotifRecorder` warns when browser audio is unavailable
+because the page is not a secure context.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `RealNotifManager.kt` | `NotifManager` over `Storage` (`notif.state`): JSON persistence, add/remove write-through, one-time cleanup on the first load. |
-| `RealScanFailureNotifRecorder.kt` | `ScanFailureNotifRecorder`: collects `scanner.state()`, and on `ScannerState.Failed` adds (or replaces) one `NOTIF_SCAN_FAILED_TITLE` error notice with the failing path. Reuses one id so failures don't stack; `isOneTime = true` so it doesn't nag after a relaunch. |
+| `RealScanFailureNotifRecorder.kt` | `ScanFailureNotifRecorder`: collects `scanner.state()`, and on `ScannerState.Failed` adds (or replaces) one `NOTIF_SCAN_FAILED_TITLE` error notice. A file failure names the path (`HOME_SCAN_STATUS_ERROR`); a configuration failure uses the dedicated `NOTIF_SCAN_FAILED_CONFIGURATION_DESCRIPTION` (there is no failing file). Reuses one id so failures don't stack; `isOneTime = true` so it doesn't nag after a relaunch. |
+| `InsecureOriginNotifRecorder.kt` | Posts one `NOTIF_INSECURE_ORIGIN_TITLE` error notice when its injected `isSecureContext` check returns false. The web graph supplies `window.isSecureContext`; other targets leave the default `true`. Reuses one id and is `isOneTime = true`. |
 
 ## Why depend on this module
 
@@ -23,8 +25,9 @@ providers (JS). Tests use `:cbox:common:notif:fake` instead.
 ## Using it
 
 ```kotlin
-// Wired by NotifModule; apps call the recorder once at startup:
+// Wired by NotifModule; apps call the recorders once at startup:
 graph.scanFailureNotifRecorder.observe()
+graph.insecureOriginNotifRecorder.observe()   // web only
 ```
 
 ## Module facts

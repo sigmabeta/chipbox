@@ -1,0 +1,17 @@
+# Emscripten emulator modules shipped in the browser bundle.
+#
+# Single source of truth for the CMake dir under cbox/native/, the Emscripten OUTPUT_NAME
+# (`chipbox_<name>`, which the runtime loads from /wasm/), and the human-readable display name.
+# Consumed by apps/js/build.gradle.kts and scripts/ci/verify-web-bundle.sh so the build, the
+# bundle assertion, and the Docker/CI check cannot drift.
+#
+# format: <cbox/native subdir>|<output name>|<display name>
+gme|chipbox_gme|libgme
+vgm|chipbox_vgm|libvgm
+ssf|chipbox_ssf|ssf core
+usf|chipbox_usf|lazyusf2
+psf|chipbox_psf|slopsf
+ncsf|chipbox_ncsf|ncsf
+2sf|chipbox_twosf|vio2sf
+vgmstream|chipbox_vgmstream|vgmstream
+gba|chipbox_gba|mgba

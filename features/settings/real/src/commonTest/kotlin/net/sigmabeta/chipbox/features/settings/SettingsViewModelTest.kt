@@ -16,6 +16,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.encodeToString
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.LibraryFolderInfo
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.LibrarySource
@@ -36,6 +37,7 @@ import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
@@ -203,7 +205,7 @@ class SettingsViewModelTest {
         val status = vm.state.value.clearLibraryStatus
         assertTrue(status is LCE.Content)
         assertTrue(event is ChipboxEvent.ShowSnackbar)
-        assertEquals("Library cleared.", event.message)
+        assertEquals("${ChipboxStringId.SETTINGS_SNACKBAR_LIBRARY_CLEARED}", event.message)
     }
 
     @Test
@@ -222,7 +224,7 @@ class SettingsViewModelTest {
         assertEquals("settings.clear_library", status.operationName)
         assertEquals("disk full", status.error.message)
         assertTrue(event is ChipboxEvent.ShowSnackbar)
-        assertEquals("Failed to clear library.", event.message)
+        assertEquals("${ChipboxStringId.SETTINGS_SNACKBAR_LIBRARY_CLEAR_FAILED}", event.message)
     }
 
     // ---- pure navigation/event actions ----
@@ -286,7 +288,7 @@ class SettingsViewModelTest {
         val vm = newViewModel()
         val event = collectAndDispatch(vm, SettingsAction.LicensesClicked)
         assertTrue(event is ChipboxEvent.ShowSnackbar)
-        assertEquals("Licenses screen coming soon.", event.message)
+        assertEquals("${ChipboxStringId.SETTINGS_SNACKBAR_LICENSES_COMING_SOON}", event.message)
     }
 
     @Test
@@ -409,7 +411,11 @@ class SettingsViewModelTest {
         )
 
         assertTrue(event is ChipboxEvent.ShowSnackbar)
-        assertEquals("Imported 1 game(s) — 1 new, 0 updated.", event.message)
+        assertEquals(
+            "${ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_IMPORTED}:1" +
+                "${ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_IMPORT_COUNTS}:1,0",
+            event.message,
+        )
         // The import rebased the snapshot's corpus-relative folder onto its root.
         assertEquals(listOf("/corpus/PilotWings"), repository.importedGames.map { it.folderKey })
     }
@@ -424,7 +430,7 @@ class SettingsViewModelTest {
         )
 
         assertTrue(event is ChipboxEvent.ShowSnackbar)
-        assertEquals("Snapshot not found: /missing.json", event.message)
+        assertEquals("${ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_NOT_FOUND}:/missing.json", event.message)
     }
 
     // ---- helpers ----
@@ -438,6 +444,7 @@ class SettingsViewModelTest {
         librarySource: LibrarySource = FakeLibrarySource(),
         appInfo: AppInfo = appInfoOf(),
     ) = SettingsViewModel(
+        capabilities = AppCapabilities(),
         settingsManager = settings,
         debugSettingsManager = debug,
         repository = repository,
@@ -466,9 +473,9 @@ class SettingsViewModelTest {
 
     private fun stubStringProvider() = object : StringProvider {
         override fun getString(string: SageStringId): String = string.toString()
-        override fun getStringOneArg(string: SageStringId, arg: String): String = string.toString()
+        override fun getStringOneArg(string: SageStringId, arg: String): String = "$string:$arg"
         override fun getStringOneInt(string: SageStringId, arg: Int): String = string.toString()
-        override fun getStringTwoArgs(string: SageStringId, first: String, second: String): String = string.toString()
+        override fun getStringTwoArgs(string: SageStringId, first: String, second: String): String = "$string:$first,$second"
     }
 }
 

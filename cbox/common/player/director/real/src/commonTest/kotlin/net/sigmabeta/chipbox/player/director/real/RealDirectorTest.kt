@@ -25,6 +25,7 @@ import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.sage.logging.BluntHatchet
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -323,16 +324,18 @@ class RealDirectorTest {
     }
 
     @Test
-    fun `Generator Error on the last track stops the session`() = runTest {
-        // Documented terminal case: no next track to skip to, so the session ends in STOPPED
-        // (not ERROR — ERROR is reserved for the consecutive-failure cutoff).
+    fun `Generator Error on the last track ends the session in ERROR`() = runTest {
+        // A last-track failure has nowhere to skip to. It must surface as ERROR (with the message)
+        // rather than STOPPED: a normal stop would make a failed WASM/emulator load look like the
+        // end of a setlist.
         val (director, gen, _, _) = newDirector(listOf(track1))
         director.request(SessionRequest.Start(setlistSession(listOf(1L), startingPosition = 0)))
 
         gen.emit(GeneratorEvent.Error("emulator crashed on last track"))
 
-        val state = director.playbackState().first { it.state == PlayerState.STOPPED }
-        assertEquals(PlayerState.STOPPED, state.state)
+        val state = director.playbackState().first { it.state == PlayerState.ERROR }
+        assertEquals(PlayerState.ERROR, state.state)
+        assertEquals("emulator crashed on last track", state.errorMessage)
         director.release()
     }
 
@@ -398,15 +401,16 @@ class RealDirectorTest {
     }
 
     @Test
-    fun `a stall on the last track stops the session`() = runTest {
+    fun `a stall on the last track ends the session in ERROR`() = runTest {
         val (director, gen, _, _) = newDirector(listOf(track1))
         director.request(SessionRequest.Start(setlistSession(listOf(1L), startingPosition = 0)))
         gen.emit(GeneratorEvent.Loading(1L)) // arms the watchdog
 
         advanceUntilIdle()
 
-        val state = director.playbackState().first { it.state == PlayerState.STOPPED }
-        assertEquals(PlayerState.STOPPED, state.state, "no track to skip to -> stop")
+        val state = director.playbackState().first { it.state == PlayerState.ERROR }
+        assertEquals(PlayerState.ERROR, state.state, "no track to skip to -> failed session")
+        assertTrue(state.errorMessage?.contains("stalled") == true, "the stall reason is surfaced")
         assertEquals(listOf(1L), gen.startTrackCalls, "nothing new queued")
         director.release()
     }
@@ -995,6 +999,64 @@ class RealDirectorTest {
             gen.startTrackCalls,
             "play() after completion should restart the final track via startTrack",
         )
+        director.release()
+    }
+
+    @Test
+    fun `play in ERROR restarts the current track, clears the error, and buffers back into PLAYING`() = runTest {
+        // A fatal error leaves ERROR with the generator loop and speaker sink torn down — like
+        // STOPPED — so a bare generator.play() would block on an empty channel while the UI still
+        // looks alive. Tapping play must re-issue the track on screen from the top and clear the
+        // stale error message.
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L))))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+
+        gen.emit(GeneratorEvent.Error("emulator crashed on last track"))
+        val errored = director.playbackState().first { it.state == PlayerState.ERROR }
+        assertEquals("emulator crashed on last track", errored.errorMessage)
+
+        val speakerPlaysBefore = speaker.playCalls
+        director.request(SessionRequest.Play)
+
+        assertEquals(listOf(1L, 1L), gen.startTrackCalls, "play() in ERROR restarts the current track")
+        val restarting = director.playbackState().first()
+        assertEquals(PlayerState.ERROR, restarting.state, "still ERROR until the restarted track loads")
+        assertNull(restarting.errorMessage, "the stale error message is cleared on play")
+
+        // The restarted track walks the state machine back through BUFFERING -> PLAYING exactly
+        // like a STOPPED restart, re-spinning both the generation and consume loops.
+        gen.emit(GeneratorEvent.Loading(1L))
+        assertEquals(PlayerState.BUFFERING, director.playbackState().first().state)
+        gen.emit(GeneratorEvent.Emitting(producedMs = 100L, trackId = 1L))
+        // A distinct position: the speaker event flow is distinctUntilChanged, so repeating the
+        // earlier Playing(0) would be dropped before the director sees it.
+        speaker.emit(SpeakerEvent.Playing(500L))
+
+        val playing = director.playbackState().first { it.state == PlayerState.PLAYING }
+        assertEquals(PlayerState.PLAYING, playing.state)
+        assertNull(playing.errorMessage)
+        assertTrue(speaker.playCalls > speakerPlaysBefore, "the consume loop restarts with the track")
+        director.release()
+    }
+
+    @Test
+    fun `play in ERROR with no current track stays put`() = runTest {
+        // A speaker failure before any session exists ends in ERROR with nothing to re-issue.
+        // play() must warn and stay put rather than fabricate a track or start empty loops.
+        val (director, gen, speaker, _) = newDirector(emptyList())
+        speaker.emit(SpeakerEvent.Error("audio output couldn't start"))
+        val errored = director.playbackState().first { it.state == PlayerState.ERROR }
+
+        director.request(SessionRequest.Play)
+
+        assertTrue(gen.startTrackCalls.isEmpty(), "nothing to restart -> no track queued")
+        assertEquals(0, gen.playCalls, "the generator loop isn't poked without a track")
+        assertEquals(0, speaker.playCalls, "the consume loop isn't started without a track")
+        val state = director.playbackState().first()
+        assertEquals(PlayerState.ERROR, state.state, "stays in ERROR")
+        assertEquals(errored.errorMessage, state.errorMessage, "the error message still applies")
         director.release()
     }
 

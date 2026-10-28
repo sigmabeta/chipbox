@@ -11,7 +11,7 @@ the real Compose UI over fakes, and seedable up front.
 
 | File | What it is |
 | --- | --- |
-| `FakePlaylistsRepository.kt` | One `MutableStateFlow<List<Entry>>` plus monotonic id/clock counters for deterministic ids and timestamps. `seed(name, trackIds)` pre-populates a playlist; the full `PlaylistsRepository` surface (create/rename/delete, add/remove/reorder tracks, clear) mutates it in place. |
+| `FakePlaylistsRepository.kt` | One `MutableStateFlow<List<Entry>>` plus monotonic id/clock counters for deterministic ids and timestamps. `seed(name, trackIds)` pre-populates a playlist; `failCreates = true` makes `createPlaylist` report a refused write (null); the full `PlaylistsRepository` surface (create/rename/delete, add/remove/reorder tracks, clear) mutates it in place. |
 
 ## Why depend on this module
 

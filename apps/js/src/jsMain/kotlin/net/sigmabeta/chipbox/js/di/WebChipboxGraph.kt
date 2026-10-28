@@ -5,9 +5,13 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import kotlinx.coroutines.CoroutineScope
+import net.sigmabeta.chipbox.browserstate.BrowserStateEvents
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
+import net.sigmabeta.chipbox.notif.real.InsecureOriginNotifRecorder
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
@@ -32,8 +36,11 @@ interface WebChipboxGraph : ViewModelGraph {
     val hatchet: Hatchet
     val stringProvider: StringProvider
 
-    /** Build metadata; `isDebug` sets the browser document title in `JsMain`. */
+    /** Build metadata; `isDebug` is false and the version comes from git at build time. */
     val appInfo: AppInfo
+
+    /** Host policy for the browser: no library administration, no debug section. */
+    val appCapabilities: AppCapabilities
 
     // Exposed so `JsMain` can wire the browser-only `WebMediaSession` to the player without
     // creating a parallel composition root. The app-scope CoroutineScope is the same one
@@ -47,6 +54,17 @@ interface WebChipboxGraph : ViewModelGraph {
 
     /** Turns scanner failures into persisted Home notifications; `JsMain` calls observe() once. */
     val scanFailureNotifRecorder: ScanFailureNotifRecorder
+
+    // Restores the last queue/track/position on launch (paused) and keeps the saved snapshot in
+    // step with playback. `JsMain` calls observe() + restore() and flushes it on page teardown.
+    val playbackSessionPersister: PlaybackSessionPersister
+
+    // Non-fatal favorites/playlists storage events (corrupt data, quota/read failures). `JsMain`
+    // forwards `userMessages` to `ChipboxAppUi` so the browser shows a snackbar instead of failing.
+    val browserStateEvents: BrowserStateEvents
+
+    /** Posts the "audio needs HTTPS/localhost" notice on an insecure origin; `JsMain` observes it. */
+    val insecureOriginNotifRecorder: InsecureOriginNotifRecorder
 
     @DependencyGraph.Factory
     fun interface Factory {

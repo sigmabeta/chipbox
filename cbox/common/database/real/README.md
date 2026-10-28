@@ -51,7 +51,7 @@ val artistDao = db.artistDao()
 
 ## Module facts
 
-- **Plugin:** `sage.kmp` + `ksp`
+- **Plugin:** `sage.kmp` + `ksp` + `chipbox.plugins.kmp.test`
 - **Targets:** Android + JVM (Room KMP; KSP runs `room-compiler` for `kspAndroid` and `kspJvm`)
 - **Source set:** `jvmSharedMain` (`src/main/java`) for the shared `@Database`; `jvmMain` for the bundled SQLite driver
 - **SAGE/module dependencies:** `:cbox:common:database:api`, `:cbox:common:entities:api`, `room-runtime`, `sqlite-bundled` (JVM), `room-compiler` (KSP)

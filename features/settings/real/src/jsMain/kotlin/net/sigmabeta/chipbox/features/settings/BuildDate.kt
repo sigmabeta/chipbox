@@ -1,4 +1,11 @@
 package net.sigmabeta.chipbox.features.settings
 
-// Enforcement-only target (no JS settings screen); a plain epoch string suffices.
-internal actual fun formatLongDate(epochMs: Long): String = epochMs.toString()
+import kotlin.js.Date
+
+/**
+ * Localized date for the build timestamp on the browser Settings screen. Uses the browser's own
+ * locale via `Date.toLocaleDateString`, matching the desktop/Android "long date" intent without
+ * pulling a date-time library into the JS bundle.
+ */
+internal actual fun formatLongDate(epochMs: Long): String =
+    Date(epochMs.toDouble()).toLocaleDateString()

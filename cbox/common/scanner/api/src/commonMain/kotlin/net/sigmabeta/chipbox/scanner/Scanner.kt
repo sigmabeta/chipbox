@@ -103,6 +103,11 @@ abstract class Scanner(
     protected fun isFailedAlready() = currentState is ScannerState.Failed
 
     companion object {
-        const val INITIAL_VERSION = 1
+        // 2: server-side RSN extraction rewrites archive tracks to extracted `.spc` paths. Bumping
+        // the scanner version forces every existing folder to be re-read once on upgrade (the
+        // persisted rows written before extraction are extension `rsn`, so a reader-only bump
+        // would not be enough to convert a row that later becomes `spc`). Future changes to
+        // extraction naming/layout need another bump (or a dedicated stored extraction version).
+        const val INITIAL_VERSION = 2
     }
 }

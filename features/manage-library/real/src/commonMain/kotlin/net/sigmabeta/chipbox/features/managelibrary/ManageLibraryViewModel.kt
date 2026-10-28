@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
@@ -22,7 +23,7 @@ import net.sigmabeta.sage.ui.StringProvider
 class ManageLibraryViewModel @Inject constructor(
     private val librarySource: LibrarySource,
     private val scanner: Scanner,
-    stringProvider: StringProvider,
+    private val stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<ManageLibraryState>(
     ManageLibraryState(),
@@ -61,6 +62,10 @@ class ManageLibraryViewModel @Inject constructor(
 
     private fun onFolderRemoved(identifier: String) {
         librarySource.removeLibraryLocation(identifier)
-        emit(ChipboxEvent.ShowSnackbar("Folder removed from library."))
+        emit(
+            ChipboxEvent.ShowSnackbar(
+                stringProvider.getString(ChipboxStringId.MANAGE_LIBRARY_SNACKBAR_FOLDER_REMOVED)
+            )
+        )
     }
 }

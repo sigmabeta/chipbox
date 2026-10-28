@@ -43,4 +43,4 @@ external interface ChipboxGmeModule {
 private external val chipboxGme: () -> Promise<ChipboxGmeModule>
 
 suspend fun loadChipboxGme(): ChipboxGmeModule =
-    loadWasmModule("gme", "/wasm/chipbox_gme.js") { chipboxGme() }
+    loadWasmModule("gme", "/wasm/chipbox_gme.js", "chipboxGme") { chipboxGme() }

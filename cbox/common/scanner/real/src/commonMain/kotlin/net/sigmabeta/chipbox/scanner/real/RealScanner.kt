@@ -8,6 +8,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import net.sigmabeta.chipbox.contentsource.LibraryFileInfo
@@ -23,14 +24,20 @@ import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
+import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.scanner.DuplicateRsnContentException
+import net.sigmabeta.chipbox.scanner.RsnExtractor
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
+import net.sigmabeta.chipbox.utils.RSN_EXTENSION
+import net.sigmabeta.chipbox.utils.RSN_MEMBER_EXTENSION
 import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 import okio.ByteString.Companion.toByteString
@@ -55,6 +62,9 @@ class RealScanner(
     private val vgmstreamProbe: VgmstreamProber,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = ioDispatcher,
+    // Server-only: rewrites RSN archive tracks to standalone extracted .spc files. Null on
+    // desktop/Android/CLI, where playback stages the member out of the archive itself.
+    private val rsnExtractor: RsnExtractor? = null,
 ) : Scanner(dispatcher) {
 
     // Scan work spans coroutine suspension points, so a trace section's begin and end can land on
@@ -104,6 +114,23 @@ class RealScanner(
                 locations.joinToString { it.identifier }
         )
 
+        // Refuse an overlapping configuration before the walk, any write, or the prune: nested or
+        // duplicate roots emit their shared folders twice in one scan, and the concurrent readers
+        // race on the unique `game.folder_key` index (one insert loses and the whole scan aborts).
+        // The stored library is left exactly as it was — this is admin-fixable configuration.
+        librarySource.findOverlappingLocations()?.let { overlap ->
+            hatchet.e(
+                "Refusing library scan: library locations overlap — ${overlap.first} and " +
+                    "${overlap.second}. Each folder may be added only once, and no location may " +
+                    "contain another. Remove one of the overlapping folders and rescan."
+            )
+            // The health body is public: state names the configuration problem, never a host path.
+            // The kind tells consumers this is not a failing file (health clears failedFile).
+            emitState(ScannerState.Failed(OVERLAP_FAILURE, ScanFailureKind.CONFIGURATION))
+            emitEvent(ScannerEvent.Unknown)
+            return@traceAsync
+        }
+
         // Pre-scan snapshot of stored folder signatures, so a folder whose files are unchanged
         // (same paths, sizes, mtimes) is skipped without any reads or parsing.
         val snapshot = repository.folderSnapshots()
@@ -150,6 +177,16 @@ class RealScanner(
         // their tracks/joins) and any artists left without tracks. Each removed game becomes an event.
         val removed = traceAsync(TRACE_PRUNE, nextCookie()) { repository.pruneGames(seenFolderKeys.load()) }
         removed.forEach { emitEvent(ScannerEvent.GameRemoved(it)) }
+
+        // Extraction output is pruned only after the folder sweep has completed and nothing failed.
+        // `pruneGames` runs first so removed folders' extracted members are already unreferenced; a
+        // failed/partial scan (tracksFailed > 0) or a thrown scan never reaches this point, so it can
+        // never delete output a retry might still use.
+        if (total.tracksFailed == 0) {
+            traceAsync(TRACE_PRUNE_RSN, nextCookie()) { pruneOrphanedRsnOutput() }
+        } else {
+            hatchet.w("Scan had ${total.tracksFailed} failure(s) — keeping all RSN extraction output.")
+        }
 
         val duration = scanStart.elapsedNow()
         hatchet.i(
@@ -208,6 +245,9 @@ class RealScanner(
     ): Progress {
         var imagePath: String? = null
         val tracksByFilename = LinkedHashMap<String, MutableList<RawTrack>>()
+        // Archive bytes already read by the RSN reader, handed to the server extractor so the file
+        // is opened once and extraction uses the same bytes / `rsnSpcMembers` member order.
+        val rsnArchiveBytes = LinkedHashMap<String, ByteArray>()
         val m3uFiles = mutableListOf<LibraryFileInfo>()
         var failed = 0
 
@@ -299,6 +339,9 @@ class RealScanner(
                 val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
                     librarySource.openBytes(file.identifier)
                 } ?: return@readWithErrorHandling null
+                if (rsnExtractor != null && ext == RSN_EXTENSION) {
+                    rsnArchiveBytes[file.name] = bytes
+                }
                 trace("$TRACE_READ_PREFIX$ext") { reader.readTracksFromFile(bytes, file.identifier) }
                     ?.map { it.copy(source = librarySource.sourceId, extension = ext) }
             }
@@ -367,6 +410,11 @@ class RealScanner(
                 )
             }
         }
+
+        // RSN extraction must run here: the m3u overlay above matches on the original archive
+        // basename + member index, and the filename fallback derives titles from archive names.
+        // Rewriting tracks to extracted paths before either would break those matches.
+        failed += extractRsnMembers(tracksByFilename, rsnArchiveBytes, folderKey)
 
         val rawTracks = tracksByFilename.values.flatten().map {
             // Stamp the versions that produced this track so the next scan can skip the folder when
@@ -486,7 +534,11 @@ class RealScanner(
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (unavailable: Throwable) {
-            if (unavailable is VirtualMachineError) throw unavailable
+            // A missing libvgmstream raises a JVM LinkageError; anything else (a decode failure, a
+            // bad native call) is also non-fatal for the scan. This catch deliberately covers all
+            // Throwables because the JVM-only VM-fatal types (VirtualMachineError,
+            // OutOfMemoryError) are not available from commonMain, which now also compiles for
+            // Kotlin/JS.
             if (vgmstreamUnavailable.compareAndSet(false, true)) {
                 hatchet.e(
                     "vgmstream native lib unavailable (${unavailable.message}); " +
@@ -531,6 +583,103 @@ class RealScanner(
                 )
             }
         }
+    }
+
+    /**
+     * Rewrites every RSN archive's tracks into standalone extracted `.spc` tracks. [trackNumber]
+     * is the member index produced by `RsnReader` (same order as `rsnSpcMembers`), so it maps
+     * directly onto the extractor's returned member list. Returns the number of archive-level
+     * failures; a failed archive contributes no tracks, which keeps the scan from persisting
+     * unplayable archive rows and forces the prune gate closed.
+     *
+     * A duplicate archive (same bytes as one already extracted this scan) is refused by the
+     * extractor and reported as a clear per-file failure; [folderKey] identifies the archive in
+     * that message.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun extractRsnMembers(
+        tracksByFilename: MutableMap<String, MutableList<RawTrack>>,
+        archiveBytesByFilename: Map<String, ByteArray>,
+        folderKey: String,
+    ): Int {
+        val extractor = rsnExtractor ?: return 0
+        var failures = 0
+        for ((filename, tracks) in tracksByFilename) {
+            val archiveBytes = archiveBytesByFilename[filename] ?: continue
+            var refusedAsDuplicate = false
+            val members = try {
+                extractor.extract(archiveBytes, source = "$folderKey/$filename")
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (duplicate: DuplicateRsnContentException) {
+                // Two library folders carry the same archive bytes. Content-addressed extraction
+                // can only give those paths to one archive, so the second is refused instead of
+                // colliding with the owner's track rows. This is admin-fixable library
+                // maintenance: remove one copy and rescan.
+                hatchet.e(
+                    "Refusing RSN archive ${duplicate.source}: byte-identical to " +
+                        "${duplicate.owner}. Remove one of the two archives and rescan."
+                )
+                refusedAsDuplicate = true
+                null
+            } catch (error: Exception) {
+                // Disk full, permissions, a foreign extractor bug: this archive fails (closing the
+                // prune gate) while the rest of the scan can still complete.
+                hatchet.e("RSN extraction failed for $filename: ${error.stackTraceToString()}")
+                null
+            }
+            if (members == null) {
+                if (!refusedAsDuplicate) {
+                    hatchet.w("RSN extraction failed for $filename — dropping its tracks.")
+                }
+                failures++
+                tracks.clear()
+                continue
+            }
+            var dropped = 0
+            val rewritten = tracks.mapNotNull { track ->
+                val member = members.getOrNull(track.trackNumber)
+                if (member == null) {
+                    hatchet.w("RSN member ${track.trackNumber} missing from $filename.")
+                    dropped++
+                    null
+                } else {
+                    track.copy(
+                        path = member.path,
+                        extension = RSN_MEMBER_EXTENSION,
+                        trackNumber = 0,
+                    )
+                }
+            }
+            if (dropped > 0) failures++
+            tracks.clear()
+            tracks.addAll(rewritten)
+        }
+        return failures
+    }
+
+    /**
+     * Delete extracted-member directories no surviving track references. Called only after a fully
+     * successful scan, and after [Repository.pruneGames], so the kept set reflects the post-prune
+     * library. Skipped/unchanged folders never run the extractor, so this must consult the library
+     * rather than "what this scan extracted" — otherwise their output would be wrongly deleted.
+     */
+    private suspend fun pruneOrphanedRsnOutput() {
+        val extractor = rsnExtractor ?: return
+        val tracks = when (val data = repository.getAllTracks().first { it !is Data.Loading }) {
+            is Data.Succeeded -> data.data
+
+            is Data.Empty -> emptyList()
+
+            is Data.Failed -> {
+                // Unsure what survives → deleting could destroy usable output. Keep everything.
+                hatchet.w("Skipping RSN extraction prune — could not list tracks: ${data.message}")
+                return
+            }
+
+            Data.Loading -> return
+        }
+        extractor.prune(tracks.mapTo(mutableSetOf()) { it.path })
     }
 
     private suspend fun resolvePsfChain(
@@ -611,6 +760,10 @@ class RealScanner(
     companion object {
         val EXTENSIONS_IMAGES = setOf("jpg", "png")
         private const val TAG_UNKNOWN = "Unknown"
+
+        // The refusal has to survive into the public /api/health body, which exposes the failed
+        // state as a basename — so this message deliberately names the problem and carries no path.
+        private const val OVERLAP_FAILURE = "Overlapping library locations"
         private const val MAX_LIB_DEPTH = 8
         private const val DEFAULT_LENGTH_MS = 2L * 60 * 1000 + 30 * 1000
         private const val ZERO_FADE_PADDING_MS = 2L * 1000
@@ -635,5 +788,6 @@ class RealScanner(
         private const val TRACE_PARSE_M3U = "Scanner:parseM3u"
         private const val TRACE_UPSERT_GAME = "Scanner:upsertGame"
         private const val TRACE_PRUNE = "Scanner:pruneGames"
+        private const val TRACE_PRUNE_RSN = "Scanner:pruneRsnExtraction"
     }
 }

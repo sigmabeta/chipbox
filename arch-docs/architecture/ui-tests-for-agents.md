@@ -72,6 +72,8 @@ class BrowseByArtistTest {
   `assertNavigationEventOfType<Route>()` (when the args aren't predictable).
 - **Assert playback:** `assertDirectorReceived(SessionRequest.X)` or
   `assertDirectorReceived<SessionRequest.Start>()`.
+- **Assert accessibility:** `assertContentDescription(testTag, text)` — checks the
+  content description an icon-only control announces (e.g. a play/pause button).
 - **Text input:** `typeSearch(query)`.
 
 ### Base test content on what the repository actually provides

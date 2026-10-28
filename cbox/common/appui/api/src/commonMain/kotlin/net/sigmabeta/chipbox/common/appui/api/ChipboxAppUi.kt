@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.common.appui.api
 
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -14,7 +15,9 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.common.ui.chrome.api.ChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
@@ -23,6 +26,8 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.TitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.subs.LocalForceFakeImages
 import net.sigmabeta.chipbox.common.ui.list.api.LocalScreenLifecycleOwner
 import net.sigmabeta.chipbox.settings.ThemeMode
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
 
 /**
@@ -64,6 +69,16 @@ fun ChipboxAppUi(
     // UI test assert that an interaction triggered the expected navigation. See
     // [LocalNavigationObserver]. Null for hosts that aren't observing (the apps today).
     onNavigate: ((Any) -> Unit)? = null,
+    // Non-fatal, app-level messages (e.g. a failed localStorage write on web) shown in the shared
+    // snackbar host. Null for desktop/Android, which have no such producer yet; web passes the
+    // browser-state event flow so a quota failure is visible without crashing the UI.
+    messages: Flow<String>? = null,
+    // Web-only bridge that mirrors shell navigation into browser history and drives the shell from
+    // popstate/deep links. Null on desktop/Android (and in UI tests that don't assert URLs).
+    browserNavigation: BrowserNavigation? = null,
+    // Which surfaces this host exposes. Defaults to the full desktop/Android surface; the browser
+    // passes the graph's web capabilities (no library administration, no debug section).
+    capabilities: AppCapabilities = AppCapabilities.Default,
 ) {
     // Materialized before the theme so its persisted theme choice picks the color scheme — and
     // so Metro multibinding misses surface at launch rather than at the first screen entry.
@@ -96,6 +111,8 @@ fun ChipboxAppUi(
             LocalPlatformBackKeys provides backKeyEvents,
             LocalActiveTabDestinations provides activeTabDestinations,
             LocalNavigationObserver provides onNavigate,
+            LocalBrowserNavigation provides browserNavigation,
+            LocalAppCapabilities provides capabilities,
             // The owner the screen entries observe for foreground/background. Sourced from the
             // platform LocalLifecycleOwner (the Activity / desktop Window provides it) so the
             // centralized ScreenLifecycleEffect has a real lifecycle to follow.
@@ -112,6 +129,8 @@ fun ChipboxAppUi(
                 // now invoked by a collector on the VM's [effects] flow rather than directly
                 // by the LocalChipboxEventSink. Policy decisions (what to honour, what to
                 // drop) live in the VM; this layer just executes whatever the VM forwards.
+                val serverManagedLibraryMessage = LocalChipboxStringProvider.current
+                    .getString(ChipboxStringId.APPUI_SERVER_MANAGED_LIBRARY)
                 val applyEffect = remember(
                     navigator,
                     snackbarHostState,
@@ -119,10 +138,14 @@ fun ChipboxAppUi(
                     onOpenUrl,
                     onCopyToClipboard,
                     chromeController,
+                    capabilities,
+                    serverManagedLibraryMessage,
                 ) {
                     buildOuterSink(
                         snackbarHostState = snackbarHostState,
                         snackbarScope = snackbarScope,
+                        capabilities = capabilities,
+                        serverManagedLibraryMessage = serverManagedLibraryMessage,
                         onNavigateTo = { destination ->
                             navigator.push(screenFor(destination))
                         },
@@ -147,6 +170,19 @@ fun ChipboxAppUi(
                 // ChromeController / SnackbarHostState all expect.
                 LaunchedEffect(appUiViewModel, applyEffect) {
                     appUiViewModel.effects.collect(applyEffect)
+                }
+
+                // Platform-level non-fatal messages (web localStorage quota/corruption) share the
+                // same snackbar host as screen events. A null flow means "no producer" (desktop,
+                // Android, previews) and costs one no-op effect.
+                LaunchedEffect(messages) {
+                    messages?.collect { message ->
+                        snackbarHostState.showSnackbar(
+                            message = message,
+                            withDismissAction = true,
+                            duration = SnackbarDuration.Short,
+                        )
+                    }
                 }
 
                 // Screens emit events into this sink — which is just a method call on the

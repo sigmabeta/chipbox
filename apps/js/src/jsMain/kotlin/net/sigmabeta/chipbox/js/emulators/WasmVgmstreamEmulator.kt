@@ -20,10 +20,10 @@ import okio.Path.Companion.toPath
  * twist: the track number is passed in as the subsong index (vgmstream containers like FSB pack
  * many streams per file).
  *
- * Like the JVM `VgmstreamEmulator`, [supportedFileExtensions] is sourced from the native library
- * (lazy first access; JsMain guarantees the WASM module is resolved before any Emulator method
- * runs). Registered last in the emulator list so dedicated chiptune emulators win shared
- * extensions.
+ * Like the JVM `VgmstreamEmulator`, [supportedFileExtensions] is sourced from the native library.
+ * On web, though, that list is unreadable until the WASM module loads, so extension probing goes
+ * through [supportsExtension], which awaits the module first. Registered last in the emulator list
+ * so dedicated chiptune emulators win shared extensions without paying the module load.
  */
 class WasmVgmstreamEmulator(private val fileSystem: FileSystem) : Emulator() {
 
@@ -37,10 +37,27 @@ class WasmVgmstreamEmulator(private val fileSystem: FileSystem) : Emulator() {
         VgmstreamWasmCore(module).supportedExtensions()
     }
 
+    /**
+     * Loading the module is the only way to learn the extension list, so the lazy, ordered
+     * selector reaches this only for a track no earlier emulator claimed. [ensureNativeLibReady]
+     * dedupes the load, so repeated selections (and the factory's follow-up call) reuse it.
+     */
+    override suspend fun supportsExtension(extension: String): Boolean {
+        ensureNativeLibReady()
+        return isFileExtensionSupported(extension)
+    }
+
     override suspend fun ensureNativeLibReady() {
         if (loadedModule != null) return
         val pending = loadInProgress ?: loadScope.async { loadChipboxVgmstream() }.also { loadInProgress = it }
-        loadedModule = pending.await()
+        try {
+            loadedModule = pending.await()
+        } catch (t: Throwable) {
+            // A failed module load must not stay cached in `loadInProgress`: the next play (after
+            // the user fixes the bundle / reconnects) gets a fresh attempt without a page reload.
+            loadInProgress = null
+            throw t
+        }
     }
 
     override fun loadNativeLib() {

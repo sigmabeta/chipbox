@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ClassNaming:WebHatchet.kt$console</ID>
+    <ID>LongMethod:JsMain.kt$fun main()</ID>
+    <ID>LongMethod:WasmModuleLoader.kt$private fun &lt;T : Any&gt; injectAndInstantiate( name: String, loaderUrl: String, factoryName: String, factory: () -&gt; Promise&lt;T&gt;, ): Promise&lt;T&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:MemfsMirror.kt$for</ID>
+    <ID>MagicNumber:RemoteRepository.kt$RemoteRepository$200</ID>
+    <ID>MagicNumber:RemoteRepository.kt$RemoteRepository$299</ID>
+    <ID>MagicNumber:WasmGbaEmulator.kt$WasmGbaEmulator$44100</ID>
+    <ID>MagicNumber:WasmGmeEmulator.kt$WasmGmeEmulator$44100</ID>
+    <ID>MagicNumber:WasmNcsfEmulator.kt$WasmNcsfEmulator$44100</ID>
+    <ID>MagicNumber:WasmPsfEmulator.kt$WasmPsfEmulator$44100</ID>
+    <ID>MagicNumber:WasmSsfEmulator.kt$WasmSsfEmulator$44100</ID>
+    <ID>MagicNumber:WasmTwosfEmulator.kt$WasmTwosfEmulator$44100</ID>
+    <ID>MagicNumber:WasmUsfEmulator.kt$WasmUsfEmulator$44100</ID>
+    <ID>MagicNumber:WasmVgmEmulator.kt$WasmVgmEmulator$44100</ID>
+    <ID>MagicNumber:WasmVgmstreamEmulator.kt$WasmVgmstreamEmulator$44100</ID>
+    <ID>MagicNumber:WebMediaSession.kt$WebMediaSession$0.01</ID>
+    <ID>MatchingDeclarationName:GbaWasm.kt$ChipboxGbaModule</ID>
+    <ID>MatchingDeclarationName:GmeWasm.kt$ChipboxGmeModule</ID>
+    <ID>MatchingDeclarationName:NcsfWasm.kt$ChipboxNcsfModule</ID>
+    <ID>MatchingDeclarationName:PsfWasm.kt$ChipboxPsfModule</ID>
+    <ID>MatchingDeclarationName:SsfWasm.kt$ChipboxSsfModule</ID>
+    <ID>MatchingDeclarationName:TwosfWasm.kt$ChipboxTwosfModule</ID>
+    <ID>MatchingDeclarationName:UsfWasm.kt$ChipboxUsfModule</ID>
+    <ID>MatchingDeclarationName:VgmWasm.kt$ChipboxVgmModule</ID>
+    <ID>MatchingDeclarationName:VgmstreamWasm.kt$ChipboxVgmstreamModule</ID>
+    <ID>MaxLineLength:WebMediaSession.kt$WebMediaSession$director.request(SessionRequest.Seek((currentPositionMs() - (offsetSec * MILLIS_PER_SECOND).toLong()).coerceAtLeast(0L)))</ID>
+    <ID>ReturnCount:BrowserHistoryNavigation.kt$BrowserHistoryNavigation$override fun onTargetChanged(target: ShellTarget, push: Boolean)</ID>
+    <ID>ReturnCount:BrowserHistoryNavigation.kt$BrowserHistoryNavigation$private fun withApiOverride(url: String): String</ID>
+    <ID>ReturnCount:BrowserHistoryNavigation.kt$private fun readDepth(state: dynamic): Int</ID>
+    <ID>ReturnCount:WasmGbaEmulator.kt$WasmGbaEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmGbaEmulator.kt$WasmGbaEmulator$override fun loadTrackInternal(path: String)</ID>
+    <ID>ReturnCount:WasmGmeEmulator.kt$WasmGmeEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmNcsfEmulator.kt$WasmNcsfEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmNcsfEmulator.kt$WasmNcsfEmulator$override fun loadTrackInternal(path: String)</ID>
+    <ID>ReturnCount:WasmPsfEmulator.kt$WasmPsfEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmPsfEmulator.kt$WasmPsfEmulator$override fun loadTrackInternal(path: String)</ID>
+    <ID>ReturnCount:WasmSsfEmulator.kt$WasmSsfEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmSsfEmulator.kt$WasmSsfEmulator$override fun loadTrackInternal(path: String)</ID>
+    <ID>ReturnCount:WasmTwosfEmulator.kt$WasmTwosfEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmTwosfEmulator.kt$WasmTwosfEmulator$override fun loadTrackInternal(path: String)</ID>
+    <ID>ReturnCount:WasmUsfEmulator.kt$WasmUsfEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmUsfEmulator.kt$WasmUsfEmulator$override fun loadTrackInternal(path: String)</ID>
+    <ID>ReturnCount:WasmVgmEmulator.kt$WasmVgmEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmVgmstreamEmulator.kt$WasmVgmstreamEmulator$override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int</ID>
+    <ID>ReturnCount:WasmVgmstreamEmulator.kt$WasmVgmstreamEmulator$override fun loadTrackInternal(path: String)</ID>
+    <ID>ReturnCount:WebAudioSpeaker.kt$WebAudioSpeaker$override fun readSinkPositionMs(): Long</ID>
+    <ID>ReturnCount:WebAudioSpeaker.kt$WebAudioSpeaker$override suspend fun awaitSinkReady(): Boolean</ID>
+    <ID>ReturnCount:WebImageLoader.kt$ServerUrlMapper$override fun map(data: String, options: Options): String?</ID>
+    <ID>ReturnCount:WebModules.kt$WebPlaybackSessionModule$private suspend fun Repository.knownTrackIds(ids: List&lt;Long&gt;): Set&lt;Long&gt;?</ID>
+    <ID>SwallowedException:WebModules.kt$WebPlaybackSessionModule$@Suppress("TooGenericExceptionCaught") t: Throwable</ID>
+    <ID>ThrowsCount:RemoteRepository.kt$RemoteRepository$private suspend inline fun &lt;reified T&gt; HttpResponse.bodyOrThrow(): T</ID>
+    <ID>TooGenericExceptionCaught:RemoteRepository.kt$RemoteRepository$ex: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmGbaEmulator.kt$WasmGbaEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmGmeEmulator.kt$WasmGmeEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmModuleLoader.kt$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmNcsfEmulator.kt$WasmNcsfEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmPsfEmulator.kt$WasmPsfEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmSsfEmulator.kt$WasmSsfEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmTwosfEmulator.kt$WasmTwosfEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmUsfEmulator.kt$WasmUsfEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmVgmEmulator.kt$WasmVgmEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WasmVgmstreamEmulator.kt$WasmVgmstreamEmulator$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:WebAudioSpeaker.kt$WebAudioSpeaker$t: Throwable</ID>
+    <ID>TooGenericExceptionThrown:WasmModuleLoader.kt$throw RuntimeException(failureFor(name, loaderUrl, t).message, t)</ID>
+  </CurrentIssues>
+</SmellBaseline>

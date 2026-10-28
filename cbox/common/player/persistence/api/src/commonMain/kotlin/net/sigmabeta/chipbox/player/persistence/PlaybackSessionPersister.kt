@@ -21,6 +21,19 @@ interface PlaybackSessionPersister {
     /** Write the latest observed playback position immediately, regardless of state — the teardown
      *  net for "closed while playing" (no pause ever happened). Synchronous so it can run from a
      *  service `onDestroy`/`onTaskRemoved` with no coroutine; relies on [observe] already running.
-     *  No-op when nothing is playing. */
-    fun snapshotNow()
+     *  No-op when nothing is playing.
+     *
+     *  [teardown] guards the session against the `STOPPED` a released player emits during teardown
+     *  (which would otherwise clear what this just wrote). Pass false for a non-teardown flush —
+     *  e.g. the web host's `visibilitychange=hidden` — so a subsequent real stop still clears. */
+    fun snapshotNow(teardown: Boolean = true)
+
+    /**
+     * Undo a teardown suppression left behind by [snapshotNow] when the host did not actually
+     * terminate. The web host calls this from `pageshow`: `pagehide` fires for the back-forward
+     * cache too, and a page restored from BFCache must still clear its snapshot on a real stop.
+     * Hosts with a genuine teardown (the Android service) have nothing to undo; the default is a
+     * no-op.
+     */
+    fun resumeAfterTeardown() {}
 }

@@ -10,10 +10,14 @@ per-format `:real` modules; this module only defines what they must implement.
 
 | File | What it is |
 | --- | --- |
-| `Emulator.kt` | Abstract base for every backend. Subclasses implement `loadNativeLib`, `loadTrackInternal`, `generateBufferInternal`, `teardownInternal`, `getLastError`, `getSampleRateInternal`, and `supportedFileExtensions`. The base tracks the per-track frame budget (declared length + fade), flips `trackOver`, and guards `generateBuffer` from crossing into native unless a track is loaded (the use-after-free fix). Optional hooks: `ensureNativeLibReady` (async WASM load), `getDiagnostics`, `setTrackNumber`. |
-| `EmulatorProvider.kt` | A `data class` wrapping `List<Emulator>` — the set of backends in the current build variant. `RealGenerator` iterates it to find the first emulator whose extension matches a track. Wrapped in a class so DI can distinguish the binding from any other `List<Emulator>`. |
+| `Emulator.kt` | Abstract base for every backend. Subclasses implement `loadNativeLib`, `loadTrackInternal`, `generateBufferInternal`, `teardownInternal`, `getLastError`, `getSampleRateInternal`, and `supportedFileExtensions`. The base tracks the per-track frame budget (declared length + fade), flips `trackOver`, and guards `generateBuffer` from crossing into native unless a track is loaded (the use-after-free fix). Optional hooks: `ensureNativeLibReady` (async WASM load), `supportsExtension` (suspend-aware extension probe; defaults to `isFileExtensionSupported`, overridden by web vgmstream to load its module first), `getDiagnostics`, `setTrackNumber`. |
+| `EmulatorSelector.kt` | The one ordered selection seam used by both `PcmTrackSource.Factory` implementations and the A/B renderer. `select(emulators, extension)` is `firstOrNull` over `Emulator.supportsExtension`, preserving DI order: dedicated backends win shared extensions and a lazy catch-all (web vgmstream) loads only when its turn comes. Load failures propagate. |
+| `EmulatorProvider.kt` | A `data class` wrapping `List<Emulator>` — the set of backends in the current build variant. Wrapped in a class so DI can distinguish the binding from any other `List<Emulator>`. |
 | `vgmstream/VgmstreamProber.kt` | Scan-time bridge for vgmstream: the `VgmstreamProber` interface (`isSupported`, `probe`) plus the `VgmstreamSubsong` data class. Kept in `commonMain` so the scanner stays platform-agnostic; the native impl lives in `vgmstream/real`. |
 | `EmulatorLoadGuardTest.kt` (test) | Regression guard for the native use-after-free: asserts `generateBuffer` runs native only after a successful load, and skips it after teardown or a failed load. |
+| `WasmLoadFailure.kt` | Pure classification (and actionable message) for browser emulator-module load failures: timeout, script `error`, missing factory global, factory rejection, module rejection. Every message names the module URL and says the bundle may lack WASM. The web loader in `apps/js` throws it; the selector lets the load failure propagate. |
+| `WasmLoadFailureTest.kt` (test) | Asserts each failure kind names the module + URL + bundle remedy and keeps its detail, and that the observation helper maps a non-callable global to `FACTORY_MISSING` (a script `error` event is classified directly by the loader). |
+| `EmulatorSelectionTest.kt` (test) | Selection-order regression: a shared extension picks its dedicated backend without loading the lazy one, a lazy-only extension loads once and then matches, repeated selection does not reload, and a load failure propagates. Runs under `jvmTest` and `jsNodeTest`. |
 
 ## Why depend on this module
 
@@ -37,8 +41,8 @@ class MyBackend : Emulator() {
     external override fun getSampleRateInternal(): Int
 }
 
-// The generator selects a backend by extension:
-val emulator = provider.emulators.firstOrNull { it.isFileExtensionSupported("spc") }
+// The ordered selector picks a backend by extension (dedicated first, lazy catch-all last):
+val emulator = EmulatorSelector.select(provider.emulators, "spc")
 ```
 
 ## Module facts

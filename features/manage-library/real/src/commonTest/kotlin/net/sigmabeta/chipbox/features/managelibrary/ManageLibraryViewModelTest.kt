@@ -15,6 +15,7 @@ import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -119,7 +120,7 @@ class ManageLibraryViewModelTest {
 
         assertEquals(listOf("file:///music/PSX"), source.removedLocations)
         assertTrue(event is ChipboxEvent.ShowSnackbar)
-        assertEquals("Folder removed from library.", event.message)
+        assertEquals("${ChipboxStringId.MANAGE_LIBRARY_SNACKBAR_FOLDER_REMOVED}", event.message)
     }
 
     // ---- helpers ----

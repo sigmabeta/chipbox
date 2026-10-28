@@ -34,7 +34,7 @@ class RealPlaylistsRepository(
 
     override fun trackIds(playlistId: Long): Flow<List<Long>> = playlistTrackDao.trackIds(playlistId)
 
-    override suspend fun createPlaylist(name: String): Long {
+    override suspend fun createPlaylist(name: String): Long? {
         val id = playlistDao.insert(PlaylistEntity(name = name, createdAtMs = now()))
         hatchet.d("Created playlist $id \"$name\"")
         return id

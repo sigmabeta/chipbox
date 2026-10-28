@@ -23,6 +23,7 @@ plugins {
 // their deps — hence the fakes + leaf bindings.
 val harnessDependencies: KotlinDependencyHandler.() -> Unit = {
     implementation(projects.cbox.common.appui.api)
+    implementation(projects.cbox.common.capabilities.api)
     implementation(projects.features.gameDetail.real)
     implementation(projects.features.gameDetail.api)
     implementation(projects.features.artistDetail.api)

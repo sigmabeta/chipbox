@@ -21,10 +21,16 @@ DB rows the DAOs operate on; models are the domain types; the repository
 | `Platform.kt` | `@Serializable` enum (`NES`, `SNES`, `PSX`, …`OTHER`) carrying a `SageStringId` for display; serializes by name. |
 | `SearchHistory.kt` | `@Serializable` recent-search entry (`id`, `query`). |
 | `ChainFile.kt` | `@Serializable` `(filename, uri)` pair **plus** the `encodeChainFiles`/`decodeChainFiles` codec (tab-delimited, newline-separated) used to flatten a track's chain files into `TrackEntity.chainFiles`. |
+| `HealthStatus.kt` | `/api/health` wire contract (`HealthStatus`, `ScanState`, `ScanStatus`) plus the bounded `ScanRetryPolicy` the browser uses while the server's startup scan is running. |
+| `ScanReadiness.kt` | `readListAwaitingScan`: the read flow shared by the browser and its tests — partial data is emitted immediately, then re-read once the scan ends; empty reads wait for the scan; `unknown` health also retries. |
+| `ErrorResponse.kt` | The standard error envelope `{"error": …}` shared by the server and the browser client, plus `apiErrorMessage(status, contentType, body)`, the pure classifier that turns a non-2xx or non-JSON response into the message the UI shows. |
 
-Tests (`commonTest`): `ModelSerializationTest` round-trips every wire type through
-`Json` (the `Platform` enum-by-name and nullable back-links), and `ChainFileCodecTest`
-covers the `ChainFile` codec's round-trips and malformed-line handling.
+Tests (`commonTest`, also run under `jsNodeTest`): `ModelSerializationTest`
+round-trips every wire type through `Json` (the `Platform` enum-by-name and
+nullable back-links), `ChainFileCodecTest` covers the `ChainFile` codec's
+round-trips and malformed-line handling, `HealthStatusTest`/`ScanReadinessTest`
+cover the scan-status contract and retry policy, and `ApiErrorMessageTest`
+covers error-body decoding and the HTML/non-JSON fallbacks.
 
 ## Why depend on this module
 
@@ -66,4 +72,7 @@ val files: List<ChainFile> = decodeChainFiles(encoded)
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (tests in `commonTest`)
 - **SAGE/module dependencies:** `api(projects.cbox.common.strings.api)` (for
-  `Platform`'s string ids); `api(libs.kotlinx.serialization.core)`.
+  `Platform`'s string ids); `api(libs.kotlinx.serialization.core)` (generated
+  serializers); `implementation(libs.kotlinx.serialization.json)` (decoding the
+  shared error envelope); `implementation(libs.kotlinx.coroutines.core)` (the
+  scan-readiness retry loop).

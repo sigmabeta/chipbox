@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
@@ -26,6 +27,7 @@ import net.sigmabeta.chipbox.repository.importLibrarySnapshot
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
@@ -37,6 +39,7 @@ import net.sigmabeta.sage.ui.StringProvider
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @ViewModelKey
 class SettingsViewModel @Inject constructor(
+    private val capabilities: AppCapabilities,
     private val settingsManager: ChipboxSettingsManager,
     private val debugSettingsManager: DebugSettingsManager,
     private val repository: Repository,
@@ -44,7 +47,7 @@ class SettingsViewModel @Inject constructor(
     private val scanner: Scanner,
     private val librarySource: LibrarySource,
     private val appInfo: AppInfo,
-    stringProvider: StringProvider,
+    private val stringProvider: StringProvider,
     private val hatchet: Hatchet,
 ) : ChipboxListViewModel<SettingsState>(
     SettingsState(),
@@ -54,6 +57,9 @@ class SettingsViewModel @Inject constructor(
     init {
         updateState {
             it.copy(
+                canManageLibrary = capabilities.canManageLibrary,
+                showDebugSection = capabilities.showDebugSection,
+                showErrorLog = capabilities.showErrorLog,
                 appInfo = appInfo,
                 formattedBuildDate = formatBuildDate(appInfo.buildTimeMs),
             )
@@ -155,6 +161,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     override fun handleAction(action: SageAction) {
+        // Host policy, enforced at the action seam as well as in the rendered list: a stale row or
+        // a synthetic event must not reach server-owned library state or hidden debug surfaces.
+        if (!capabilities.canManageLibrary && action.requiresLibraryAdmin()) return
+        if (!capabilities.showDebugSection && action.requiresDebugSection()) return
+
         when (action) {
             is SettingsAction.DropdownExpandClicked -> updateState {
                 // At most one dropdown open at a time: re-tapping the open one closes it; tapping
@@ -242,7 +253,9 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.ClearPlaybackHistoryClicked -> onClearPlaybackHistoryClicked()
 
             SettingsAction.LicensesClicked -> emit(
-                ChipboxEvent.ShowSnackbar("Licenses screen coming soon.")
+                ChipboxEvent.ShowSnackbar(
+                    stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_LICENSES_COMING_SOON)
+                )
             )
 
             SettingsAction.GithubClicked -> emit(ChipboxEvent.OpenUrl(GITHUB_URL))
@@ -296,11 +309,19 @@ class SettingsViewModel @Inject constructor(
             try {
                 repository.clearLibrary()
                 updateState { it.copy(clearLibraryStatus = LCE.Content(Unit)) }
-                emit(ChipboxEvent.ShowSnackbar("Library cleared."))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_LIBRARY_CLEARED)
+                    )
+                )
             } catch (ex: Throwable) {
                 hatchet.e("Clear library failed: ${ex.message}")
                 updateState { it.copy(clearLibraryStatus = LCE.Error(LOAD_OP_CLEAR, ex)) }
-                emit(ChipboxEvent.ShowSnackbar("Failed to clear library."))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_LIBRARY_CLEAR_FAILED)
+                    )
+                )
             }
         }
     }
@@ -312,11 +333,19 @@ class SettingsViewModel @Inject constructor(
             try {
                 playbackHistoryRepository.clearHistory()
                 updateState { it.copy(clearPlaybackHistoryStatus = LCE.Content(Unit)) }
-                emit(ChipboxEvent.ShowSnackbar("Playback history cleared."))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_HISTORY_CLEARED)
+                    )
+                )
             } catch (ex: Throwable) {
                 hatchet.e("Clear playback history failed: ${ex.message}")
                 updateState { it.copy(clearPlaybackHistoryStatus = LCE.Error(LOAD_OP_CLEAR_HISTORY, ex)) }
-                emit(ChipboxEvent.ShowSnackbar("Failed to clear playback history."))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_HISTORY_CLEAR_FAILED)
+                    )
+                )
             }
         }
     }
@@ -332,7 +361,14 @@ class SettingsViewModel @Inject constructor(
             try {
                 val bytes = librarySource.openBytes(path)
                 if (bytes == null) {
-                    emit(ChipboxEvent.ShowSnackbar("Snapshot not found: $path"))
+                    emit(
+                        ChipboxEvent.ShowSnackbar(
+                            stringProvider.getStringOneArg(
+                                ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_NOT_FOUND,
+                                path,
+                            )
+                        )
+                    )
                     return@launch
                 }
                 val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(bytes.decodeToString())
@@ -340,14 +376,27 @@ class SettingsViewModel @Inject constructor(
                 // the snapshot was generated from (correct when importing on the same host). The
                 // benchmark build's startup seed passes its own fixed device root instead.
                 val result = repository.importLibrarySnapshot(snapshot, root = snapshot.root)
-                emit(
-                    ChipboxEvent.ShowSnackbar(
-                        "Imported ${result.total} game(s) — ${result.added} new, ${result.updated} updated."
-                    )
+                // Two templates because StringProvider has at most two arguments: total first,
+                // then the added/updated breakdown.
+                val summary = stringProvider.getStringOneArg(
+                    ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_IMPORTED,
+                    result.total.toString(),
+                ) + stringProvider.getStringTwoArgs(
+                    ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_IMPORT_COUNTS,
+                    result.added.toString(),
+                    result.updated.toString(),
                 )
+                emit(ChipboxEvent.ShowSnackbar(summary))
             } catch (ex: Throwable) {
                 hatchet.e("Snapshot import failed: ${ex.message}")
-                emit(ChipboxEvent.ShowSnackbar("Snapshot import failed: ${ex.message}"))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getStringOneArg(
+                            ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_IMPORT_FAILED,
+                            ex.message.toString(),
+                        )
+                    )
+                )
             }
         }
     }
@@ -362,6 +411,45 @@ class SettingsViewModel @Inject constructor(
         } else {
             updateState { it.copy(debugClickCount = next) }
         }
+    }
+
+    /** Actions that mutate or navigate through server-owned library administration. */
+    private fun SageAction.requiresLibraryAdmin(): Boolean = when (this) {
+        SettingsAction.AddFolderClicked,
+        SettingsAction.ManageLibraryClicked,
+        SettingsAction.RescanLibraryClicked,
+        SettingsAction.RescanStatusClicked,
+        SettingsAction.ClearLibraryClicked,
+        is SettingsAction.FolderPicked,
+        -> true
+
+        else -> false
+    }
+
+    /**
+     * Actions reachable only through the debug section. Error Log is deliberately absent: on a
+     * host that hides debug it stays reachable from the Diagnostics row.
+     */
+    private fun SageAction.requiresDebugSection(): Boolean = when (this) {
+        SettingsAction.BuildDateClicked,
+        SettingsAction.PlaybackStatusClicked,
+        SettingsAction.CrashLogClicked,
+        SettingsAction.ComponentLibraryClicked,
+        SettingsAction.ImportSnapshotClicked,
+        is SettingsAction.RepositorySourceSelected,
+        is SettingsAction.GeneratorSourceSelected,
+        is SettingsAction.SpeakerSourceSelected,
+        is SettingsAction.ImageLoaderSourceSelected,
+        is SettingsAction.FavoritesSourceSelected,
+        is SettingsAction.HistorySourceSelected,
+        is SettingsAction.PlaylistsSourceSelected,
+        -> true
+
+        is SageAction.EditTextSubmitted -> id == SettingsState.SNAPSHOT_IMPORT_EDIT_ID
+
+        is SageAction.EditTextCancelled -> id == SettingsState.SNAPSHOT_IMPORT_EDIT_ID
+
+        else -> false
     }
 
     private fun formatBuildDate(epochMs: Long?): String? =

@@ -22,18 +22,21 @@ application {
 // playback on the server (that's a future WASM project for the browser); the only native lib it
 // needs is vgmstream for the scanner's subsong probe.
 
-// libvgmstream.so: scanner.real → VgmstreamProbe.probe → System.loadLibrary("vgmstream"). Same
-// pattern apps/cli uses (apps/cli/build.gradle.kts comments explain in detail). One native lib,
-// no per-format emulator builds — pure Kotlin readers handle everything else during a scan.
-// Consume libvgmstream.so from apps/jvm's committed `libs/` directory via a named consumable
-// configuration rather than reading project(":apps:jvm").layout directly (forbidden under Isolated
-// Projects). These are prebuilt/committed .so files, so the configuration carries no producing task.
+// libvgmstream: scanner.real → VgmstreamProbe.probe → System.loadLibrary("vgmstream"). Same pattern
+// apps/cli uses (apps/cli/build.gradle.kts comments explain in detail). One native lib, no
+// per-format emulator builds — pure Kotlin readers handle everything else during a scan.
+//
+// Consume the host-built libvgmstream from apps/jvm's `hostVgmstreamElements` configuration rather
+// than reading project(":apps:jvm").layout directly (forbidden under Isolated Projects). The
+// configuration carries the CMake-produced output directory
+// (`apps/jvm/build/jvm-native/out/<target>/vgmstream/host/`) with its `builtBy` producer, so a
+// fresh checkout builds the library instead of expecting a committed binary.
 val jvmNativeLibsDeps: Configuration by configurations.dependencyScope("jvmNativeLibsDeps")
 val jvmNativeLibs: Configuration by configurations.resolvable("jvmNativeLibs") {
     extendsFrom(jvmNativeLibsDeps)
 }
 dependencies {
-    add(jvmNativeLibsDeps.name, project(path = ":apps:jvm", configuration = "prebuiltNativeLibsElements"))
+    add(jvmNativeLibsDeps.name, project(path = ":apps:jvm", configuration = "hostVgmstreamElements"))
 }
 // Argument provider that resolves the native-lib directory lazily at execution and emits it as
 // `-Djava.library.path`. Modelling it as a CommandLineArgumentProvider with an @InputFiles
@@ -106,16 +109,22 @@ tasks.named("processResources") {
 }
 
 tasks.named<JavaExec>("run") {
+    // Build (or reuse) the host vgmstream library before launching so
+    // System.loadLibrary("vgmstream") resolves on a fresh checkout. Under -Pchipbox.skipNative the
+    // configuration has no producer and the directory may be absent; that's a deliberate opt-out.
+    dependsOn(jvmNativeLibs)
     jvmArgumentProviders.add(NativeLibraryPathArgument(jvmNativeLibs))
 }
 
-// Bundle libvgmstream.so into `lib/native/` in the installed distribution + splice
-// `-Djava.library.path=$APP_HOME/lib/native` into the launch scripts. Same shape as apps/cli.
+// Bundle the host-built vgmstream library into `lib/native/` in the installed distribution +
+// splice `-Djava.library.path=$APP_HOME/lib/native` into the launch scripts. Same shape as
+// apps/cli. Include the host's real file name: Linux `.so`, macOS `.dylib`, Windows `.dll` — the
+// old `.so`-only filter produced a silently lib-less mac `installDist`.
 distributions {
     named("main") {
         contents {
             from(jvmNativeLibs) {
-                include("libvgmstream.so")
+                include("libvgmstream.so", "libvgmstream.dylib", "libvgmstream.dll", "vgmstream.dll")
                 into("lib/native")
             }
         }
@@ -153,6 +162,31 @@ listOf("installDist", "distZip", "distTar").forEach { taskName ->
         dependsOn(installProdBundle)
     }
 }
+
+// Packaging check: the server runtime is useless for vgmstream formats without this library, and
+// the old wiring silently resolved an unproduced directory. This task resolves the exact
+// configuration the distribution/run use and fails if no host vgmstream library is produced.
+// `inputs.files` both makes the config an input (configuration-cache safe) and pulls its builtBy
+// producer. Run: ./gradlew :apps:server:verifyVgmstreamNativeLib
+//   -Dorg.gradle.isolated-projects=false --configure-on-demand -Pchipbox.cmake=<cmake>
+tasks.register("verifyVgmstreamNativeLib") {
+    description = "Asserts apps/jvm produces a host libvgmstream for this server build."
+    group = "verification"
+    val nativeLibs = jvmNativeLibs
+    inputs.files(nativeLibs)
+    doLast {
+        val dir = inputs.files.singleFile
+        val lib = dir.listFiles().orEmpty().firstOrNull {
+            it.isFile && (it.name.startsWith("libvgmstream.") || it.name == "vgmstream.dll")
+        }
+        check(lib != null && lib.length() > 0) {
+            "No host vgmstream library produced in $dir. Expected libvgmstream.{so,dylib,dll} " +
+                "(or vgmstream.dll). Check apps/jvm hostVgmstreamElements and " +
+                "buildHostNativeVgmstream."
+        }
+        logger.lifecycle("vgmstream native library OK: ${lib.absolutePath} (${lib.length()} bytes)")
+    }
+}
 tasks.named<CreateStartScripts>("startScripts") {
     doLast {
         unixScript.writeText(
@@ -183,6 +217,7 @@ dependencies {
     implementation(projects.cbox.common.contentsource.file.real)
     implementation(projects.cbox.common.readers.api)
     implementation(projects.cbox.common.models.api)
+    implementation(projects.cbox.common.utils.api)
     implementation(projects.cbox.common.strings.real)
     implementation(libs.sage.common.ui.strings)
     implementation(libs.sqlite.bundled)
@@ -212,4 +247,23 @@ dependencies {
     // apps/jvm and apps/cli; pull it in directly so JvmFileSystem-style provides can return
     // FileSystem.SYSTEM if needed by anything we wire later.
     implementation(libs.okio)
+
+    // Health/scan-state mapping + loopback-bind tests are plain JVM unit tests (no Ktor server
+    // startup), same test stack as apps/jvm. Scan + RSN extraction tests run over
+    // DatabaseRepository/FakeDatabase, and route tests go through Ktor's test host. kotlin-test
+    // resolves to its JUnit 4 variant via the junit4 dep; there is no catalog alias for
+    // ktor-server-test-host, so use the catalog's Ktor version with an explicit coordinate.
+    testImplementation(kotlin("test"))
+    testImplementation(libs.junit4)
+    testImplementation("io.ktor:ktor-server-test-host:${libs.versions.ktor.get()}")
+    testImplementation(projects.cbox.common.database.fake)
+}
+
+// The SPA shell's asset-loading contract (deep links need `<base href="/">`) is asserted against
+// the real apps/js index.html, not a fixture that could drift from what ships.
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    systemProperty(
+        "chipbox.jsIndexHtml",
+        layout.projectDirectory.file("../js/src/jsMain/resources/index.html").asFile.absolutePath,
+    )
 }

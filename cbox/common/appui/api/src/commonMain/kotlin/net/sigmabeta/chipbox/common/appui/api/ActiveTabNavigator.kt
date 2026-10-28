@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 
@@ -22,6 +23,15 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
 @Stable
 internal class ActiveTabNavigator {
     var navigator: Navigator? by mutableStateOf(null)
+
+    /**
+     * Route-key destinations backing the active tab's deep stack, keyed by the wrapped Screen's
+     * [ScreenKey]. Voyager Screens are anonymous wrappers that don't carry the original route key;
+     * the browser-history seam needs it to name the screen an in-app pop lands on. Entries are added
+     * when the shell pushes a destination and are harmless to keep: each Screen key embeds its
+     * arguments (`GameDetail:42`) and tab switches reset stacks to their roots.
+     */
+    val destinations: MutableMap<ScreenKey, Any> = mutableMapOf()
 }
 
 internal val LocalActiveTabNavigator = staticCompositionLocalOf<ActiveTabNavigator> {

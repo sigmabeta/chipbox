@@ -11,7 +11,7 @@ hardware. Being a `:fake`, depend on it from tests, exporters, and dev tooling.
 
 | File | What it is |
 | --- | --- |
-| `FakeSpeaker.kt` | Test stub implementing `Speaker` directly: tests push `SpeakerEvent`s via `emit(event)`, set `currentPositionMsValue`, and inspect recorded calls (`playCalls`, `switchToCalls`, `setDuckedCalls`, …). No real sink — drives the `Director` in isolation. |
+| `FakeSpeaker.kt` | Test stub implementing `Speaker` directly: tests push `SpeakerEvent`s via `emit(event)`, set `currentPositionMsValue`, and inspect recorded calls (`playCalls`, `prepareCalls`, `switchToCalls`, `setDuckedCalls`, …). No real sink — drives the `Director` in isolation. |
 | `FileSpeaker.kt` | `BaseSpeaker` writing incoming PCM to a WAV file (okio). Writes a placeholder RIFF header up front and patches the real chunk sizes in `teardown()`; reopens the file on any sample-rate change. For exporting an emulator's output. |
 | `TextSpeaker.kt` | Debug `BaseSpeaker` that logs each buffer as a `Frame \| Left \| Right` table via `Hatchet`. Verifies the producer makes sensible samples without audio hardware. |
 

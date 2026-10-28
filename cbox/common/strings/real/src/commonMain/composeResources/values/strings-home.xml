@@ -14,6 +14,7 @@
     <string name="home_rng_random_artist">Random Artist</string>
     <string name="home_empty_no_folders">Your library is empty. Add a folder of music for Chipbox to play.</string>
     <string name="home_empty_folders_empty">Chipbox didn't find any music in your library folders. Try adding another folder.</string>
+    <string name="home_empty_server_managed">Your library is empty. It is managed on the server — add music files to the library folder and restart chipbox-server.</string>
     <string name="home_empty_add_folder_cta">Add a library folder</string>
     <string name="home_empty_rescan_cta">Rescan library folders</string>
     <string name="home_error">Something went wrong loading your home screen.</string>
@@ -23,4 +24,5 @@
     <string name="home_scan_status_failed">Failed</string>
     <string name="home_scan_status_error">The scan failed while reading %1$s.</string>
     <string name="home_scan_status_error_generic">The scan failed.</string>
+    <string name="home_scan_status_configuration_error">The scan could not run because the library folder configuration is invalid. Check for overlapping or nested library folders and rescan.</string>
 </resources>

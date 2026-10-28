@@ -2,24 +2,26 @@ package net.sigmabeta.chipbox.js.repository
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentType
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.browser.window
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
+import net.sigmabeta.chipbox.browserstate.StorageSearchHistoryRepository
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.HealthStatus
 import net.sigmabeta.chipbox.models.Platform
+import net.sigmabeta.chipbox.models.ScanRetryPolicy
 import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.models.apiErrorMessage
+import net.sigmabeta.chipbox.models.readListAwaitingScan
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteOutcome
@@ -33,15 +35,21 @@ import net.sigmabeta.chipbox.repository.Repository
  * the configured `CHIPBOX_API_BASE` instead — see [resolveBaseUrl]).
  *
  * Each `Flow<Data<T>>` returning method launches a single HTTP request and emits
- * `Data.Loading` then `Data.Succeeded(...)` (or `Data.Empty` / `Data.Failed`). No polling — one
- * shot per subscription, matching the server's single-snapshot semantics.
+ * `Data.Loading` then `Data.Succeeded(...)` (or `Data.Empty` / `Data.Failed`). List reads await the
+ * server's startup scan: partial data paints immediately, then the list is re-read once
+ * `/api/health` reports the scan is no longer running (bounded by [ScanRetryPolicy]) so a browser
+ * opened during the first scan converges on the full library. An empty first read is held back
+ * until the scan finishes, and an initial `unknown` health state also retries. Search reads do not
+ * wait (an empty result is a legitimate answer, not a sign the scan has not finished).
  *
  * Write paths (`upsertGame`, `pruneGames`, `clearLibrary`, `folderSnapshots`) are scanner-side
  * concerns the UI doesn't drive; they error if called.
  */
 class RemoteRepository(
     private val client: HttpClient,
+    private val searchHistory: StorageSearchHistoryRepository,
     private val baseUrl: String = resolveBaseUrl(),
+    private val scanRetryPolicy: ScanRetryPolicy = ScanRetryPolicy(),
 ) : Repository {
 
     // ---------- lists ----------
@@ -58,7 +66,7 @@ class RemoteRepository(
                 parameter("withGames", withGames)
                 if (limit != null) parameter("limit", limit)
                 if (offset != 0) parameter("offset", offset)
-            }.body()
+            }.bodyOrThrow()
         }
 
     override fun getAllGames(
@@ -73,7 +81,7 @@ class RemoteRepository(
                 parameter("withArtists", withArtists)
                 if (limit != null) parameter("limit", limit)
                 if (offset != 0) parameter("offset", offset)
-            }.body()
+            }.bodyOrThrow()
         }
 
     override fun getAllTracks(
@@ -88,7 +96,7 @@ class RemoteRepository(
                 parameter("withArtists", withArtists)
                 if (limit != null) parameter("limit", limit)
                 if (offset != 0) parameter("offset", offset)
-            }.body()
+            }.bodyOrThrow()
         }
 
     // Server-side id filter (`?ids=…`) so only the requested rows come over the wire, not the
@@ -99,7 +107,7 @@ class RemoteRepository(
                 parameter("ids", ids.joinToString(","))
                 parameter("withGame", withGame)
                 parameter("withArtists", withArtists)
-            }.body()
+            }.bodyOrThrow()
         }
 
     override fun getGamesByIds(ids: List<Long>, withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> =
@@ -108,7 +116,7 @@ class RemoteRepository(
                 parameter("ids", ids.joinToString(","))
                 parameter("withTracks", withTracks)
                 parameter("withArtists", withArtists)
-            }.body()
+            }.bodyOrThrow()
         }
 
     override fun getArtistsByIds(ids: List<Long>, withTracks: Boolean, withGames: Boolean): Flow<Data<List<Artist>>> =
@@ -117,20 +125,20 @@ class RemoteRepository(
                 parameter("ids", ids.joinToString(","))
                 parameter("withTracks", withTracks)
                 parameter("withGames", withGames)
-            }.body()
+            }.bodyOrThrow()
         }
 
     override suspend fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
         client.get("$baseUrl/api/games/$id/tracks") {
             parameter("withGame", withGame)
             parameter("withArtists", withArtists)
-        }.body()
+        }.bodyOrThrow()
 
     override suspend fun getTracksForArtist(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
         client.get("$baseUrl/api/artists/$id/tracks") {
             parameter("withGame", withGame)
             parameter("withArtists", withArtists)
-        }.body()
+        }.bodyOrThrow()
 
     override suspend fun getTracksForPlatform(
         platform: Platform,
@@ -139,14 +147,14 @@ class RemoteRepository(
     ): List<Track> = client.get("$baseUrl/api/platforms/${platform.name}/tracks") {
         parameter("withGame", withGame)
         parameter("withArtists", withArtists)
-    }.body()
+    }.bodyOrThrow()
 
     override fun getGamesForPlatform(platform: Platform): Flow<Data<List<Game>>> = listFlow {
-        client.get("$baseUrl/api/platforms/${platform.name}/games").body()
+        client.get("$baseUrl/api/platforms/${platform.name}/games").bodyOrThrow()
     }
 
     override fun getAvailablePlatforms(): Flow<Data<List<Platform>>> = listFlow {
-        client.get("$baseUrl/api/platforms").body()
+        client.get("$baseUrl/api/platforms").bodyOrThrow()
     }
 
     // Surgical server-side query — the window filter, random pick, and LIMIT all run in SQL, so the
@@ -155,7 +163,7 @@ class RemoteRepository(
         client.get("$baseUrl/api/games/recently-added") {
             parameter("limit", limit)
             parameter("withinMs", withinMs)
-        }.body()
+        }.bodyOrThrow()
     }
 
     // The played-game ids come from the browser's local history; the server excludes them, picks at
@@ -164,7 +172,7 @@ class RemoteRepository(
         client.get("$baseUrl/api/games/unplayed") {
             parameter("limit", limit)
             parameter("exclude", playedGameIds.joinToString(","))
-        }.body()
+        }.bodyOrThrow()
     }
 
     // ---------- single ----------
@@ -212,39 +220,36 @@ class RemoteRepository(
     // Server-side count + offset pick — keeps the date-seeded "game of the day" off the
     // fetch-everything path even over HTTP.
     override suspend fun getGameCount(): Int =
-        client.get("$baseUrl/api/games/count").body()
+        client.get("$baseUrl/api/games/count").bodyOrThrow()
 
     override suspend fun getGameAtIndex(index: Int): Game? =
         client.get("$baseUrl/api/games/at") { parameter("index", index) }.bodyOrNull()
 
     // ---------- search ----------
 
-    override fun searchGames(query: String): Flow<Data<List<Game>>> = listFlow {
-        client.get("$baseUrl/api/search/games") { parameter("q", query) }.body()
+    override fun searchGames(query: String): Flow<Data<List<Game>>> = listFlow(awaitStartupScan = false) {
+        client.get("$baseUrl/api/search/games") { parameter("q", query) }.bodyOrThrow()
     }
 
-    override fun searchSongs(query: String): Flow<Data<List<Track>>> = listFlow {
-        client.get("$baseUrl/api/search/tracks") { parameter("q", query) }.body()
+    override fun searchSongs(query: String): Flow<Data<List<Track>>> = listFlow(awaitStartupScan = false) {
+        client.get("$baseUrl/api/search/tracks") { parameter("q", query) }.bodyOrThrow()
     }
 
-    override fun searchArtists(query: String): Flow<Data<List<Artist>>> = listFlow {
-        client.get("$baseUrl/api/search/artists") { parameter("q", query) }.body()
+    override fun searchArtists(query: String): Flow<Data<List<Artist>>> = listFlow(awaitStartupScan = false) {
+        client.get("$baseUrl/api/search/artists") { parameter("q", query) }.bodyOrThrow()
     }
 
-    override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = listFlow {
-        client.get("$baseUrl/api/search/history").body()
-    }
-
-    override suspend fun addSearchHistory(query: String) {
-        client.post("$baseUrl/api/search/history") {
-            contentType(ContentType.Application.Json)
-            setBody(SearchHistoryAddBody(query))
+    override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = flow {
+        emit(Data.Loading)
+        // Browser-local only: the server stores no user state (no /api/search/history calls).
+        searchHistory.recent().collect { entries ->
+            emit(if (entries.isEmpty()) Data.Empty else Data.Succeeded(entries))
         }
     }
 
-    override suspend fun removeSearchHistory(id: Long) {
-        client.delete("$baseUrl/api/search/history/$id")
-    }
+    override suspend fun addSearchHistory(query: String) = searchHistory.add(query)
+
+    override suspend fun removeSearchHistory(id: Long) = searchHistory.remove(id)
 
     // ---------- scanner-side; the UI doesn't drive these ----------
 
@@ -262,14 +267,41 @@ class RemoteRepository(
 
     // ---------- helpers ----------
 
-    private fun <T> listFlow(call: suspend () -> List<T>): Flow<Data<List<T>>> = flow {
+    private fun <T> listFlow(
+        awaitStartupScan: Boolean = true,
+        call: suspend () -> List<T>,
+    ): Flow<Data<List<T>>> = flow listFlow@{
         emit(Data.Loading)
         try {
-            val list = call()
-            emit(if (list.isEmpty()) Data.Empty else Data.Succeeded(list))
+            if (awaitStartupScan) {
+                // May emit more than once: partial data paints immediately, then the post-scan
+                // contents replace it when the startup scan finishes.
+                readListAwaitingScan(scanRetryPolicy, read = call, readHealth = ::readHealth)
+                    .collect { list ->
+                        this@listFlow.emit(if (list.isEmpty()) Data.Empty else Data.Succeeded(list))
+                    }
+            } else {
+                val list = call()
+                this@listFlow.emit(if (list.isEmpty()) Data.Empty else Data.Succeeded(list))
+            }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (ex: Throwable) {
             emit(Data.Failed(ex.message ?: ex::class.simpleName ?: "Request failed"))
         }
+    }
+
+    /**
+     * `/api/health` is advisory: a network error or a malformed body just means "stop waiting" —
+     * the list read still decides between Empty and Failed, and a forever-retry here would keep a
+     * screen loading against a server that is gone.
+     */
+    private suspend fun readHealth(): HealthStatus? = try {
+        client.get("$baseUrl/api/health").body<HealthStatus>()
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (_: Throwable) {
+        null
     }
 
     private fun <T : Any> singleFlow(call: suspend () -> T?): Flow<Data<T?>> = flow {
@@ -277,16 +309,42 @@ class RemoteRepository(
         try {
             val item = call()
             emit(if (item == null) Data.Empty else Data.Succeeded(item))
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (ex: Throwable) {
             emit(Data.Failed(ex.message ?: ex::class.simpleName ?: "Request failed"))
         }
     }
 
-    private suspend inline fun <reified T> HttpResponse.bodyOrNull(): T? =
-        if (status == HttpStatusCode.NotFound) null else body()
+    /**
+     * Decode a JSON success; fail with the server's own message otherwise.
+     *
+     * Status and content type are checked before decoding so an unknown `/api` path (now a JSON
+     * 404) or any non-JSON page (a proxy error, an old server's SPA fallback) becomes a real
+     * message instead of a `JsonDecodingException`. The body is only read on the failure path:
+     * a successful response is still decoded by Ktor's configured content-negotiation decoder.
+     */
+    private suspend inline fun <reified T> HttpResponse.bodyOrThrow(): T {
+        val content = contentType()?.toString()
+        if (status.value !in 200..299) {
+            val body = try {
+                bodyAsText()
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Throwable) {
+                null
+            }
+            throw ApiResponseException(
+                apiErrorMessage(status.value, content, body) ?: "HTTP ${status.value}",
+            )
+        }
+        apiErrorMessage(status.value, content, body = null)?.let { throw ApiResponseException(it) }
+        return body()
+    }
 
-    @Serializable
-    private data class SearchHistoryAddBody(val query: String)
+    /** A missing single resource is `Data.Empty` (404); every other failure keeps its message. */
+    private suspend inline fun <reified T> HttpResponse.bodyOrNull(): T? =
+        if (status == HttpStatusCode.NotFound) null else bodyOrThrow()
 
     companion object {
         /**
@@ -315,3 +373,10 @@ class RemoteRepository(
         }
     }
 }
+
+/**
+ * A non-2xx (or non-JSON success) API response. Its message is already user-facing — it comes from
+ * the server's standard `{"error": …}` body when there is one — so flows can emit it verbatim as
+ * `Data.Failed`.
+ */
+private class ApiResponseException(message: String) : Exception(message)

@@ -11,6 +11,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
+import net.sigmabeta.chipbox.models.ErrorResponse
 import net.sigmabeta.chipbox.repository.Repository
 
 /**

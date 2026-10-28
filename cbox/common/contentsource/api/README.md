@@ -10,12 +10,23 @@ scanner and the player resolve files through these, so neither knows whether the
 bytes came from the local filesystem (Android or JVM, via the `file/real` impl)
 or anywhere else.
 
+**Library locations must be disjoint.** Adding the same folder twice, or a folder
+inside (or containing) an existing root, is refused: the scanner would walk the
+shared folders twice in one pass, and its parallel readers would race on the same
+folder's game row. `LibrarySource` exposes the check
+(`findOverlappingLocations()` / `findOverlappingLocation(identifier)`) for the add
+flow and the scanner; the filesystem impl's `addLibraryLocation` fails fast with
+an `IllegalArgumentException` for a nested/containing root rather than silently
+dropping it, while re-adding an already-configured root is a no-op. See
+`LibraryLocations.kt` for the segment-wise rule.
+
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `ContentSource.kt` | Base interface: a `sourceId` and `suspend openBytes(identifier): ByteArray?`. |
-| `LibrarySource.kt` | A `ContentSource` that also exposes a `locations` `StateFlow`, a `scanFolders()` walk, and add/remove-location. |
+| `LibrarySource.kt` | A `ContentSource` that also exposes a `locations` `StateFlow`, a `scanFolders()` walk, and add/remove-location. Also answers `findOverlappingLocations()` / `findOverlappingLocation(identifier)` so callers can refuse an overlapping root before adding it or scanning it. |
+| `LibraryLocations.kt` | The disjointness rule for library roots: `overlaps(a, b)` / `firstOverlap(ids)` compare paths segment-wise (`/music` contains `/music/SNES` but not `/music/SNES2`), ignoring trailing/duplicate separators and `/` vs `\`. An overlapping list is a configuration error, not a library to merge. |
 | `LibraryFileInfo.kt` | One discovered file: `identifier`, `parentFolderId` (the scanner's grouping key), name/ext/mime, size, and last-modified ms (size+mtime feed the unchanged-folder signature). |
 | `LibraryFolderInfo.kt` | One discovered folder + all its direct files. `scanFolders()` streams these so the scanner can read each folder (its complete file set) while later folders are still being discovered. |
 | `LibraryLocationInfo.kt` | One user-added location: `identifier` (same shape as a file id) + optional display name. |

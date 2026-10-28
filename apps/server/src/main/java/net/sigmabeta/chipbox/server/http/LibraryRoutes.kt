@@ -4,11 +4,9 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
-import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import kotlinx.serialization.Serializable
+import net.sigmabeta.chipbox.models.ErrorResponse
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.Repository
 
@@ -34,6 +32,15 @@ internal fun Route.libraryRoutes(repository: Repository) {
         randomRoutes(repository)
     }
 }
+
+/**
+ * Upper bound on one `limit=` page. The browser's pager asks for 100; 500 leaves room for larger
+ * clients while keeping a single response from pulling an arbitrarily large library over the wire.
+ * A present-but-invalid `limit` (non-numeric, negative, zero, absurdly large) is clamped into
+ * `1..MAX_PAGE_LIMIT` instead of falling back to "no limit", so a malformed request can never
+ * accidentally stream the whole catalog.
+ */
+internal const val MAX_PAGE_LIMIT = 500
 
 // Fallbacks for /api/games/recently-added when the client omits the params (it normally sends both).
 private const val DEFAULT_RECENTLY_ADDED_LIMIT = 10
@@ -70,7 +77,8 @@ private fun Route.artistRoutes(repository: Repository) {
             val artists = if (ids != null) {
                 repository.getArtistsByIds(ids, withTracks, withGames)
             } else {
-                repository.getAllArtists(withTracks, withGames)
+                val paging = call.pagingParams()
+                repository.getAllArtists(withTracks, withGames, paging.limit, paging.offset)
             }
             call.respond(artists.firstSettled().map { it.withPublicUrls() })
         }
@@ -101,7 +109,8 @@ private fun Route.gameRoutes(repository: Repository) {
             val games = if (ids != null) {
                 repository.getGamesByIds(ids, withTracks, withArtists)
             } else {
-                repository.getAllGames(withTracks, withArtists)
+                val paging = call.pagingParams()
+                repository.getAllGames(withTracks, withArtists, paging.limit, paging.offset)
             }
             call.respond(games.firstSettled().map { it.withPublicUrls() })
         }
@@ -155,9 +164,8 @@ private fun Route.trackRoutes(repository: Repository) {
             val tracks = if (ids != null) {
                 repository.getTracksByIds(ids, withGame, withArtists).firstSettled()
             } else {
-                val limit = call.intParam("limit")
-                val offset = call.intParam("offset") ?: 0
-                repository.getAllTracks(withGame, withArtists, limit, offset).firstSettled()
+                val paging = call.pagingParams()
+                repository.getAllTracks(withGame, withArtists, paging.limit, paging.offset).firstSettled()
             }
             call.respond(tracks.map { it.withPublicUrls() })
         }
@@ -201,24 +209,10 @@ private fun Route.searchRoutes(repository: Repository) {
             val q = call.queryParam("q") ?: return@get call.badRequest("`q` required")
             call.respond(repository.searchArtists(q).firstSettled().map { it.withPublicUrls() })
         }
-        route("/history") {
-            get { call.respond(repository.getSearchHistory().firstSettled()) }
-            post {
-                val body = call.receive<SearchHistoryAdd>()
-                repository.addSearchHistory(body.query)
-                call.respond(HttpStatusCode.NoContent)
-            }
-            delete("/{id}") {
-                val id = call.longPathParam("id") ?: return@delete call.notFound()
-                repository.removeSearchHistory(id)
-                call.respond(HttpStatusCode.NoContent)
-            }
-        }
+        // No `/search/history` routes: recent searches are browser-local user state, so the server
+        // stores none of it. An old client's request falls through to the JSON API 404.
     }
 }
-
-@Serializable
-private data class SearchHistoryAdd(val query: String)
 
 // --- small request-handling helpers ---
 
@@ -233,6 +227,30 @@ private fun io.ktor.server.application.ApplicationCall.queryParam(name: String):
 
 private fun io.ktor.server.application.ApplicationCall.intParam(name: String): Int? =
     request.queryParameters[name]?.toIntOrNull()
+
+/**
+ * The `limit`/`offset` window shared by the games, artists, and tracks list endpoints.
+ *
+ * - Absent `limit` keeps the historical "everything from `offset` onward" behavior (the DAO treats
+ *   `null` as an unbounded page).
+ * - A present `limit` is clamped to `1..[MAX_PAGE_LIMIT]`. A non-numeric value becomes the cap
+ *   rather than "no limit" so a typo'd query cannot return an unbounded list.
+ * - `offset` defaults to 0, negatives clamp to 0, and an overflowing value clamps to
+ *   `Int.MAX_VALUE` (an empty page, not page one).
+ */
+private data class Paging(val limit: Int?, val offset: Int)
+
+private fun io.ktor.server.application.ApplicationCall.pagingParams(): Paging {
+    val limit = request.queryParameters["limit"]?.let { raw ->
+        raw.toLongOrNull()?.coerceIn(1L, MAX_PAGE_LIMIT.toLong())?.toInt() ?: MAX_PAGE_LIMIT
+    }
+    val offset = request.queryParameters["offset"]
+        ?.toLongOrNull()
+        ?.coerceIn(0L, Int.MAX_VALUE.toLong())
+        ?.toInt()
+        ?: 0
+    return Paging(limit, offset)
+}
 
 private fun io.ktor.server.application.ApplicationCall.longParam(name: String): Long? =
     request.queryParameters[name]?.toLongOrNull()
@@ -255,6 +273,3 @@ private suspend fun io.ktor.server.application.ApplicationCall.notFound() {
 private suspend fun io.ktor.server.application.ApplicationCall.badRequest(message: String) {
     respond(HttpStatusCode.BadRequest, ErrorResponse(message))
 }
-
-@Serializable
-internal data class ErrorResponse(val error: String)

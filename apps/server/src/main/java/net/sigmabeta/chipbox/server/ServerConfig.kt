@@ -68,6 +68,19 @@ data class ServerConfig(
             )
         }
 
+        /**
+         * True for `localhost`, IPv4 loopback (`127.0.0.0/8`) and IPv6 loopback (`::1`, bracketed or
+         * not). The v1 server has no authentication, so `Main.kt` warns when the bind address is
+         * anything else (the wildcard `0.0.0.0` included). Deliberately textual: no DNS lookup at
+         * startup, and a non-literal host (e.g. `chipbox.lan`) is treated as exposed.
+         */
+        fun isLoopbackHost(host: String): Boolean {
+            val normalized = host.trim().removePrefix("[").removeSuffix("]").lowercase()
+            return normalized == "localhost" ||
+                normalized == "::1" ||
+                normalized.startsWith("127.")
+        }
+
         private fun failFast(message: String): Nothing {
             System.err.println("chipbox-server: $message")
             System.err.println(

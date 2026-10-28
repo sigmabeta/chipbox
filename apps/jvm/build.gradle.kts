@@ -27,31 +27,31 @@ val splashReleaseFile: File = layout.projectDirectory.dir("src/main/splash").fil
 val nativeLibsDirFile: File = layout.buildDirectory.dir("jvm-native/libs").get().asFile
 val nativeLibsTask = tasks.named("chipboxHostNativeLibs")
 
-// Expose the host-built native directories to sibling JVM consumers (apps/cli and the testing
-// harnesses under :testing:) as consumable configurations. They used to read
+// Expose the host-built native directories to sibling JVM consumers (apps/cli, apps/server and the
+// testing harnesses under :testing:) as consumable configurations. They used to read
 // `project(":apps:jvm").layout` directly, which Isolated Projects forbids (a project accessing
 // another project's layout). Each configuration carries one directory as an outgoing artifact with
 // `builtBy` its producing task; consumers select a specific one by name via
 // `project(path = ":apps:jvm", configuration = "<name>")`, so no attribute matching is needed and
 // the task dependency is wired through `builtBy` automatically.
+//
+// The host build writes `build/jvm-native/out/<target>/<emulator>/host/` (see
+// ChipboxNativeHostPlugin / BuildEmulatorNativeLib), so the vgmstream directory must include the
+// target segment. Getting this wrong makes consumers resolve a directory that is never produced and
+// silently ship no library.
+val nativeHostTargetName = resolveNativeHostTarget().name.lowercase()
 artifacts.add(configurations.consumable("hostNativeLibsElements").name, nativeLibsDirFile) {
     builtBy(nativeLibsTask)
 }
 artifacts.add(
     configurations.consumable("hostVgmstreamElements").name,
-    layout.buildDirectory.dir("jvm-native/out/vgmstream/host"),
+    layout.buildDirectory.dir("jvm-native/out/$nativeHostTargetName/vgmstream/host"),
 ) {
     // tasks.matching (not tasks.named) so this tolerates -Pchipbox.skipNative, under which the
     // per-emulator host tasks aren't registered (lint/static-analysis configure this module but
     // build nothing native). Empty under skipNative → no producer wired, which is correct there.
     builtBy(tasks.matching { it.name == "buildHostNativeVgmstream" })
 }
-// The `libs/` directory holds committed prebuilt .so files (a source dir, not a build output), so
-// this consumable needs no `builtBy` producing task.
-artifacts.add(
-    configurations.consumable("prebuiltNativeLibsElements").name,
-    layout.projectDirectory.dir("libs"),
-)
 
 // --- Packaging: compose.desktop.application (jpackage) --------------------------------------------
 // Migrated off the Gradle `application` plugin (native-installers phase): that plugin and
@@ -212,6 +212,8 @@ dependencies {
     // `cbox/android/appui/api` (now sage.kmp). `appui:api` already pulls in every feature
     // module via `api(...)`, so we don't list them individually here.
     implementation(projects.cbox.common.appui.api)
+    // Host capability policy bound to the desktop surface (full library + debug).
+    implementation(projects.cbox.common.capabilities.api)
 
     // Direct deps for things the JVM-side Metro graph (JvmChipboxGraph) needs that aren't
     // covered transitively by appui.
