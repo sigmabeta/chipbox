@@ -1340,8 +1340,22 @@ sint32 EMU_CALL iop_execute(
             // are about to render; deliver the IRQ once iff the crossing
             // falls within it (cyc < 768). iop_advance's HLE delivery is
             // gated off under the pump (it owns SPU2-IRQ delivery here).
-            {
-                uint32 ci = spu_cycles_until_interrupt(SPUSTATE, 1);
+            //
+            // Batching: while spu_batch_allowed() holds (no sound IRQ armed
+            // on either core, no running voice sampling its core's reverb
+            // work area) the sample joins the pending batch instead of being
+            // rendered now -- spu_render_queued() renders the whole run in
+            // one spu_render() the moment the guest touches sound-chip state
+            // (register access, DMA, DMA complete, IRQ look-ahead), which is
+            // the only way it could tell the difference. With the sound IRQ
+            // armed the look-ahead query needs a current chip every sample,
+            // so that case keeps the original per-sample query + render.
+            if (bp && spu_batch_allowed(SPUSTATE)) {
+                spu_render_queued(SPUSTATE, bp, 1);   // the reference spu_advance(1), batched
+            } else {
+                uint32 ci;
+                spu_flush_batch(SPUSTATE);            // guard tripped (or no buffer)
+                ci = spu_cycles_until_interrupt(SPUSTATE, 1);
                 spu_render(SPUSTATE, bp ? bp : tmp, 1);  // the reference spu_advance(1)
                 if (ci != 0xFFFFFFFFu && ci < 768) hle_ps2_spu_irq();
             }
@@ -1385,6 +1399,9 @@ sint32 EMU_CALL iop_execute(
             else stuck = 0;
         }
         hle_ps2_set_pump(0);
+        // Never hand back unrendered samples: the caller (and the next
+        // iop_execute) would otherwise see a chip that is a batch behind.
+        spu_flush_batch(SPUSTATE);
         IOPSTATE->sound_buffer_samples_free = want - done;
         *sound_samples = done;
         if (r >= 0) r = (sint32) (IOPSTATE->odometer - old_odometer);
