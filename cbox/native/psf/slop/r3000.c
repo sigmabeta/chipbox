@@ -329,6 +329,63 @@ static EMU_INLINE void EMU_CALL update_usage(void *state) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
+/*
+** Debug instruction tracer.
+**
+** HLE_PCTRACE="lo:hi[:max]" (hex addresses) makes the interpreter log every
+** instruction whose PC falls in [lo,hi], up to `max` lines. It exists to debug
+** drivers that misbehave, so it must keep working -- but it must also cost
+** nothing when it is off, and the decode loop runs it on every emulated
+** instruction.
+**
+** So the environment is read once per process and the loop tests only the
+** cached `pctrace_on` flag, calling into a cold logger: an untraced run pays a
+** predictable not-taken branch (plus one flag load) per instruction instead of
+** the operand reload, range comparison and second branch it used to pay. Keeping
+** the flag in a callee-saved register was measured *slower* -- the extra live
+** register costs more than the load it saves -- so it is read from memory.
+*/
+
+static int pctrace_ready = 0;
+static int pctrace_on = 0;
+static uint32 pctrace_lo = 1, pctrace_hi = 0;
+static long pctrace_max = 0, pctrace_n = 0;
+
+static void EMU_CALL pctrace_setup(void) {
+    const char *e = getenv("HLE_PCTRACE");
+    pctrace_ready = 1;
+    if (!e) return;
+    pctrace_lo = (uint32) strtoul(e, (char **) &e, 16);
+    if (*e == ':') pctrace_hi = (uint32) strtoul(e + 1, (char **) &e, 16);
+    pctrace_max = (*e == ':') ? strtol(e + 1, 0, 10) : 200000;
+    /* An inverted (or empty) range means "trace nothing", as before. */
+    pctrace_on = (pctrace_lo <= pctrace_hi);
+}
+
+/* The tracer is a debug aid: keep its (large) body out of the decode loop and
+** tell the compiler the enabled branch is cold, so an untraced run pays only a
+** predictable not-taken branch per instruction. */
+#if defined(__GNUC__)
+#define PCTRACE_LIKELY_OFF(x) __builtin_expect((x), 0)
+#define PCTRACE_COLD __attribute__((noinline, cold))
+#else
+#define PCTRACE_LIKELY_OFF(x) (x)
+#define PCTRACE_COLD
+#endif
+
+static PCTRACE_COLD void EMU_CALL pctrace_log(struct R3000_STATE *state, uint32 instruction) {
+    if (state->pc < pctrace_lo || state->pc > pctrace_hi) return;
+    if (pctrace_n >= pctrace_max) return;
+    fprintf(stderr, "P %08X %08X r2=%08X gp=%08X sp=%08X r16=%08X r31=%08X\n",
+            state->pc, instruction, state->regs[2], state->regs[28], state->regs[29],
+            state->regs[16], state->regs[31]);
+    pctrace_n++;
+}
+
+#define PCTRACE_HOOK() \
+    do { if (PCTRACE_LIKELY_OFF(pctrace_on)) pctrace_log(state, instruction); } while (0)
+
+/////////////////////////////////////////////////////////////////////////////
 
 #define INS_S ((uint32)((instruction>>21)&0x1F))
 #define INS_T ((uint32)((instruction>>16)&0x1F))
@@ -534,29 +591,12 @@ sint32 EMU_CALL r3000_execute(void *state, sint32 cycles) {
     //
     STATE->maxpc = 0;
 
+    /* HLE_PCTRACE is read once per process, not once per instruction. */
+    if (!pctrace_ready) pctrace_setup();
+
     while (STATE->slot || STATE->cycles_remaining > 0) {
         instruction = fetch(state);
-        {
-            // Env-gated instruction tracer: HLE_PCTRACE="lo:hi[:max]" (hex).
-            // BIOS-safe (no behaviour change; only active when the var is set).
-            static int tinit = 0;
-            static uint32 tlo = 1, thi = 0;
-            static long tmax = 0, tn = 0;
-            if (!tinit) {
-                const char *e = getenv("HLE_PCTRACE");
-                tinit = 1;
-                if (e) {
-                    tlo = (uint32) strtoul(e, (char **) &e, 16);
-                    if (*e == ':') thi = (uint32) strtoul(e + 1, (char **) &e, 16);
-                    tmax = (*e == ':') ? strtol(e + 1, 0, 10) : 200000;
-                }
-            }
-            if (tlo <= thi && STATE->pc >= tlo && STATE->pc <= thi && tn < tmax) {
-                fprintf(stderr, "P %08X %08X r2=%08X gp=%08X sp=%08X r16=%08X r31=%08X\n",
-                        STATE->pc, instruction, REGS[2], REGS[28], REGS[29], REGS[16], REGS[31]);
-                tn++;
-            }
-        }
+        PCTRACE_HOOK();
         if (instruction < 0x04000000) {
             switch (instruction & 0x3F) {
                 /* MINOR */
