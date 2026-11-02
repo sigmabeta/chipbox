@@ -12,6 +12,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "chipbox_env.h"
+
+// VFSLOG: read once per process by the shared cached helper (the read path it
+// gates runs on every guest file read).
+static int env_vfslog = CHIPBOX_ENV_UNREAD;
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // Static information
@@ -139,7 +145,7 @@ sint32 EMU_CALL vfs_read(void *state, sint32 fd, char *buffer, sint32 length) {
             buffer,
             length
     );
-    if (getenv("VFSLOG"))
+    if (chipbox_env_flag(&env_vfslog, "VFSLOG"))
         fprintf(stderr, "[vfs] read fd=%d \"%s\" ofs=%d len=%d -> %d\n",
                 (int) fd, VFSSTATE->path[fd], (int) VFSSTATE->ofs[fd], (int) length, (int) r);
     if (r < -1) return -5; // EIO for fatal errors

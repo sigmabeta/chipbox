@@ -31,20 +31,23 @@
 #include "iop.h"
 #include "ioptimer.h"
 #include "spu.h"
+#include "chipbox_env.h"
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Optional PC/dispatch trace (HLE_TRACE=1 in the environment). Off by
-// default; costs nothing in the hot path when disabled.
+// Debug-log switches: HLE_TRACE (PC/dispatch trace), HLE_DMA (DMA + SPU2 DMA
+// logging), SCLOG (softcall drains) and HLE_ADV (counter advance). All off by
+// default, and all resolved once per process through the shared cached helper
+// -- they gate per-register / per-slice paths, so a getenv per call showed up
+// as PSF2 render time on a desktop-sized environment.
 //
-static int hle_trace = -1;
+static int env_hle_trace = CHIPBOX_ENV_UNREAD;
+static int env_hle_dma = CHIPBOX_ENV_UNREAD;
+static int env_sclog = CHIPBOX_ENV_UNREAD;
+static int env_hle_adv = CHIPBOX_ENV_UNREAD;
 
 static EMU_INLINE int trace_on(void) {
-    if (hle_trace < 0) {
-        const char *e = getenv("HLE_TRACE");
-        hle_trace = (e && *e != '0') ? 1 : 0;
-    }
-    return hle_trace;
+    return chipbox_env_flag(&env_hle_trace, "HLE_TRACE");
 }
 
 #define TRACE(...) do { if(trace_on()) fprintf(stderr, __VA_ARGS__); } while(0)
@@ -383,7 +386,7 @@ static void psx_dma4(void) {
 // runs here against HE's real SPU2 core (`core` 0 or 1). `len` is the
 // transfer length in bytes; `towrite` is RAM->SPU2 (1) vs SPU2->RAM (0).
 void EMU_CALL hle_ps2_spu_dma(int core, uint32 madr, uint32 len, int towrite) {
-    if (getenv("HLE_DMA")) {
+    if (chipbox_env_flag(&env_hle_dma, "HLE_DMA")) {
         uint32 *p = (uint32 *) ((uint8 *) RAM() + (madr & 0x1ffffc));
         uint32 acc = 0, k;
         for (k = 0; k < (len / 4) && k < 256; k++) acc |= p[k];
@@ -441,7 +444,7 @@ void EMU_CALL hle_dma_sw(void *iop, uint32 a, uint32 d, uint32 mask) {
     (void) iop;
     {
         static int n = 0;
-        if (getenv("HLE_DMA") && n++ < 80)
+        if (chipbox_env_flag(&env_hle_dma, "HLE_DMA") && n++ < 80)
             fprintf(stderr, "[dma] sw a=%08X lo=%03X d=%08X ps2=%d\n", a, lo, d, g_hle.ps2);
     }
     // ---- PS2 SPU2 DMA (the reference ps2_dma4 / ps2_dma7). The CHCR write kicks
@@ -588,12 +591,7 @@ void EMU_CALL hle_advance(void *iop, uint32 elapse) {
     if (g_hle.ps2 && g_hle.ps2_pump) return;   // pump drives PS2 counters
 
     {
-        static int en = -1;
-        if (en < 0) {
-            const char *e = getenv("HLE_ADV");
-            en = (e && *e != '0');
-        }
-        if (en) {
+        if (chipbox_env_flag(&env_hle_adv, "HLE_ADV")) {
             static unsigned long c = 0;
             if ((c++ % 100000) == 0)
                 fprintf(stderr, "[adv] #%lu elapse=%u accum=%u ps2=%d\n", c, elapse,
@@ -1432,7 +1430,7 @@ void EMU_CALL hle_slice_end(void *r3000, void *iop) {
     g_hle.r3000 = r3000;
     {
         static int n = 0;
-        if (getenv("HLE_DMA") && g_hle.sc_head != g_hle.sc_tail && n++ < 12)
+        if (chipbox_env_flag(&env_hle_dma, "HLE_DMA") && g_hle.sc_head != g_hle.sc_tail && n++ < 12)
             fprintf(stderr, "[sc] slice_end entry: head=%d tail=%d sc_active=%d\n",
                     g_hle.sc_head, g_hle.sc_tail, g_hle.ps2_sc_active);
     }
@@ -1469,7 +1467,7 @@ void EMU_CALL hle_slice_end(void *r3000, void *iop) {
         uint32 guard = 0;
         {
             static unsigned long long drains = 0, instr = 0;
-            if (getenv("SCLOG")) {
+            if (chipbox_env_flag(&env_sclog, "SCLOG")) {
                 unsigned long long o0 = 0;
                 (void) o0;
                 drains++;

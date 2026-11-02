@@ -43,6 +43,30 @@ void   EMU_CALL spucore_setflag(void *state, uint32 n, int value);
 uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 samples);
 
 /*
+** Read-only queries backing the PSF2 renderer's batching guards
+** (spu_batch_allowed(), see spu.h). Neither one advances any state.
+*/
+
+/* Non-zero iff this core has the sound IRQ enabled. */
+int    EMU_CALL spucore_irq_enabled(void *state);
+
+/*
+** Non-zero iff a voice whose envelope is running is sampling from (or looping
+** back into) this core's reverb work area -- the window the reverb engine
+** writes every sample -- either now or within the next `lookahead_samples`
+** samples. Rendering such a core in a batch would reorder the reverb writes
+** against the voice reads inside the batch, which is audible (the Front
+** Mission 4 divergence).
+**
+** The caller passes the whole pending batch plus the sample it is about to
+** queue: the chip does not advance while it is frozen for the batch, so a
+** voice that starts outside the window at the batch head can still walk into
+** it (or jump back to its loop) before the batch ends. The sweep is computed
+** conservatively -- a false positive only costs speed.
+*/
+int    EMU_CALL spucore_reverb_overlap(void *state, uint32 lookahead_samples);
+
+/*
 ** Register definitions
 */
 

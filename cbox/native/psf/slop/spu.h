@@ -32,6 +32,33 @@ void   EMU_CALL spu_set_dma_complete(void *state, uint32 core);
 
 uint32 EMU_CALL spu_cycles_until_interrupt(void *state, uint32 samples);
 
+////////////////////////////////////////////////////////////////////////////////
+/*
+** Batched SPU rendering -- INTERNAL, used only by the PSF2 pump in iop.c.
+** Not a user-facing option; it is always on. Output must stay bit-identical.
+**
+** THE INVARIANT: every guest-visible sound-chip entry point flushes the
+** pending batch before it touches SPU state, because the guest can only
+** observe a sample-accurate SPU through this API. So spu_lh, spu_sh,
+** spu_dma, spu_set_dma_complete, spu_cycles_until_interrupt, spu_render
+** (+_ext) and the enable_* setters all begin with spu_flush_batch();
+** iop_execute() flushes before it returns (never hand back unrendered
+** samples). The lifecycle functions (spu_init, spu_get_state_size,
+** spu_clear_state) do not: they take no live state, and spu_clear_state()
+** discards the pending batch along with the rest of the state. ANYTHING
+** ADDED TO THIS SOUND-CHIP API LATER MUST FLUSH TOO.
+**
+** spu_render_queued() appends one or more samples to the pending batch
+** instead of rendering them now; spu_flush_batch() renders the batch.
+** spu_batch_allowed() answers the two state guards (no sound IRQ on either
+** core; no running voice sampling, or about to sample, its core's reverb
+** work area within the batch) -- while it is false the caller renders one
+** sample at a time via spu_render().
+*/
+void EMU_CALL spu_render_queued(void *state, sint16 *buf, uint32 samples);
+void EMU_CALL spu_flush_batch(void *state);
+int  EMU_CALL spu_batch_allowed(void *state);
+
 /*
 ** Bounded SPU-IRQ look-ahead.
 **

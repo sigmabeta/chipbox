@@ -1997,6 +1997,24 @@ render(struct SPUCORE_STATE *state, uint16 *ram, sint16 *buf, sint16 *extinput, 
         sint32 *fm = (chanbit & maskfm) ? ibuffm : NULL;
         sint32 *noise = (chanbit & masknoise) ? ibufn : NULL;
         if (!(main_l | main_r | verb_l | verb_r)) b = NULL;
+        /*
+        ** A voice whose envelope has finished and which has no deferred
+        ** key-on produces nothing: skip the resampler, enveloper and mixer,
+        ** just like a voice muted out of every bus already does. The key-off
+        ** response counter must keep advancing, because render_channel_mono()
+        ** advances it even when the envelope is off (a key-off for a silent
+        ** voice has to complete on the same sample). Clear the FM scratch
+        ** buffer too, so the next voice still sees this voice's silence as
+        ** its modulation input.
+        */
+        if ((state->chan[ch].env.state == ENVELOPE_STATE_OFF) &&
+            !(state->chan[ch].samples_until_pending_keyon)) {
+            int n = state->chan[ch].samples_until_keyoff_responds;
+            if (n > samples) n = samples;
+            state->chan[ch].samples_until_keyoff_responds -= n;
+            memset(ibuffm, 0, 4 * samples);
+            continue;
+        }
         r = render_channel_mono(
                 ram, state->memsize, state->chan + ch, b, fm, noise, samples, irq_state_ptr
         );
@@ -2428,7 +2446,7 @@ void EMU_CALL spucore_setreg_voice(void *state, uint32 voice, uint32 n, uint32 v
 */
 uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 samples) {
     uint32 r;
-    void *backup;
+    struct SPUCORE_STATE backup;
 
     if (!(SPUCORESTATE->flags & SPUREG_FLAG_IRQ_ENABLE)) return 0xFFFFFFFF;
 
@@ -2437,10 +2455,20 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
     ** buffer on every IOP slice. */
     if (samples > SPUIRQ_LOOKAHEAD_SAMPLES) samples = SPUIRQ_LOOKAHEAD_SAMPLES;
 
-    backup = malloc(spucore_get_state_size());
-    if (!backup) return 0xFFFFFFFF;
-    memcpy(backup, state, spucore_get_state_size());
-    state = backup;
+    /* Speculate on a throw-away copy of the core: render() advances the
+    ** decoder, envelopes, reverb position and noise state, and the caller's
+    ** state must not move. The copy is a fixed-size stack local -- no
+    ** allocator. This runs once per sample for both cores on the PSF2 pump,
+    ** where a malloc/free pair per call cost more than the speculative
+    ** render itself (and Android's allocator is slower than glibc's). The
+    ** struct is small (a few KB; spucore_get_state_size()), well within a
+    ** stack frame, and nothing observes the copy's padding.
+    **
+    ** The speculative render reads (but never writes) SPU RAM -- it passes
+    ** buf=NULL, so render() returns before the reverb process that would
+    ** write back -- so RAM stays shared with the real state. */
+    backup = *SPUCORESTATE;
+    state = &backup;
     SPUCORESTATE->irq_triggered_cycle = 0xFFFFFFFF;
     r = 0;
     while (samples > RENDERMAX) {
@@ -2453,8 +2481,93 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
         render(SPUCORESTATE, ram, NULL, NULL, samples, 0, 0);
     r = (SPUCORESTATE->irq_triggered_cycle == 0xFFFFFFFF) ? SPUIRQ_NOT_NEAR :
         SPUCORESTATE->irq_triggered_cycle + r;
-    free(backup);
     return r;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+** Batching-guard queries (see spucore.h and spu_batch_allowed() in spu.c).
+** Both are read-only: they must be callable once per output sample without
+** disturbing the core.
+*/
+
+int EMU_CALL spucore_irq_enabled(void *state) {
+    return !!(SPUCORESTATE->flags & SPUREG_FLAG_IRQ_ENABLE);
+}
+
+/*
+** Does the 16-byte ADPCM block at `addr`, or any block the decoder can reach
+** `reach` bytes further on, land inside [sa, ea)? A block that starts just
+** before `sa` still reads into the window, so the swept range is tested as
+** [addr, addr + reach + 16) rather than as a point. `memsize` is the SPU RAM
+** size: decode_sample_block() masks block addresses to it, so a sweep that
+** runs off the top restarts at the bottom and that tail is tested too.
+*/
+static int EMU_INLINE block_sweep_overlaps(
+        uint32 addr, uint32 reach, sint32 sa, sint32 ea, uint32 memsize
+) {
+    uint64 first = (uint64) addr;
+    uint64 last = (uint64) addr + reach + 0x10;
+
+    if (first < (uint64) ea && last > (uint64) sa) return 1;
+    if (memsize && last > memsize && (last - memsize) > (uint64) sa) return 1;
+    return 0;
+}
+
+int EMU_CALL spucore_reverb_overlap(void *state, uint32 lookahead_samples) {
+    struct SPUCORE_STATE *s = SPUCORESTATE;
+    sint32 sa = s->reverb.safe_start_address;
+    sint32 ea = s->reverb.safe_end_address;
+    uint32 memsize = (s->memsize > 0) ? (uint32) s->memsize : 0;
+    int ch;
+
+    /*
+    ** Without reverb enabled the engine still reads its work area but never
+    ** writes it, so sample order inside a batch cannot be observed.
+    */
+    if (!(s->flags & SPUREG_FLAG_REVERB_ENABLE)) return 0;
+    if (ea <= sa) return 0;
+    if (sa < 0) sa = 0;
+
+    for (ch = 0; ch < 24; ch++) {
+        struct SPUCORE_CHAN *c = s->chan + ch;
+        uint64 sweep;
+        uint32 reach, step;
+
+        /* A voice whose envelope has finished reads nothing. */
+        if (c->env.state == ENVELOPE_STATE_OFF) continue;
+
+        /*
+        ** Look ahead over the samples already queued plus the one about to
+        ** join them: the chip does not advance while it is frozen for a
+        ** batch, so the address at the batch head is not where the voice
+        ** will still be at the end of it. decode_sample_block() consumes one
+        ** 16-byte block each time the 18-bit phase passes 0x1C000, and the
+        ** phase moves by at most `step` per sample: the plain resampler uses
+        ** the pitch register as stored (it can hold more than the 14 bits
+        ** the hardware honours), and the FM-modulated resampler scales that
+        ** but clamps its result to 0x3FFF. So the furthest the decoder can
+        ** walk is
+        **     ceil(lookahead_samples * step * 16 / 0x1C000)
+        ** bytes. Over-estimating only costs a false positive (one-at-a-time
+        ** rendering).
+        */
+        step = c->voice_pitch;
+        if (step < 0x3FFF) step = 0x3FFF;
+        sweep = (uint64) lookahead_samples * step * 16;
+        reach = (uint32)((sweep + 0x1BFFF) / 0x1C000);
+
+        if (block_sweep_overlaps(c->sample.block_addr, reach, sa, ea, memsize))
+            return 1;
+        /*
+        ** The loop address stays live for the whole voice -- from state alone
+        ** we cannot tell which decoded block will be the one that jumps -- so
+        ** the range the loop path can sweep is tested as well.
+        */
+        if (block_sweep_overlaps(c->sample.loop_block_addr, reach, sa, ea, memsize))
+            return 1;
+    }
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
