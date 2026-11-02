@@ -1,6 +1,8 @@
 # Shared native code for all Chipbox emulators: the vendored psflib/psf2fs
-# (byte-identical across every PSF-derived emulator) plus the PSF file-I/O
-# callback layer. Consumed via add_subdirectory + linking chipbox_native_common.
+# (byte-identical across every PSF-derived emulator), the PSF file-I/O callback
+# layer, and the header-only `include/chipbox_env.h` debug-switch latch that
+# every emulator core can use. Consumed via add_subdirectory + linking
+# chipbox_native_common.
 
 cmake_minimum_required(VERSION 3.22)
 

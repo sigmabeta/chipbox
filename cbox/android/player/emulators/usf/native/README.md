@@ -21,7 +21,7 @@ Emscripten/WASM builds):
 | `Usf.cpp` / `Usf.h` | Chipbox load/generate/teardown wrapper over the core. |
 | `kotlin-jni.cpp` | JNI bridge mapping `…usf.UsfEmulator` natives onto the wrapper. |
 | `r4300/`, `rsp*/`, `rdp/`, `ri/`, `si/`, `vi/`, `ai/`, `pi/`, `memory/`, `main/`, `usf/` | The vendored **lazyusf / Mupen64Plus-derived** N64 core. ARM Android builds the cached-interpreter configuration (`r4300/empty_dynarec.c`, no x86 recompilers). |
-| `CMakeLists.txt` | Builds the `usf` target; links the shared `native-common` (psflib + PSF file I/O, transitively zlib). |
+| `CMakeLists.txt` | Builds the `usf` target; links the shared `native-common` (psflib, PSF file I/O and the shared `chipbox_env.h` debug-switch header, transitively zlib). |
 | `Usf_Web.cpp` | Emscripten/WASM entry point (used by the JS build, not Android). |
 
 ## Why depend on this module
@@ -53,4 +53,4 @@ class UsfEmulator : Emulator {
 - **Plugin:** `chipbox.emulator.native` (applies `sage.android`, wires the NDK/CMake build of `cbox/native/usf`)
 - **Targets:** Android only
 - **Source set:** none in this module; native sources at `cbox/native/usf/` (lazyusf / Mupen64Plus-derived N64 core, C/C++, built via CMake)
-- **SAGE/module dependencies:** none (Gradle deps); native build links `cbox/native/native-common` (psflib + PSF I/O + zlib). Consumed by `:cbox:common:player:emulators:usf:real`.
+- **SAGE/module dependencies:** none (Gradle deps); native build links `cbox/native/native-common` (psflib + PSF I/O + the shared `chipbox_env.h` header + zlib). Consumed by `:cbox:common:player:emulators:usf:real`.
