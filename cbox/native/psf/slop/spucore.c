@@ -1997,6 +1997,24 @@ render(struct SPUCORE_STATE *state, uint16 *ram, sint16 *buf, sint16 *extinput, 
         sint32 *fm = (chanbit & maskfm) ? ibuffm : NULL;
         sint32 *noise = (chanbit & masknoise) ? ibufn : NULL;
         if (!(main_l | main_r | verb_l | verb_r)) b = NULL;
+        /*
+        ** A voice whose envelope has finished and which has no deferred
+        ** key-on produces nothing: skip the resampler, enveloper and mixer,
+        ** just like a voice muted out of every bus already does. The key-off
+        ** response counter must keep advancing, because render_channel_mono()
+        ** advances it even when the envelope is off (a key-off for a silent
+        ** voice has to complete on the same sample). Clear the FM scratch
+        ** buffer too, so the next voice still sees this voice's silence as
+        ** its modulation input.
+        */
+        if ((state->chan[ch].env.state == ENVELOPE_STATE_OFF) &&
+            !(state->chan[ch].samples_until_pending_keyon)) {
+            int n = state->chan[ch].samples_until_keyoff_responds;
+            if (n > samples) n = samples;
+            state->chan[ch].samples_until_keyoff_responds -= n;
+            memset(ibuffm, 0, 4 * samples);
+            continue;
+        }
         r = render_channel_mono(
                 ram, state->memsize, state->chan + ch, b, fm, noise, samples, irq_state_ptr
         );
