@@ -15,6 +15,18 @@
 #include "r3000.h"
 #include "spu.h"
 #include "hle.h"
+#include "chipbox_env.h"
+
+// Debug-log switches (SPU1LOG, SPU2LOG, ATTRLOG, ATTRDUMP, IPSLOG, HLE_IOP):
+// resolved once per process by the shared cached helper. The SPU register
+// hooks below run on every guest store/load, so the getenv scan that used to
+// gate them was on the hot path.
+static int env_spu1log = CHIPBOX_ENV_UNREAD;
+static int env_spu2log = CHIPBOX_ENV_UNREAD;
+static int env_attrlog = CHIPBOX_ENV_UNREAD;
+static int env_attrdump = CHIPBOX_ENV_UNREAD;
+static int env_ipslog = CHIPBOX_ENV_UNREAD;
+static int env_hle_iop = CHIPBOX_ENV_UNREAD;
 
 // Global SPU-sample clock for the PSF2-HLE pump (diagnostics only).
 unsigned long long g_hle_pump_sample = 0;
@@ -750,7 +762,7 @@ static uint32 EMU_CALL iop_spu_lw(void *state, uint32 a, uint32 mask) {
 }
 
 static void EMU_CALL iop_spu_sw(void *state, uint32 a, uint32 d, uint32 mask) {
-    { static int n=0; if(getenv("SPU1LOG") && n++<40000)
+    { static int n=0; if(chipbox_env_flag(&env_spu1log, "SPU1LOG") && n++<40000)
         fprintf(stderr,"[spu1] sw %04X = %08X (m%08X)\n", a & 0x1FFF, d, mask); }
     event(state, IOP_EVENT_REG_STORE, "SPU store (%08X,%08X,%08X)", a, d, mask, 0);
     flush_sound(IOPSTATE);
@@ -770,7 +782,7 @@ static uint32 EMU_CALL iop_spu2_lw(void *state, uint32 a, uint32 mask) {
     d &= mask;
     {
         static int n = 0;
-        if (getenv("SPU2LOG") && n++ < 20000)
+        if (chipbox_env_flag(&env_spu2log, "SPU2LOG") && n++ < 20000)
             fprintf(stderr, "[spu2] @%llu LD %08X = %08X (mask %08X)\n",
                     g_hle_pump_sample ? g_hle_pump_sample
                                       : (unsigned long long) (IOPSTATE->odometer /
@@ -784,14 +796,15 @@ static uint32 EMU_CALL iop_spu2_lw(void *state, uint32 a, uint32 mask) {
 static void EMU_CALL iop_spu2_sw(void *state, uint32 a, uint32 d, uint32 mask) {
     {
         static int n = 0;
-        if (getenv("SPU2LOG") && n++ < 20000)
+        if (chipbox_env_flag(&env_spu2log, "SPU2LOG") && n++ < 20000)
             fprintf(stderr, "[spu2] @%llu sw %08X = %08X (mask %08X)\n",
                     g_hle_pump_sample ? g_hle_pump_sample
                                       : (unsigned long long) (IOPSTATE->odometer /
                                                               IOPSTATE->cycles_per_sample),
                     a, d, mask);
     }
-    if (getenv("ATTRLOG") && (a & 0x1FFFFFFF) == 0x1F900198 && d == 0xC0A00000) {
+    if (chipbox_env_flag(&env_attrlog, "ATTRLOG") &&
+        (a & 0x1FFFFFFF) == 0x1F900198 && d == 0xC0A00000) {
         static int dumped = 0;
         void *r = R3000STATE;
         uint32 pc = r3000_getreg(r, R3000_REG_PC);
@@ -800,7 +813,7 @@ static void EMU_CALL iop_spu2_sw(void *state, uint32 a, uint32 d, uint32 mask) {
                 g_hle_pump_sample, pc, r3000_getreg(r, 31),
                 r3000_getreg(r, 16), r3000_getreg(r, 17), r3000_getreg(r, 18),
                 r3000_getreg(r, 4), r3000_getreg(r, 2));
-        if (getenv("ATTRDUMP") && !dumped) {
+        if (chipbox_env_flag(&env_attrdump, "ATTRDUMP") && !dumped) {
             uint32 ra = r3000_getreg(r, 31);
             uint32 base = (ra & ~0xFu) - 0x80, k;
             dumped = 1;
@@ -1377,7 +1390,7 @@ sint32 EMU_CALL iop_execute(
         if (r >= 0) r = (sint32) (IOPSTATE->odometer - old_odometer);
         {
             static unsigned long long iacc = 0, sacc = 0, next = 0;
-            if (getenv("IPSLOG")) {
+            if (chipbox_env_flag(&env_ipslog, "IPSLOG")) {
                 iacc += (IOPSTATE->odometer - old_odometer);
                 sacc += done;
                 if (sacc >= next) {
@@ -1429,7 +1442,7 @@ sint32 EMU_CALL iop_execute(
 
             if (IOPSTATE->odometer == wd_last) {
                 if (++wd_stuck > 2000000) {
-                    if (getenv("HLE_IOP"))
+                    if (chipbox_env_flag(&env_hle_iop, "HLE_IOP"))
                         fprintf(stderr, "[iop] WATCHDOG: odometer stuck at %llu pc=%08X "
                                         "diff path -- bailing\n",
                                 (unsigned long long) IOPSTATE->odometer,

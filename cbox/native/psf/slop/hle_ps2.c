@@ -26,8 +26,21 @@
 #include "hle.h"
 #include "hle_ps2_compat.h"
 #include "iop.h"
+#include "chipbox_env.h"
 
 static PSX_STATE g_ps2;
+
+// Debug-log switches (HLE_IOP, HLE_DMA, HLE_RPC, IOPHIST, RCLOG, CIRLOG,
+// IRQLOG): resolved once per process by the shared cached helper. Several of
+// these gates are on the per-sample / per-register PS2 path, where an environ
+// scan per call was measurable render time.
+static int env_hle_iop = CHIPBOX_ENV_UNREAD;
+static int env_hle_dma = CHIPBOX_ENV_UNREAD;
+static int env_hle_rpc = CHIPBOX_ENV_UNREAD;
+static int env_iophist = CHIPBOX_ENV_UNREAD;
+static int env_rclog = CHIPBOX_ENV_UNREAD;
+static int env_cirlog = CHIPBOX_ENV_UNREAD;
+static int env_irqlog = CHIPBOX_ENV_UNREAD;
 
 // Forward decls (port cross-references)
 static void ps2_reschedule(PSX_STATE *psx);
@@ -661,12 +674,12 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
     name[8] = '\0';
     {
         static int n = 0;
-        if (getenv("HLE_IOP") && n++ < 100000)
+        if (chipbox_env_flag(&env_hle_iop, "HLE_IOP") && n++ < 100000)
             fprintf(stderr, "[iop] %-9s svc=%-3u a0=%08X a1=%08X a2=%08X\n",
                     name, callnum, a0, a1, a2);
     }
     {
-        if (getenv("IOPHIST")) {
+        if (chipbox_env_flag(&env_iophist, "IOPHIST")) {
             static char hk[64][16];
             static unsigned hc[64];
             static int hn = 0;
@@ -884,7 +897,7 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
 #if DEBUG_THREADING
                 printlog(psx, "IOP: GetThreadId()\n");
 #endif
-                if (getenv("HLE_RPC"))
+                if (chipbox_env_flag(&env_hle_rpc, "HLE_RPC"))
                     fprintf(stderr, "[thr] GetThreadId -> %d\n", psx->iCurThread);
 
                 mipsinfo.i = psx->iCurThread;
@@ -913,13 +926,13 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
                     psx->threads[(psx->iCurThread >= 0 && psx->iCurThread < 32) ? psx->iCurThread
                                                                                 : 0].iState = TS_SLEEPING;
                     psx->rescheduleNeeded = 1;
-                    if (getenv("HLE_RPC"))
+                    if (chipbox_env_flag(&env_hle_rpc, "HLE_RPC"))
                         fprintf(stderr, "[thr] @%llu SleepThread cur=%d -> SLEEP\n",
                                 g_hle_pump_sample, psx->iCurThread);
                 } else {
                     psx->threads[(psx->iCurThread >= 0 && psx->iCurThread < 32) ? psx->iCurThread
                                                                                 : 0].wakeupcount--;
-                    if (getenv("HLE_RPC"))
+                    if (chipbox_env_flag(&env_hle_rpc, "HLE_RPC"))
                         fprintf(stderr,
                                 "[thr] @%llu SleepThread cur=%d -> consume wakeup (wc now %u)\n",
                                 g_hle_pump_sample,
@@ -940,12 +953,12 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
                 if (psx->threads[(unsigned) (a0) < 32u ? (a0) : 0].iState == TS_SLEEPING) {
                     psx->threads[(unsigned) (a0) < 32u ? (a0) : 0].iState = TS_RUNNING;
                     psx->rescheduleNeeded = 1;
-                    if (getenv("HLE_RPC"))
+                    if (chipbox_env_flag(&env_hle_rpc, "HLE_RPC"))
                         fprintf(stderr, "[thr] @%llu WakeupThread(%d) cur=%d -> WAKE\n",
                                 g_hle_pump_sample, a0, psx->iCurThread);
                 } else {
                     psx->threads[(unsigned) (a0) < 32u ? (a0) : 0].wakeupcount++;
-                    if (getenv("HLE_RPC"))
+                    if (chipbox_env_flag(&env_hle_rpc, "HLE_RPC"))
                         fprintf(stderr,
                                 "[thr] @%llu WakeupThread(%d) cur=%d state=%d -> wc++ (%u)\n",
                                 g_hle_pump_sample,
@@ -1983,7 +1996,7 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
 
                 tempmem = (uint8 *) psx->elf_scratch;
                 load_result = psf2_load_file(psx, mname, tempmem, 2 * 1024 * 1024);
-                if (getenv("HLE_IOP"))
+                if (chipbox_env_flag(&env_hle_iop, "HLE_IOP"))
                     fprintf(stderr, "[iop] LoadStartModule '%s' -> %u\n",
                             mname, load_result);
                 if (load_result == 0xffffffff) {
@@ -1995,7 +2008,7 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
                     int i;
 
                     start = psf2_load_elf(psx, tempmem, 2 * 1024 * 1024);
-                    if (getenv("HLE_IOP"))
+                    if (chipbox_env_flag(&env_hle_iop, "HLE_IOP"))
                         fprintf(stderr, "[iop]   '%s' entry=%08X loadAddr=%08X\n",
                                 mname, start, psx->loadAddr);
 
@@ -2104,7 +2117,7 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
                     uint8 tempbuf[4];
                     psx->filesize[slot2use] = psx->readfile(psx->readfile_context, mname, 0,
                                                             tempbuf, 0);
-                    if (getenv("HLE_DMA"))
+                    if (chipbox_env_flag(&env_hle_dma, "HLE_DMA"))
                         fprintf(stderr,
                                 "[io] open \"%s\" -> size=%d slot=%d\n",
                                 mname, (int) psx->filesize[slot2use], slot2use);
@@ -2162,7 +2175,7 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
 
                 a2 = psx->readfile(psx->readfile_context, psx->filename[a0], psx->filepos[a0], rp,
                                    a2);
-                if (getenv("HLE_IOP"))
+                if (chipbox_env_flag(&env_hle_iop, "HLE_IOP"))
                     fprintf(stderr,
                             "[io] read \"%s\" pos=%d -> %d bytes\n",
                             psx->filename[a0], psx->filepos[a0], (int) a2);
@@ -2321,7 +2334,7 @@ void psx_hw_runcounters(PSX_STATE *psx) {
 
             if (psx->dma4_delay == 0) {
                 spu_interrupt_dma4(SPUSTATE);
-                if (getenv("HLE_DMA"))
+                if (chipbox_env_flag(&env_hle_dma, "HLE_DMA"))
                     fprintf(stderr,
                             "[dma] DMA4 complete -> cb=%08X flag=%08X\n",
                             psx->dma4_cb, psx->dma4_flag);
@@ -2363,7 +2376,7 @@ void psx_hw_runcounters(PSX_STATE *psx) {
         psx->sys_time += 768;
         {
             static unsigned long long rc = 0;
-            if (getenv("RCLOG")) {
+            if (chipbox_env_flag(&env_rclog, "RCLOG")) {
                 rc++;
                 if ((rc % 44100ULL) == 0)
                     fprintf(stderr, "[rc] runcounters-calls=%llu sys_time=%llu\n",
@@ -2416,7 +2429,7 @@ static void call_irq_routine(PSX_STATE *psx, uint32 routine, uint32 parameter,
     if (!routine) return;
     {
         static unsigned long long d4 = 0, d7 = 0, sp = 0, tm = 0, ot = 0;
-        if (getenv("CIRLOG")) {
+        if (chipbox_env_flag(&env_cirlog, "CIRLOG")) {
             if (source && source[0] == 'D' && source[3] == '4') d4++;
             else if (source && source[0] == 'D' && source[3] == '7') d7++;
             else if (source && source[0] == 'S') sp++;
@@ -2436,13 +2449,13 @@ static void call_irq_routine(PSX_STATE *psx, uint32 routine, uint32 parameter,
     // hardware. Without this the timer/DMA sources flood the FIFO and the
     // chained-softcall mechanism corrupts the CPU ("PSX execution error").
     if (hle_ps1_softcall_has(routine, parameter)) {
-        if (getenv("HLE_DMA"))
+        if (chipbox_env_flag(&env_hle_dma, "HLE_DMA"))
             fprintf(stderr,
                     "[sc] call_irq_routine(%s) DROPPED (same event %08X/%08X in flight)\n",
                     source ? source : "?", routine, parameter);
         return;
     }
-    if (getenv("HLE_DMA"))
+    if (chipbox_env_flag(&env_hle_dma, "HLE_DMA"))
         fprintf(stderr,
                 "[sc] call_irq_routine(%s) routine=%08X arg=%08X\n",
                 source ? source : "?", routine, parameter);
@@ -2478,7 +2491,7 @@ void EMU_CALL hle_ps2_dma4(uint32 madr, uint32 bcr, uint32 chcr) {
     delay = (int) (((len / 2) * 8 /*cycles/halfword*/) / 768);
     if (!delay) delay = 1;
     g_ps2.dma4_delay = delay;
-    if (getenv("HLE_DMA"))
+    if (chipbox_env_flag(&env_hle_dma, "HLE_DMA"))
         fprintf(stderr,
                 "[dma] dma4 kick: delay=%d cb=%08X intr_susp=%d curThr=%d\n",
                 delay, g_ps2.dma4_cb, g_ps2.intr_susp, g_ps2.iCurThread);
@@ -2495,7 +2508,7 @@ void EMU_CALL hle_ps2_spu_irq(void) {
     if (hle_ps1_softcall_pending()) return;
     {
         static unsigned long long n = 0;
-        if (getenv("IRQLOG")) {
+        if (chipbox_env_flag(&env_irqlog, "IRQLOG")) {
             n++;
             if ((n % 500ULL) == 0) fprintf(stderr, "[spuirq] deliveries=%llu\n", n);
         }
@@ -2582,7 +2595,7 @@ uint32 EMU_CALL hle_ps2_boot(void *iop) {
         pc = psf2_load_elf(&g_ps2, buf, (uint32) n);
     }
     free(buf);
-    if (getenv("HLE_IOP"))
+    if (chipbox_env_flag(&env_hle_iop, "HLE_IOP"))
         fprintf(stderr, "[ps2] psf2_load_elf -> pc=%08X loadAddr=%08X\n", pc, g_ps2.loadAddr);
     if (pc == 0xffffffff) return 0xffffffff;
 
@@ -2681,7 +2694,7 @@ uint32 EMU_CALL hle_ps2_thread_exit(void *iop) {
     ps2_reschedule(&g_ps2);
     {
         static int n = 0;
-        if (getenv("HLE_IOP") && n++ < 20)
+        if (chipbox_env_flag(&env_hle_iop, "HLE_IOP") && n++ < 20)
             fprintf(stderr,
                     "[ps2] thread_exit -> nThreads=%d cur=%d\n", g_ps2.iNumThreads,
                     g_ps2.iCurThread);
