@@ -1997,6 +1997,24 @@ render(struct SPUCORE_STATE *state, uint16 *ram, sint16 *buf, sint16 *extinput, 
         sint32 *fm = (chanbit & maskfm) ? ibuffm : NULL;
         sint32 *noise = (chanbit & masknoise) ? ibufn : NULL;
         if (!(main_l | main_r | verb_l | verb_r)) b = NULL;
+        /*
+        ** A voice whose envelope has finished and which has no deferred
+        ** key-on produces nothing: skip the resampler, enveloper and mixer,
+        ** just like a voice muted out of every bus already does. The key-off
+        ** response counter must keep advancing, because render_channel_mono()
+        ** advances it even when the envelope is off (a key-off for a silent
+        ** voice has to complete on the same sample). Clear the FM scratch
+        ** buffer too, so the next voice still sees this voice's silence as
+        ** its modulation input.
+        */
+        if ((state->chan[ch].env.state == ENVELOPE_STATE_OFF) &&
+            !(state->chan[ch].samples_until_pending_keyon)) {
+            int n = state->chan[ch].samples_until_keyoff_responds;
+            if (n > samples) n = samples;
+            state->chan[ch].samples_until_keyoff_responds -= n;
+            memset(ibuffm, 0, 4 * samples);
+            continue;
+        }
         r = render_channel_mono(
                 ram, state->memsize, state->chan + ch, b, fm, noise, samples, irq_state_ptr
         );
@@ -2428,7 +2446,7 @@ void EMU_CALL spucore_setreg_voice(void *state, uint32 voice, uint32 n, uint32 v
 */
 uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 samples) {
     uint32 r;
-    void *backup;
+    struct SPUCORE_STATE backup;
 
     if (!(SPUCORESTATE->flags & SPUREG_FLAG_IRQ_ENABLE)) return 0xFFFFFFFF;
 
@@ -2437,10 +2455,20 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
     ** buffer on every IOP slice. */
     if (samples > SPUIRQ_LOOKAHEAD_SAMPLES) samples = SPUIRQ_LOOKAHEAD_SAMPLES;
 
-    backup = malloc(spucore_get_state_size());
-    if (!backup) return 0xFFFFFFFF;
-    memcpy(backup, state, spucore_get_state_size());
-    state = backup;
+    /* Speculate on a throw-away copy of the core: render() advances the
+    ** decoder, envelopes, reverb position and noise state, and the caller's
+    ** state must not move. The copy is a fixed-size stack local -- no
+    ** allocator. This runs once per sample for both cores on the PSF2 pump,
+    ** where a malloc/free pair per call cost more than the speculative
+    ** render itself (and Android's allocator is slower than glibc's). The
+    ** struct is small (a few KB; spucore_get_state_size()), well within a
+    ** stack frame, and nothing observes the copy's padding.
+    **
+    ** The speculative render reads (but never writes) SPU RAM -- it passes
+    ** buf=NULL, so render() returns before the reverb process that would
+    ** write back -- so RAM stays shared with the real state. */
+    backup = *SPUCORESTATE;
+    state = &backup;
     SPUCORESTATE->irq_triggered_cycle = 0xFFFFFFFF;
     r = 0;
     while (samples > RENDERMAX) {
@@ -2453,7 +2481,6 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
         render(SPUCORESTATE, ram, NULL, NULL, samples, 0, 0);
     r = (SPUCORESTATE->irq_triggered_cycle == 0xFFFFFFFF) ? SPUIRQ_NOT_NEAR :
         SPUCORESTATE->irq_triggered_cycle + r;
-    free(backup);
     return r;
 }
 
