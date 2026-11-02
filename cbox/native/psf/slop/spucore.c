@@ -2428,7 +2428,7 @@ void EMU_CALL spucore_setreg_voice(void *state, uint32 voice, uint32 n, uint32 v
 */
 uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 samples) {
     uint32 r;
-    void *backup;
+    struct SPUCORE_STATE backup;
 
     if (!(SPUCORESTATE->flags & SPUREG_FLAG_IRQ_ENABLE)) return 0xFFFFFFFF;
 
@@ -2437,10 +2437,20 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
     ** buffer on every IOP slice. */
     if (samples > SPUIRQ_LOOKAHEAD_SAMPLES) samples = SPUIRQ_LOOKAHEAD_SAMPLES;
 
-    backup = malloc(spucore_get_state_size());
-    if (!backup) return 0xFFFFFFFF;
-    memcpy(backup, state, spucore_get_state_size());
-    state = backup;
+    /* Speculate on a throw-away copy of the core: render() advances the
+    ** decoder, envelopes, reverb position and noise state, and the caller's
+    ** state must not move. The copy is a fixed-size stack local -- no
+    ** allocator. This runs once per sample for both cores on the PSF2 pump,
+    ** where a malloc/free pair per call cost more than the speculative
+    ** render itself (and Android's allocator is slower than glibc's). The
+    ** struct is small (a few KB; spucore_get_state_size()), well within a
+    ** stack frame, and nothing observes the copy's padding.
+    **
+    ** The speculative render reads (but never writes) SPU RAM -- it passes
+    ** buf=NULL, so render() returns before the reverb process that would
+    ** write back -- so RAM stays shared with the real state. */
+    backup = *SPUCORESTATE;
+    state = &backup;
     SPUCORESTATE->irq_triggered_cycle = 0xFFFFFFFF;
     r = 0;
     while (samples > RENDERMAX) {
@@ -2453,7 +2463,6 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
         render(SPUCORESTATE, ram, NULL, NULL, samples, 0, 0);
     r = (SPUCORESTATE->irq_triggered_cycle == 0xFFFFFFFF) ? SPUIRQ_NOT_NEAR :
         SPUCORESTATE->irq_triggered_cycle + r;
-    free(backup);
     return r;
 }
 
