@@ -21,7 +21,7 @@ Emscripten/WASM builds):
 | `ncsf.cpp` / `ncsf.h` | Chipbox load/generate/teardown wrapper plus the PSF→SDAT glue. |
 | `kotlin-jni.cpp` | JNI bridge mapping `…ncsf.NcsfEmulator` natives onto the wrapper. |
 | `Core/sseqplayer/…` | The vendored **SSEQ Player** (a software Nitro Composer SDAT synthesizer, by Naram Qashat / CyberBotX). |
-| `CMakeLists.txt` | Builds the `ncsf` target; links the shared `native-common` (psflib + PSF file I/O, transitively zlib). |
+| `CMakeLists.txt` | Builds the `ncsf` target; links the shared `native-common` (psflib, PSF file I/O and the shared `chipbox_env.h` debug-switch header, transitively zlib). |
 | `Ncsf_Web.cpp` | Emscripten/WASM entry point (used by the JS build, not Android). |
 
 ## Why depend on this module
@@ -53,4 +53,4 @@ class NcsfEmulator : Emulator {
 - **Plugin:** `chipbox.emulator.native` (applies `sage.android`, wires the NDK/CMake build of `cbox/native/ncsf`)
 - **Targets:** Android only
 - **Source set:** none in this module; native sources at `cbox/native/ncsf/` (SSEQ Player, C/C++, built via CMake)
-- **SAGE/module dependencies:** none (Gradle deps); native build links `cbox/native/native-common` (psflib + PSF I/O + zlib). Consumed by `:cbox:common:player:emulators:ncsf:real`.
+- **SAGE/module dependencies:** none (Gradle deps); native build links `cbox/native/native-common` (psflib + PSF I/O + the shared `chipbox_env.h` header + zlib). Consumed by `:cbox:common:player:emulators:ncsf:real`.

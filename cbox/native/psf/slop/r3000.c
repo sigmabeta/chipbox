@@ -10,6 +10,7 @@
 
 #include "r3000.h"
 #include "hle.h"
+#include "chipbox_env.h"
 
 /////////////////////////////////////////////////////////////////////////////
 /*
@@ -338,23 +339,28 @@ static EMU_INLINE void EMU_CALL update_usage(void *state) {
 ** nothing when it is off, and the decode loop runs it on every emulated
 ** instruction.
 **
-** So the environment is read once per process and the loop tests only the
-** cached `pctrace_on` flag, calling into a cold logger: an untraced run pays a
-** predictable not-taken branch (plus one flag load) per instruction instead of
-** the operand reload, range comparison and second branch it used to pay. Keeping
-** the flag in a callee-saved register was measured *slower* -- the extra live
-** register costs more than the load it saves -- so it is read from memory.
+** So the environment is read once per process, through the shared
+** chipbox_env_flag() latch, and the loop tests only the cached `pctrace_on`
+** flag, calling into a cold logger: an untraced run pays a predictable
+** not-taken branch (plus one flag load) per instruction instead of the operand
+** reload, range comparison and second branch it used to pay. Keeping the flag
+** in a callee-saved register was measured *slower* -- the extra live register
+** costs more than the load it saves -- so it is read from memory.
+**
+** As with every other debug switch, `HLE_PCTRACE=0` is OFF.
 */
 
-static int pctrace_ready = 0;
+static int env_pctrace = CHIPBOX_ENV_UNREAD;
 static int pctrace_on = 0;
 static uint32 pctrace_lo = 1, pctrace_hi = 0;
 static long pctrace_max = 0, pctrace_n = 0;
 
+/* Parse the range once; the env latch above doubles as the "already parsed"
+** marker. */
 static void EMU_CALL pctrace_setup(void) {
-    const char *e = getenv("HLE_PCTRACE");
-    pctrace_ready = 1;
-    if (!e) return;
+    const char *e;
+    if (!chipbox_env_flag(&env_pctrace, "HLE_PCTRACE")) return;
+    e = getenv("HLE_PCTRACE");   /* cached above: the one real environment read */
     pctrace_lo = (uint32) strtoul(e, (char **) &e, 16);
     if (*e == ':') pctrace_hi = (uint32) strtoul(e + 1, (char **) &e, 16);
     pctrace_max = (*e == ':') ? strtol(e + 1, 0, 10) : 200000;
@@ -366,10 +372,10 @@ static void EMU_CALL pctrace_setup(void) {
 ** tell the compiler the enabled branch is cold, so an untraced run pays only a
 ** predictable not-taken branch per instruction. */
 #if defined(__GNUC__)
-#define PCTRACE_LIKELY_OFF(x) __builtin_expect((x), 0)
+#define PCTRACE_EXPECT_OFF(x) __builtin_expect((x), 0)
 #define PCTRACE_COLD __attribute__((noinline, cold))
 #else
-#define PCTRACE_LIKELY_OFF(x) (x)
+#define PCTRACE_EXPECT_OFF(x) (x)
 #define PCTRACE_COLD
 #endif
 
@@ -383,7 +389,7 @@ static PCTRACE_COLD void EMU_CALL pctrace_log(struct R3000_STATE *state, uint32 
 }
 
 #define PCTRACE_HOOK() \
-    do { if (PCTRACE_LIKELY_OFF(pctrace_on)) pctrace_log(state, instruction); } while (0)
+    do { if (PCTRACE_EXPECT_OFF(pctrace_on)) pctrace_log(state, instruction); } while (0)
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -591,8 +597,9 @@ sint32 EMU_CALL r3000_execute(void *state, sint32 cycles) {
     //
     STATE->maxpc = 0;
 
-    /* HLE_PCTRACE is read once per process, not once per instruction. */
-    if (!pctrace_ready) pctrace_setup();
+    /* HLE_PCTRACE is read once per process, not once per instruction; the
+    ** env latch doubles as the "already parsed" marker. */
+    if (env_pctrace == CHIPBOX_ENV_UNREAD) pctrace_setup();
 
     while (STATE->slot || STATE->cycles_remaining > 0) {
         instruction = fetch(state);

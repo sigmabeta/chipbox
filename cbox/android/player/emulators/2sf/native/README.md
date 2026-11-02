@@ -21,7 +21,7 @@ Emscripten/WASM builds):
 | `2sf.cpp` / `2sf.h` | Chipbox load/generate/teardown wrapper over the core. |
 | `kotlin-jni.cpp` | JNI bridge mapping `…twosf.TwosfEmulator` natives onto the wrapper (uses the shared `chipbox_jni_bridge.h`). |
 | `Core/vio2sf/…` | The vendored **vio2sf** core (a DeSmuME-derived NDS emulator). |
-| `CMakeLists.txt` | Builds the `twosf` target; links the shared `native-common` (psflib + PSF file I/O, transitively zlib). |
+| `CMakeLists.txt` | Builds the `twosf` target; links the shared `native-common` (psflib, PSF file I/O and the shared `chipbox_env.h` debug-switch header, transitively zlib). |
 | `Twosf_Web.cpp` | Emscripten/WASM entry point (used by the JS build, not Android). |
 
 ## Why depend on this module
@@ -53,4 +53,4 @@ class TwosfEmulator : Emulator {
 - **Plugin:** `chipbox.emulator.native` (applies `sage.android`, wires the NDK/CMake build of `cbox/native/2sf`)
 - **Targets:** Android only
 - **Source set:** none in this module; native sources at `cbox/native/2sf/` (C/C++, built via CMake)
-- **SAGE/module dependencies:** none (Gradle deps); native build links `cbox/native/native-common` (psflib + PSF I/O + zlib). Consumed by `:cbox:common:player:emulators:2sf:real`.
+- **SAGE/module dependencies:** none (Gradle deps); native build links `cbox/native/native-common` (psflib + PSF I/O + the shared `chipbox_env.h` header + zlib). Consumed by `:cbox:common:player:emulators:2sf:real`.

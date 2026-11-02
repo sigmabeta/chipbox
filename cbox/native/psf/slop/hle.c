@@ -39,7 +39,7 @@
 // logging), SCLOG (softcall drains) and HLE_ADV (counter advance). All off by
 // default, and all resolved once per process through the shared cached helper
 // -- they gate per-register / per-slice paths, so a getenv per call showed up
-// as PSF2 render time (see .scratch/psf-render-perf/spec.md).
+// as PSF2 render time on a desktop-sized environment.
 //
 static int env_hle_trace = CHIPBOX_ENV_UNREAD;
 static int env_hle_dma = CHIPBOX_ENV_UNREAD;

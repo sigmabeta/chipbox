@@ -2495,10 +2495,30 @@ int EMU_CALL spucore_irq_enabled(void *state) {
     return !!(SPUCORESTATE->flags & SPUREG_FLAG_IRQ_ENABLE);
 }
 
-int EMU_CALL spucore_reverb_overlap(void *state) {
+/*
+** Does the 16-byte ADPCM block at `addr`, or any block the decoder can reach
+** `reach` bytes further on, land inside [sa, ea)? A block that starts just
+** before `sa` still reads into the window, so the swept range is tested as
+** [addr, addr + reach + 16) rather than as a point. `memsize` is the SPU RAM
+** size: decode_sample_block() masks block addresses to it, so a sweep that
+** runs off the top restarts at the bottom and that tail is tested too.
+*/
+static int EMU_INLINE block_sweep_overlaps(
+        uint32 addr, uint32 reach, sint32 sa, sint32 ea, uint32 memsize
+) {
+    uint64 first = (uint64) addr;
+    uint64 last = (uint64) addr + reach + 0x10;
+
+    if (first < (uint64) ea && last > (uint64) sa) return 1;
+    if (memsize && last > memsize && (last - memsize) > (uint64) sa) return 1;
+    return 0;
+}
+
+int EMU_CALL spucore_reverb_overlap(void *state, uint32 lookahead_samples) {
     struct SPUCORE_STATE *s = SPUCORESTATE;
     sint32 sa = s->reverb.safe_start_address;
     sint32 ea = s->reverb.safe_end_address;
+    uint32 memsize = (s->memsize > 0) ? (uint32) s->memsize : 0;
     int ch;
 
     /*
@@ -2507,18 +2527,45 @@ int EMU_CALL spucore_reverb_overlap(void *state) {
     */
     if (!(s->flags & SPUREG_FLAG_REVERB_ENABLE)) return 0;
     if (ea <= sa) return 0;
+    if (sa < 0) sa = 0;
 
     for (ch = 0; ch < 24; ch++) {
         struct SPUCORE_CHAN *c = s->chan + ch;
-        sint32 cur, loop;
+        uint64 sweep;
+        uint32 reach, step;
 
         /* A voice whose envelope has finished reads nothing. */
         if (c->env.state == ENVELOPE_STATE_OFF) continue;
 
-        cur = (sint32) c->sample.block_addr;
-        if (cur >= sa && cur < ea) return 1;
-        loop = (sint32) c->sample.loop_block_addr;
-        if (loop >= sa && loop < ea) return 1;
+        /*
+        ** Look ahead over the samples already queued plus the one about to
+        ** join them: the chip does not advance while it is frozen for a
+        ** batch, so the address at the batch head is not where the voice
+        ** will still be at the end of it. decode_sample_block() consumes one
+        ** 16-byte block each time the 18-bit phase passes 0x1C000, and the
+        ** phase moves by at most `step` per sample: the plain resampler uses
+        ** the pitch register as stored (it can hold more than the 14 bits
+        ** the hardware honours), and the FM-modulated resampler scales that
+        ** but clamps its result to 0x3FFF. So the furthest the decoder can
+        ** walk is
+        **     ceil(lookahead_samples * step * 16 / 0x1C000)
+        ** bytes. Over-estimating only costs a false positive (one-at-a-time
+        ** rendering).
+        */
+        step = c->voice_pitch;
+        if (step < 0x3FFF) step = 0x3FFF;
+        sweep = (uint64) lookahead_samples * step * 16;
+        reach = (uint32)((sweep + 0x1BFFF) / 0x1C000);
+
+        if (block_sweep_overlaps(c->sample.block_addr, reach, sa, ea, memsize))
+            return 1;
+        /*
+        ** The loop address stays live for the whole voice -- from state alone
+        ** we cannot tell which decoded block will be the one that jumps -- so
+        ** the range the loop path can sweep is tested as well.
+        */
+        if (block_sweep_overlaps(c->sample.loop_block_addr, reach, sa, ea, memsize))
+            return 1;
     }
     return 0;
 }
