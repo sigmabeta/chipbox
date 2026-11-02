@@ -2485,6 +2485,45 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/*
+** Batching-guard queries (see spucore.h and spu_batch_allowed() in spu.c).
+** Both are read-only: they must be callable once per output sample without
+** disturbing the core.
+*/
+
+int EMU_CALL spucore_irq_enabled(void *state) {
+    return !!(SPUCORESTATE->flags & SPUREG_FLAG_IRQ_ENABLE);
+}
+
+int EMU_CALL spucore_reverb_overlap(void *state) {
+    struct SPUCORE_STATE *s = SPUCORESTATE;
+    sint32 sa = s->reverb.safe_start_address;
+    sint32 ea = s->reverb.safe_end_address;
+    int ch;
+
+    /*
+    ** Without reverb enabled the engine still reads its work area but never
+    ** writes it, so sample order inside a batch cannot be observed.
+    */
+    if (!(s->flags & SPUREG_FLAG_REVERB_ENABLE)) return 0;
+    if (ea <= sa) return 0;
+
+    for (ch = 0; ch < 24; ch++) {
+        struct SPUCORE_CHAN *c = s->chan + ch;
+        sint32 cur, loop;
+
+        /* A voice whose envelope has finished reads nothing. */
+        if (c->env.state == ENVELOPE_STATE_OFF) continue;
+
+        cur = (sint32) c->sample.block_addr;
+        if (cur >= sa && cur < ea) return 1;
+        loop = (sint32) c->sample.loop_block_addr;
+        if (loop >= sa && loop < ea) return 1;
+    }
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 /*
 ** Mute control
