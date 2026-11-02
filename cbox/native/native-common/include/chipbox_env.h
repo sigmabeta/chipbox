@@ -9,9 +9,8 @@
 // linear scan of `environ`, and the gate often sits on a hot path: the PSF2
 // per-sample pump and the per-register HLE hooks reach these sites thousands
 // of times per second of audio, which cost several percent of render time on a
-// desktop-sized environment (see .scratch/psf-render-perf/spec.md). Resolving
-// each switch once and remembering the answer reduces the gate to a load and a
-// compare.
+// desktop-sized environment. Resolving each switch once and remembering the
+// answer reduces the gate to a load and a compare.
 //
 // Usage -- give the call site a file-scope cache slot, then ask for the flag:
 //
@@ -19,10 +18,15 @@
 //     ...
 //     if (chipbox_env_flag(&env_hle_dma, "HLE_DMA")) { ... }
 //
-// Semantics are exactly those of the ad-hoc `(e && *e != '0')` checks this
-// replaces: the switch is ON when the variable is present and its first
+// Semantics: the switch is ON when the variable is present and its first
 // character is not '0' (so "1", "yes", and even "" are ON), and OFF when the
 // variable is unset or starts with '0'.
+//
+// That is the contract the ad-hoc `(e && *e != '0')` checks already had. It is
+// narrower than the bare `if (getenv(...))` gates some call sites were migrated
+// from, where "0" counted as ON: there `X=0` now means OFF. Unset still means
+// OFF and any other value still means ON, so no documented switch changes
+// (`HLE_DMA=1`, `HLE_TRACE=1`, ...).
 //
 // The value is latched on first use, so a switch must be in the environment
 // before the first call for it to take effect -- which is how debug runs are
@@ -33,8 +37,7 @@
 // initialisation, no teardown and no CMake wiring: it is header-only and works
 // unchanged on Android (C11), the JVM host and Emscripten. A slot is per
 // translation unit, so a switch consulted from several files costs one
-// `getenv` each on first use -- a handful per process, never per sample. The
-// render threads read a slot only after setting it, so no lock is needed.
+// `getenv` each on first use -- a handful per process, never per sample.
 
 #include <stdlib.h>
 

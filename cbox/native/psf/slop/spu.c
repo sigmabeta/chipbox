@@ -1435,46 +1435,36 @@ static void EMU_CALL sh2(struct SPU_STATE *state, uint32 a, uint16 d) {
 ** point to this file.
 */
 
-/* Render now, ignoring any pending batch (the batch itself uses this). */
-static void EMU_CALL spu_render_now(void *state, sint16 *buf, uint32 samples) {
-    SPUSTATE->mutate_epoch++;   /* decoder advances -> memo stale */
+/*
+** Render `samples` now, bypassing the batch machinery. `ext` is the
+** external input fed to core 0 (NULL when there is none); on PSF2 core 1
+** always mixes into core 0's output. Callers flush the pending batch first.
+*/
+static void EMU_CALL spu_render_now(void *state, sint16 *buf, sint16 *ext, uint32 samples) {
     uint8 mainout = SPUSTATE->global_main_on;
     uint8 effectout = SPUSTATE->global_effect_on;
-//  mainout = 0;
-    if (SPUSTATE->version == 1) {
-        spucore_render(CORESTATE(0), SPURAM, buf, NULL, samples, mainout, effectout);
-    } else {
-        spucore_render(CORESTATE(0), SPURAM, buf, NULL, samples, mainout, effectout);
-        spucore_render(CORESTATE(1), SPURAM, buf, buf, samples, mainout, effectout);
-//    spucore_render(CORESTATE(1), SPURAM, buf, NULL, samples);
-    }
-}
-
-static void EMU_CALL spu_render_ext_now(void *state, sint16 *buf, sint16 *ext, uint32 samples) {
     SPUSTATE->mutate_epoch++;   /* decoder advances -> memo stale */
-    uint8 mainout = SPUSTATE->global_main_on;
-    uint8 effectout = SPUSTATE->global_effect_on;
-//  mainout = 0;
-    if (SPUSTATE->version == 1) {
-        spucore_render(CORESTATE(0), SPURAM, buf, ext, samples, mainout, effectout);
-    } else {
-        spucore_render(CORESTATE(0), SPURAM, buf, ext, samples, mainout, effectout);
+    spucore_render(CORESTATE(0), SPURAM, buf, ext, samples, mainout, effectout);
+    if (SPUSTATE->version == 2) {
         spucore_render(CORESTATE(1), SPURAM, buf, buf, samples, mainout, effectout);
-//    spucore_render(CORESTATE(1), SPURAM, buf, NULL, samples);
     }
 }
 
 /*
 ** spu_flush_batch: THE FLUSH HELPER.
 **
-** INVARIANT: every sound-chip entry point flushes the pending batch before
-** it touches SPU state. The guest can only observe an SPU that has caught up
-** with the output samples already handed to the pump, so a register access,
-** a DMA transfer or a DMA-complete signal must never be able to look at a
-** chip that is still `batch_samples` behind. Every entry point in this file
-** (spu_lh, spu_sh, spu_dma, spu_set_dma_complete,
+** INVARIANT: every guest-visible sound-chip entry point flushes the pending
+** batch before it touches SPU state. The guest can only observe an SPU that
+** has caught up with the output samples already handed to the pump, so a
+** register access, a DMA transfer or a DMA-complete signal must never be
+** able to look at a chip that is still `batch_samples` behind. Every such
+** entry point in this file (spu_lh, spu_sh, spu_dma, spu_set_dma_complete,
 ** spu_cycles_until_interrupt, spu_render/spu_render_ext, spu_enable_*) calls
 ** this first, and iop_execute() flushes at the end of its pump.
+**
+** The lifecycle functions are the exception: spu_init() and
+** spu_get_state_size() take no live state, and spu_clear_state() legitimately
+** discards the pending batch along with the rest of the state it memsets.
 **
 ** ANYTHING ADDED TO THE SOUND-CHIP API LATER MUST FLUSH TOO.
 **
@@ -1488,7 +1478,7 @@ void EMU_CALL spu_flush_batch(void *state) {
     if (!n) return;
     /* Clear first: spu_render_now() must never be re-entered as a batch. */
     SPUSTATE->batch_samples = 0;
-    spu_render_now(state, SPUSTATE->batch_ptr, n);
+    spu_render_now(state, SPUSTATE->batch_ptr, NULL, n);
 }
 
 /*
@@ -1531,9 +1521,14 @@ int EMU_CALL spu_batch_allowed(void *state) {
         ** Guard 3, reverb overlap: the reverb engine writes into SPU RAM
         ** every sample, so a running voice sampling inside that same window
         ** makes the order of samples inside the batch audible (Front
-        ** Mission 4). Fall back to one sample at a time while it holds.
+        ** Mission 4). The chip stays frozen until the batch flushes, so ask
+        ** the predicate to look ahead across the samples already queued plus
+        ** the one about to join them -- a voice outside the window now can
+        ** walk into it (or jump back to its loop) before the batch ends.
+        ** Fall back to one sample at a time while it holds.
         */
-        if (SPUSTATE->global_effect_on && spucore_reverb_overlap(CORESTATE(core))) return 0;
+        if (SPUSTATE->global_effect_on &&
+            spucore_reverb_overlap(CORESTATE(core), SPUSTATE->batch_samples + 1)) return 0;
     }
     return 1;
 }
@@ -1569,14 +1564,14 @@ void EMU_CALL spu_sh(void *state, uint32 a, uint16 d) {
 
 void EMU_CALL spu_render(void *state, sint16 *buf, uint32 samples) {
     spu_flush_batch(state);
-    spu_render_now(state, buf, samples);
+    spu_render_now(state, buf, NULL, samples);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void EMU_CALL spu_render_ext(void *state, sint16 *buf, sint16 *ext, uint32 samples) {
     spu_flush_batch(state);
-    spu_render_ext_now(state, buf, ext, samples);
+    spu_render_now(state, buf, ext, samples);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
