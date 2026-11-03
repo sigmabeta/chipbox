@@ -81,6 +81,21 @@ APK, pushes the corpus, renders on arm64, and pulls the run back under `--out`.
 
 ---
 
+### Durability and quiet hosts
+
+The default run store is `<repo>/ab-runs` (gitignored and durable). Keep references there:
+`record.sh` and `verify.sh` warn when `--out` or `--against` points under `/tmp`, because
+that run disappears with the temp dir (`--allow-tmp` opts out for a throwaway check).
+
+Timing runs take a machine-wide lock (`scripts/dev/perf-lock.sh`, automatic in
+`record.sh`), so a second render waits instead of contaminating the first. Pass
+`--no-lock` to opt out or set `CHIPBOX_PERF_LOCK_WAIT` to change the wait (default
+1800 s; a busy lock with `--lock-wait 0` exits 75). `record.sh` also writes
+`<out>/<label>.host.txt` with the load and CPU count and warns above 0.8 load/CPU.
+
+Before a long web build, `scripts/dev/daemon-preflight.sh` reports stale Gradle/Kotlin
+daemons and available memory; `--stop` clears them, `--strict` fails on low memory.
+
 ## 3. `verify.sh` — render again and gate on the diff
 
 ```

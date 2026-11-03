@@ -143,6 +143,34 @@ scripts/ci/verify.sh --device-audio <corpus>  # also run + gate ONE on-device ax
   macrobenchmark would otherwise wipe an earlier non-macrobenchmark axis's result.
   See `benchmark/README.md`.
 
+## Worktree and ticket guardrails
+
+- **Never `git stash` in a multi-worktree run** — the stash is shared across linked
+  worktrees, so one agent's stash can transplant a foreign change into another. Revert
+  with `git checkout -- <path>` or a `/tmp` patch.
+- **Tracker edits go through the primary checkout's absolute path.** A `.scratch`
+  directory inside a worktree is a bug; `scripts/dev/check-worktree-hygiene.sh` fails
+  on a stray tracker copy or a non-empty shared stash.
+- **Close a ticket only after its gate ran.** `scripts/dev/check-ticket-gates.sh
+  --feature <slug>` rejects a `resolved` ticket with unchecked boxes and a
+  `ready-for-human` ticket without `Manual gates:` + `## Answer`. Before dispatch,
+  `scripts/dev/gate-preflight.sh --feature <slug>` reports which gates this host can
+  actually run; if one is unavailable, decide with the user whether to proceed
+  host-only (and leave that ticket `ready-for-human`) or provision the target.
+- **Merge with `scripts/integrate.sh --branch ticket/<feature>-<nn> --feature
+  <slug>`** — it audits the branch, checks ticket closure, merges `--no-ff`, builds
+  host + Android, and runs the strict A/B gate when given `--corpus`.
+- **Remove worktrees with `scripts/dev/worktree-rm.sh <path>`** — plain
+  `git worktree remove` refuses any worktree that contains the `sage` submodule.
+- **Timing runs take a machine-wide lock** (`scripts/dev/perf-lock.sh`, automatic in
+  `scripts/abrender/record.sh`); a second run waits instead of contaminating the
+  first. Keep baselines under the default `ab-runs/` (gitignored), not `/tmp`.
+
+Native modules keep generated `build/` directories in-tree: list sources with
+`git ls-files 'cbox/native/**'` (or `rg --files cbox/native`), not `find`. Host native
+tasks are `:apps:jvm:buildHostNative<Emu>`; Android natives build through
+`:cbox:android:player:emulators:<emu>:native:assembleRelease`.
+
 ## UI tests
 
 Cross-platform UI tests live in `:cbox:common:uitest` and drive the real Compose
