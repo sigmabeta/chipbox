@@ -2247,7 +2247,8 @@ static uint32 generate_samples(
       sint32 s, s_cur, s_next, f;
       // Apply SCSP ring modulation, if necessary
       if(is_scsp && (chan->mdl!=0 || chan->mdxsl!=0 || chan->mdysl!=0)) {
-        sint32 smp=(state->ringbuf[(bufptr-64+chan->mdxsl)&(32*RINGMAX-1)]+state->ringbuf[(bufptr-64+chan->mdysl)&(32*RINGMAX-1)])/2;
+        sint32 smp=(state->ringbuf[(bufptr-64+chan->mdxsl)&(32*RINGMAX-1)]
+                    +state->ringbuf[(bufptr-64+chan->mdysl)&(32*RINGMAX-1)])/2;
         smp<<=0xA; // associate cycle with 1024
         smp>>=0x1A-chan->mdl; // ex. for MDL=0xF, sample range corresponds to +/- 64 pi (32=2^5 cycles) so shift by 11 (16-5 == 0x1A-0xF)
         readnextsample(state, chan, smp, 0);

@@ -48,9 +48,11 @@ if (EMSCRIPTEN)
     # at link time. The thin `Ssf_Web.cpp` shim provides `EMSCRIPTEN_KEEPALIVE` exports.
     #
     # Optimization is throughput-oriented and uniform across the target: the core renders 44.1 kHz
-    # audio in real time in the browser, so `-Oz`'s size-for-speed trade costs ~15–30% on
-    # DSP-heavy tracks (measured; see ticket 10). `chipbox_native_common` already builds `-O3`
-    # from `CMAKE_BUILD_TYPE=Release`, so `-O3` here makes the whole target one size class.
+    # audio in real time in the browser, so size-for-speed is the wrong trade. Measured across six
+    # browser scenarios (ticket 10), all-`-O3` renders 21.9% faster than the mixed `-Oz` core /
+    # `-O3` common build (DSP-heavy tracks 21–33% faster) for +271,867 bytes (+88.9%) of `.wasm`.
+    # `chipbox_native_common` already builds `-O3` from `CMAKE_BUILD_TYPE=Release`, so `-O3` here
+    # makes the whole target one size class.
     add_executable(${library_name}
             Ssf.cpp Ssf_Web.cpp
             Core/arm.c Core/dcsound.c Core/satsound.c Core/sega.c Core/yam.c
