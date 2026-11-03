@@ -252,6 +252,50 @@ struct MPRO {
   uint8 m_00aaaaaa; // MASA
 };
 
+/////////////////////////////////////////////////////////////////////////////
+//
+// Decoded per-step form of the microprogram
+//
+// struct MPRO already holds the microprogram decoded once per register
+// write, but the per-sample interpreter still has to derive the operand
+// choices, the temp/coef/input/efreg indices and the static part of the
+// memory address on every one of the 128 steps. DSP_OP resolves all of that
+// once per microprogram/coef/madrs/ring-buffer/RAM change. It is plain data:
+// no executable memory and no architecture-specific code.
+//
+#define DSPOP_EMPTY   0x0001 // "empty" instruction: only updates ACC
+#define DSPOP_NOFL    0x0002 // NOFL: raw 8-bit shifts instead of float16
+#define DSPOP_INTERP  0x0004 // INTERP: fractional latch uses bits 11..0
+#define DSPOP_SAT     0x0008 // saturate the shifted accumulator
+#define DSPOP_YLATCH  0x0010 // latch YREG_H/YREG_L from INPUTS
+#define DSPOP_FRC     0x0020 // latch FRC_REG from the shifted accumulator
+#define DSPOP_ADRL    0x0040 // latch ADRS_REG
+#define DSPOP_MRD     0x0080 // memory read
+#define DSPOP_MWT     0x0100 // memory write
+#define DSPOP_TWT     0x0200 // temp write
+#define DSPOP_NEGB    0x0400 // negate B
+#define DSPOP_SHIFT   0x0800 // shift the previous accumulator left by 1
+// Any of these makes a step take the slow, conditional path.
+#define DSPOP_COMPLEX (DSPOP_YLATCH|DSPOP_FRC|DSPOP_ADRL|DSPOP_MRD|DSPOP_MWT|DSPOP_TWT)
+
+struct DSP_OP {
+  uint32 flags;
+  uint32 addr_base; // MADRS[MASA] + NXADR
+  uint32 addr_mask; // (ring-buffer mask | TABLE) & 0xFFFF
+  uint32 mdec_mask; // ~TABLE: 0 or 0xFFFFFFFF
+  uint32 adrmask;   // ADREB: 0 or 0xFFFFFFFF
+  sint32 coef;      // COEF[CRA] at decode time
+  uint8 step;       // original microprogram step (0..127)
+  uint8 tra;        // temp read index (7 bits)
+  uint8 twa;        // temp write index (7 bits)
+  uint8 ira;        // inputs read index
+  uint8 iwa;        // inputs write index
+  uint8 ewa;        // efreg write index
+  uint8 bsel;       // xzbchoice index for B
+  uint8 xsel;       // xzbchoice index for X (0 or INPUTS)
+  uint8 ysel;       // yychoice index for Y
+};
+
 static uint64 mpro_scsp_read(struct MPRO *mpro) {
   uint64 value = 0;
   value |= ((uint64)(mpro->t_0rrrrrrr       )) << 56; // TRA
@@ -401,6 +445,12 @@ struct YAM_STATE {
   sint16 coef[128]; // stored as 13-bit
   uint16 madrs[64];
   struct MPRO mpro[128];
+  // Portable decoded side-table for the interpreter, rebuilt lazily after
+  // any write that can change the decode (see dsp_invalidate). Consecutive
+  // "empty" steps are merged, so dsp_op_count is <= 128.
+  struct DSP_OP dsp_ops[128];
+  uint8 dsp_op_count;
+  uint8 dsp_ops_valid;
   sint32 temp[128];
   // INPUTS all pre-promoted to 24-bit
   // 0x00-0x1F: MEMS
@@ -449,6 +499,84 @@ struct YAM_STATE {
   uint8 dynacode[DYNACODE_MAX_SIZE];
 #endif
 };
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Mark the decoded microprogram table stale
+//
+static void dsp_invalidate(struct YAM_STATE *state) {
+  state->dsp_ops_valid = 0;
+#ifdef ENABLE_DYNAREC
+  state->dsp_dyna_valid = 0;
+#endif
+}
+
+//
+// Rebuild the decoded side-table from struct MPRO, COEF, MADRS and the
+// ring-buffer size. Everything here is constant until the next guest write
+// that calls dsp_invalidate(), so the per-sample interpreter can treat it as
+// read-only.
+//
+static void dsp_build_ops(struct YAM_STATE *state) {
+  uint32 rbmask = (1 << ((state->rbl) + 13)) - 1;
+  int i;
+  uint32 count = 0;
+  uint32 prev_empty = 0;
+  for(i = 0; i < 128; i++) {
+    const struct MPRO *mpro = state->mpro + i;
+    struct DSP_OP *op;
+    uint32 kis = mpro->__kisxzbon;
+    uint32 mwf = mpro->m_wrAFyyYh;
+    uint32 tm = (uint32)(sint32)(mpro->tablemask);
+    uint32 flags = 0;
+    //
+    // A run of "empty" instructions repeatedly overwrites ACC with the
+    // same function of TEMP[mdec_ct] and FRC_REG, so the whole run is
+    // equivalent to executing one of them.
+    //
+    if(kis & 0x80) {
+      if(prev_empty) { continue; }
+      prev_empty = 1;
+      op = state->dsp_ops + count++;
+      memset(op, 0, sizeof(*op));
+      op->flags = DSPOP_EMPTY;
+      op->step = (uint8)i;
+      continue;
+    }
+    prev_empty = 0;
+    op = state->dsp_ops + count++;
+    memset(op, 0, sizeof(*op));
+    op->step = (uint8)i;
+    op->tra = mpro->t_0rrrrrrr;
+    op->twa = mpro->t_Twwwwwww & 0x7F;
+    op->ira = mpro->i_00rrrrrr;
+    op->iwa = mpro->i_0T0wwwww;
+    op->ewa = mpro->e_000Twwww;
+    op->bsel = (kis & 0x0C) >> 2;
+    op->xsel = (kis & 0x10) ? XZBCHOICE_INPUTS : XZBCHOICE_TEMP;
+    op->ysel = (mwf & 0x0C) >> 2;
+    op->coef = state->coef[mpro->c_0rrrrrrr];
+    op->adrmask = (uint32)(sint32)(mpro->adrmask);
+    op->addr_base = ((uint32)(state->madrs[mpro->m_00aaaaaa])) + (kis & 1);
+    op->addr_mask = (rbmask | tm) & 0xFFFF;
+    op->mdec_mask = ~tm;
+
+    if(kis & 0x02) { flags |= DSPOP_NOFL; }
+    if(kis & 0x40) { flags |= DSPOP_INTERP; }
+    if(kis & 0x20) { flags |= DSPOP_SAT; }
+    if(mwf & 0x02) { flags |= DSPOP_YLATCH; }
+    if(mwf & 0x10) { flags |= DSPOP_FRC; }
+    if(mwf & 0x20) { flags |= DSPOP_ADRL; }
+    if(mwf & 0x40) { flags |= DSPOP_MRD; }
+    if(mwf & 0x80) { flags |= DSPOP_MWT; }
+    if(mpro->t_Twwwwwww < 0x80) { flags |= DSPOP_TWT; }
+    if(mpro->negb) { flags |= DSPOP_NEGB; }
+    if(mwf & 0x01) { flags |= DSPOP_SHIFT; }
+    op->flags = flags;
+  }
+  state->dsp_op_count = (uint8)count;
+  state->dsp_ops_valid = 1;
+}
 
 //
 // Get size
@@ -502,6 +630,9 @@ void EMU_CALL yam_clear_state(void *state, uint8 version) {
 #ifdef ENABLE_DYNAREC
   YAMSTATE->dsp_dyna_enabled = 1;
 #endif
+
+  // The MPRO/COEF/MADRS/ring state above was rewritten; drop any decoded table
+  dsp_invalidate(YAMSTATE);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -566,11 +697,9 @@ void EMU_CALL yam_setram(void *state, uint32 *ram, uint32 size, uint8 mbx, uint8
   YAMSTATE->mem_byte_address_xor = mbx;
   YAMSTATE->mem_word_address_xor = mwx;
   //
-  // Invalidate dynarec code
+  // Invalidate decoded microprogram / dynarec code
   //
-#ifdef ENABLE_DYNAREC
-  YAMSTATE->dsp_dyna_valid = 0;
-#endif
+  dsp_invalidate(YAMSTATE);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -592,16 +721,14 @@ void EMU_CALL yam_enable_dry(void *state, uint8 enable) {
 
 void EMU_CALL yam_enable_dsp(void *state, uint8 enable) {
   YAMSTATE->dsp_emulation_enabled = (enable != 0);
-#ifdef ENABLE_DYNAREC
-  if(enable == 0) { YAMSTATE->dsp_dyna_valid = 0; }
-#endif
+  dsp_invalidate(YAMSTATE);
 }
 
 void EMU_CALL yam_enable_dsp_dynarec(void *state, uint8 enable) {
 #ifdef ENABLE_DYNAREC
   YAMSTATE->dsp_dyna_enabled = (enable != 0);
-  if(enable == 0) { YAMSTATE->dsp_dyna_valid = 0; }
 #endif
+  dsp_invalidate(YAMSTATE);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1247,31 +1374,23 @@ static void chan_aica_store_reg(struct YAM_STATE *state, uint8 ch, uint8 a, uint
 // DSP registers
 //
 static void coef_write(struct YAM_STATE *state, uint32 n, uint32 d, uint32 mask) {
-#ifdef ENABLE_DYNAREC
   sint16 old = state->coef[n];
-#endif
   yam_flush(state);
   n &= 0x7F;
   state->coef[n] <<= 3;
   state->coef[n] &= ~mask;
   state->coef[n] |= d & mask;
   state->coef[n] = ((sint16)(state->coef[n])) >> 3;
-#ifdef ENABLE_DYNAREC
-  if(old != state->coef[n]) { state->dsp_dyna_valid = 0; }
-#endif
+  if(old != state->coef[n]) { dsp_invalidate(state); }
 }
 
 static void madrs_write(struct YAM_STATE *state, uint32 n, uint32 d, uint32 mask) {
-#ifdef ENABLE_DYNAREC
   uint16 old = state->madrs[n];
-#endif
   yam_flush(state);
   n &= 0x3F;
   state->madrs[n] &= ~mask;
   state->madrs[n] |= d & mask;
-#ifdef ENABLE_DYNAREC
-  if(old != state->madrs[n]) { state->dsp_dyna_valid = 0; }
-#endif
+  if(old != state->madrs[n]) { dsp_invalidate(state); }
 }
 
 static uint32 temp_read(struct YAM_STATE *state, uint32 n) {
@@ -1384,9 +1503,7 @@ static void dsp_scsp_store_reg(
     if(newvalue != oldvalue) {
       yam_flush(state);
       mpro_scsp_write(state->mpro + index64, newvalue);
-#ifdef ENABLE_DYNAREC
-      state->dsp_dyna_valid = 0;
-#endif
+      dsp_invalidate(state);
     }
     return;
   }
@@ -1437,9 +1554,7 @@ static void dsp_aica_store_reg(
     if(newvalue != oldvalue) {
       yam_flush(state);
       mpro_aica_write(state->mpro + index64, newvalue);
-#ifdef ENABLE_DYNAREC
-      state->dsp_dyna_valid = 0;
-#endif
+      dsp_invalidate(state);
     }
     return;
   }
@@ -1641,9 +1756,7 @@ void EMU_CALL yam_scsp_store_reg(void *state, uint32 a, uint32 d, uint32 mask, u
         YAMSTATE->rbp = oldrbp;
         YAMSTATE->rbl = oldrbl;
         yam_flush(YAMSTATE);
-#ifdef ENABLE_DYNAREC
-        YAMSTATE->dsp_dyna_valid = 0;
-#endif
+        dsp_invalidate(YAMSTATE);
         YAMSTATE->rbp = newrbp;
         YAMSTATE->rbl = newrbl;
       }
@@ -1827,9 +1940,7 @@ void EMU_CALL yam_aica_store_reg(void *state, uint32 a, uint32 d, uint32 mask, u
         YAMSTATE->rbp = oldrbp;
         YAMSTATE->rbl = oldrbl;
         yam_flush(YAMSTATE);
-#ifdef ENABLE_DYNAREC
-        YAMSTATE->dsp_dyna_valid = 0;
-#endif
+        dsp_invalidate(YAMSTATE);
         YAMSTATE->rbp = newrbp;
         YAMSTATE->rbl = newrbl;
       }
@@ -2392,86 +2503,108 @@ static uint32 __fastcall int24_to_float16(uint32 i) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-#define SINT32ATOFFSET(a,b) (*((sint32*)(((uint8*)(a))+(b))))
-
 /////////////////////////////////////////////////////////////////////////////
 //
 // Execute one sample on the effects DSP
 //
+// This interprets the decoded side-table built by dsp_build_ops(), so the
+// operand choices, indices and the static part of the memory address are
+// already resolved. The arithmetic order is identical to the old MPRO
+// interpreter: this is a bit-exact fixed-point pipeline.
+//
 static void __fastcall dsp_sample_interpret(struct YAM_STATE *state) {
-  const struct MPRO *mpro = state->mpro;
+  const struct DSP_OP *op = state->dsp_ops;
+  const uint32 mdec = state->mdec_ct;
+  const uint32 rbp = state->rbp;
+  const uint32 ram_mask = state->ram_mask;
+  const uint32 memxor = state->mem_word_address_xor;
+  sint8 *ram = (sint8*)(state->ram_ptr);
+  // The accumulator is the one operand that every step reads and rewrites,
+  // so keep it in a register across the decoded steps instead of
+  // round-tripping it through state->xzbchoice. XZBCHOICE_TEMP/INPUTS/COEF
+  // are only ever read by the step that wrote them, so they stay in locals
+  // too; XZBCHOICE_ZERO/ZERO_ACC are never written and are therefore zero.
+  sint32 acc = state->xzbchoice[XZBCHOICE_ACC];
+  const uint32 count = state->dsp_op_count;
   uint32 i;
-  // Pre-compute ringbuffer size mask
-  uint32 rbmask = (1 << ((state->rbl)+13)) - 1;
   //
-  // For 128 steps:
+  // For each decoded step (a run of empty steps counts as one):
   //
-  for(i = 0; i < 128; i++, mpro++) {
-    sint32 b, x, y, shifted;
+  for(i = 0; i < count; i++, op++) {
+    uint32 flags = op->flags;
+    sint32 b, x, y, shifted, tempval, inputsval;
     //
     // Proper skip for "empty" instructions
     //
-    if((mpro->__kisxzbon) & 0x80) {
-      x = state->temp[(state->mdec_ct)&0x7F];
-      state->xzbchoice[XZBCHOICE_ACC] =
-        ((((sint64)x) * ((sint64)(state->yychoice[YYCHOICE_FRC_REG]))) >> 12) + x;
+    if(flags & DSPOP_EMPTY) {
+      x = state->temp[mdec & 0x7F];
+      acc = ((((sint64)x) * ((sint64)(state->yychoice[YYCHOICE_FRC_REG]))) >> 12) + x;
       continue;
     }
-    state->xzbchoice[XZBCHOICE_TEMP] = state->temp[((mpro->t_0rrrrrrr)+(state->mdec_ct))&0x7F];
-    state->yychoice[YYCHOICE_COEF] = state->coef[mpro->c_0rrrrrrr];
+    tempval = state->temp[(op->tra + mdec) & 0x7F];
+    state->yychoice[YYCHOICE_COEF] = op->coef;
     //
     // Input read
     //
-    state->xzbchoice[XZBCHOICE_INPUTS] = state->inputs[mpro->i_00rrrrrr];
+    inputsval = state->inputs[op->ira];
     //
     // Input write
     //
-    state->inputs[mpro->i_0T0wwwww] = state->mem_in_data[i & 3];
+    state->inputs[op->iwa] = state->mem_in_data[op->step & 3];
     //
-    // B selection
+    // B selection (TEMP, ACC, ZERO, ZERO_ACC)
     //
-    b = SINT32ATOFFSET(state->xzbchoice, (mpro->__kisxzbon) & 0x0C);
-    b ^= ((sint32)(mpro->negb));
-    b -= ((sint32)(mpro->negb));
+    b = (op->bsel == 1) ? acc : ((op->bsel & 2) ? 0 : tempval);
+    {
+      sint32 negb = (flags & DSPOP_NEGB) ? (-1) : 0;
+      b ^= negb;
+      b -= negb;
+    }
     //
-    // X selection
+    // X selection (TEMP or INPUTS)
     //
-    x = SINT32ATOFFSET(state->xzbchoice, (mpro->__kisxzbon) & 0x10);
+    x = (op->xsel == XZBCHOICE_TEMP) ? tempval : inputsval;
     //
     // Y selection
     //
-    y = SINT32ATOFFSET(state->yychoice, (mpro->m_wrAFyyYh) & 0x0C);
-    //
-    // Y latch
-    //
-    if(mpro->m_wrAFyyYh & 2) {
-      sint32 inputs = state->xzbchoice[XZBCHOICE_INPUTS];
-      state->yychoice[YYCHOICE_Y_REG_H] = inputs >> 11;
-      state->yychoice[YYCHOICE_Y_REG_L] = (inputs >> 4) & 0xFFF;
-    }
+    y = state->yychoice[op->ysel];
     //
     // Shift of previous accumulator
     //
-    shifted = state->xzbchoice[XZBCHOICE_ACC] << ((mpro->m_wrAFyyYh) & 1);
-    if((mpro->__kisxzbon) & 0x20) {
+    shifted = acc << ((flags & DSPOP_SHIFT) ? 1 : 0);
+    if(flags & DSPOP_SAT) {
       if(shifted > ( 0x7FFFFF)) { shifted = ( 0x7FFFFF); }
       if(shifted < (-0x800000)) { shifted = (-0x800000); }
     }
     //
     // Multiply and accumulate
     //
-    state->xzbchoice[XZBCHOICE_ACC] = ((((sint64)x) * ((sint64)y)) >> 12) + b;
+    acc = ((((sint64)x) * ((sint64)y)) >> 12) + b;
+    //
+    // Steps without side conditions do not need any of the blocks below.
+    //
+    if(!(flags & DSPOP_COMPLEX)) {
+      state->efreg[op->ewa] = shifted >> 8;
+      continue;
+    }
+    //
+    // Y latch
+    //
+    if(flags & DSPOP_YLATCH) {
+      state->yychoice[YYCHOICE_Y_REG_H] = inputsval >> 11;
+      state->yychoice[YYCHOICE_Y_REG_L] = (inputsval >> 4) & 0xFFF;
+    }
     //
     // Temp write
     //
-    if(mpro->t_Twwwwwww < 0x80) {
-      state->temp[((mpro->t_Twwwwwww)+(state->mdec_ct))&0x7F] = shifted;
+    if(flags & DSPOP_TWT) {
+      state->temp[(op->twa + mdec) & 0x7F] = shifted;
     }
     //
     // Fractional address latch
     //
-    if((mpro->m_wrAFyyYh) & 0x10) {
-      if((mpro->__kisxzbon) & 0x40) {
+    if(flags & DSPOP_FRC) {
+      if(flags & DSPOP_INTERP) {
         state->yychoice[YYCHOICE_FRC_REG] = shifted & 0xFFF;
       } else {
         state->yychoice[YYCHOICE_FRC_REG] = shifted >> 11;
@@ -2480,47 +2613,46 @@ static void __fastcall dsp_sample_interpret(struct YAM_STATE *state) {
     //
     // Memory operations
     //
-    if((mpro->m_wrAFyyYh) & 0xC0) {
-      sint32 tm = ((sint32)(mpro->tablemask));
-      uint32 a = state->madrs[mpro->m_00aaaaaa];
-      a += (state->adrs_reg) & ((sint32)(mpro->adrmask));
-      a += (mpro->__kisxzbon) & 1;
-      a += (state->mdec_ct) & (~tm);
-      a &= (rbmask | tm) & 0xFFFF;
+    if(flags & (DSPOP_MRD | DSPOP_MWT)) {
+      uint32 a = op->addr_base;
+      a += ((uint32)(state->adrs_reg)) & op->adrmask;
+      a += mdec & op->mdec_mask;
+      a &= op->addr_mask;
       a <<= 1;
-      a += state->rbp;
-      a &= (state->ram_mask);
-      a ^= state->mem_word_address_xor;
-      if(mpro->m_wrAFyyYh & 0x40) { // MRD
-        sint32 memdata = *((sint16*)(((sint8*)(state->ram_ptr))+a));
-        if(!(mpro->__kisxzbon & 2)) { memdata = float16_to_int24(memdata); }
+      a += rbp;
+      a &= ram_mask;
+      a ^= memxor;
+      if(flags & DSPOP_MRD) { // MRD
+        sint32 memdata = *((sint16*)(ram + a));
+        if(!(flags & DSPOP_NOFL)) { memdata = float16_to_int24(memdata); }
         else { memdata <<= 8; }
-        state->mem_in_data[(i+2)&3] = memdata;
+        state->mem_in_data[(op->step+2)&3] = memdata;
       }
-      if(mpro->m_wrAFyyYh & 0x80) { // MWT
+      if(flags & DSPOP_MWT) { // MWT
         sint32 memdata = shifted;
-        if(!(mpro->__kisxzbon & 2)) { memdata = int24_to_float16(memdata); }
+        if(!(flags & DSPOP_NOFL)) { memdata = int24_to_float16(memdata); }
         else { memdata >>= 8; }
-        *((sint16*)(((sint8*)(state->ram_ptr))+a)) = memdata;
+        *((sint16*)(ram + a)) = memdata;
       }
     }
     //
     // Address latch
     //
-    if((mpro->m_wrAFyyYh) & 0x20) {
-      if((mpro->__kisxzbon) & 0x40) {
+    if(flags & DSPOP_ADRL) {
+      if(flags & DSPOP_INTERP) {
         state->adrs_reg = shifted >> 12;
       } else {
-        state->adrs_reg = state->xzbchoice[XZBCHOICE_INPUTS] >> 16;
+        state->adrs_reg = inputsval >> 16;
       }
       state->adrs_reg &= 0xFFF;
     }
     //
     // Effect output write
     //
-    state->efreg[mpro->e_000Twwww] = shifted >> 8;
+    state->efreg[op->ewa] = shifted >> 8;
     // End of step
   }
+  state->xzbchoice[XZBCHOICE_ACC] = acc;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2883,6 +3015,7 @@ static void render_effects(
 #else
   {
 #endif
+    if(!state->dsp_ops_valid) { dsp_build_ops(state); }
     samplefunc = dsp_sample_interpret;
   }
 
