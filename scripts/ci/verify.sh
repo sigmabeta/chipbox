@@ -57,10 +57,11 @@ GRADLE_FLAGS=(--build-cache --configuration-cache --console=plain)
 # `setup`'s `:dependencies` step is dependency resolution, not verification, so it's omitted.
 # static-analysis and android-lint pass -Pchipbox.skipNative — neither needs the emulator .so libs
 # (AGP's externalNativeBuild isn't cacheable, so building native in lint is pure duplicated cost).
-# static-analysis also runs the two non-Gradle checks CI's static-analysis job adds around Gradle:
-# scripts/ci/check-user-facing-strings.sh first (the same guardrail CI runs as its own step) and
-# scripts/ci/verify-no-config-git.sh (the no-configuration-time-git gate) after Gradle. They are
-# reported under the one task name, and any of the three failing fails it.
+# static-analysis also runs the non-Gradle checks CI's static-analysis job adds around Gradle:
+# scripts/ci/check-user-facing-strings.sh and scripts/ci/check-vendored-changes.sh first (the same
+# guardrails CI runs as their own steps) and scripts/ci/verify-no-config-git.sh (the
+# no-configuration-time-git gate) after Gradle. They are reported under the one task name, and any
+# failure fails it.
 # The apk/release-jvm tasks build native on purpose. apk builds the RELEASE variant, as CI and
 # release.yml do, so release-only config (the appVersioning versionCode logic) is exercised; without
 # the CHIPBOX_KEY_* signing env it falls back to debug signing, so it builds on any machine. release-jvm builds the desktop emulator natives
@@ -233,6 +234,9 @@ for entry in "${selected[@]}"; do
     start=$SECONDS
     scripts/ci/check-user-facing-strings.sh >"$LOGS/$name.log" 2>&1
     strings_rc=$?
+    printf '%s──▶ %-16s%s scripts/ci/check-vendored-changes.sh\n' "$B" "" "$Z"
+    scripts/ci/check-vendored-changes.sh >>"$LOGS/$name.log" 2>&1
+    vendor_rc=$?
     # shellcheck disable=SC2086
     "$GRADLE" $args "${GRADLE_FLAGS[@]}" >>"$LOGS/$name.log" 2>&1
     rc=$?
@@ -240,6 +244,7 @@ for entry in "${selected[@]}"; do
     scripts/ci/verify-no-config-git.sh >>"$LOGS/$name.log" 2>&1
     git_rc=$?
     [ "$strings_rc" -ne 0 ] && rc=$strings_rc
+    if [ "$vendor_rc" -ne 0 ] && [ "$rc" -eq 0 ]; then rc="$vendor_rc"; fi
     if [ "$git_rc" -ne 0 ] && [ "$rc" -eq 0 ]; then rc="$git_rc"; fi
   else
     printf '%s──▶ %-16s%s ./gradlew %s\n' "$B" "$name" "$Z" "$args"
