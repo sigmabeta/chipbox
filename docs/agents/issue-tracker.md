@@ -26,6 +26,23 @@ specs and tickets by absolute path into the primary checkout's `.scratch/`
 (`git worktree list` shows which checkout that is). Never copy `.scratch/` into
 a worktree — the two copies would diverge.
 
+## Reading a feature
+
+- The spec is `.scratch/<feature-slug>/spec.md`. If it is absent, the issue set is the
+  spec: read every `issues/*.md` and its `## Comments` before dispatching.
+- Write tracker updates through the **primary checkout's absolute path**. A worktree
+  has no `.scratch`; a `.scratch` there is a bug (see
+  `scripts/dev/check-worktree-hygiene.sh`). Never copy the tracker into a worktree.
+
+## Before closing a ticket
+
+- Run the gate the ticket names. If it cannot run (no device, no Windows JDK, no
+  browser), leave `Status: ready-for-human`, add a `**Manual gates:**` line, and add a
+  `## Answer` recording what ran and what remains.
+- `scripts/dev/check-ticket-gates.sh --feature <slug>` enforces the mechanical half;
+  `scripts/dev/gate-preflight.sh --feature <slug>` says which gates this host can run
+  before dispatch.
+
 ## Conventions
 
 - One feature per directory: `.scratch/<feature-slug>/`
