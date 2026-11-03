@@ -2101,6 +2101,9 @@ static uint32 generate_samples(
   uint32 base_phaseinc;
   uint32 lfophaseinc = lfophaseinctable[chan->lfof];
   uint32 bufptrsave = state->bufptr;
+  // The format is fixed for the lifetime of the state, so hoist it: the SCSP
+  // branch below must cost a DSF (AICA) sample nothing at all.
+  const int is_scsp = (state->version == 1);
 
 //gfreq[samples]++;
 
@@ -2230,7 +2233,12 @@ static uint32 generate_samples(
     //
     // Advance filter envelope
     //
-    { uint32 effectiverate = env_adjustrate(chan, chan->fr[chan->lpfstate]);
+    // The SCSP has no filter: its register interface cannot write the filter
+    // envelope, and the filter application above is skipped for it too, so this
+    // would only advance state that nothing ever reads.
+    //
+    if(!is_scsp) {
+      uint32 effectiverate = env_adjustrate(chan, chan->fr[chan->lpfstate]);
       if(env_needstep(effectiverate, odometer)) {
         uint32 d = envdecayvalue[effectiverate][odometer&3];
         uint32 target = chan->flv[chan->lpfstate+1];
