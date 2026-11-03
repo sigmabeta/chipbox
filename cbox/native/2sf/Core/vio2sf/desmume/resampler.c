@@ -144,6 +144,8 @@ typedef struct resampler
     float phase_inc;
     float inv_phase;
     float inv_phase_inc;
+    double last_rate;
+    int has_last_rate;
     unsigned char quality;
     signed char delay_added;
     signed char delay_removed;
@@ -166,6 +168,8 @@ void * resampler_create(void)
     r->phase_inc = 0;
     r->inv_phase = 0;
     r->inv_phase_inc = 0;
+    r->last_rate = 0;
+    r->has_last_rate = 0;
     r->quality = RESAMPLER_QUALITY_MAX;
     r->delay_added = -1;
     r->delay_removed = -1;
@@ -205,6 +209,8 @@ void resampler_dup_inplace(void *_d, const void *_s)
     r_out->phase_inc = r_in->phase_inc;
     r_out->inv_phase = r_in->inv_phase;
     r_out->inv_phase_inc = r_in->inv_phase_inc;
+    r_out->last_rate = r_in->last_rate;
+    r_out->has_last_rate = r_in->has_last_rate;
     r_out->quality = r_in->quality;
     r_out->delay_added = r_in->delay_added;
     r_out->delay_removed = r_in->delay_removed;
@@ -331,9 +337,15 @@ void resampler_clear(void *_r)
 void resampler_set_rate(void *_r, double new_factor)
 {
     resampler * r = ( resampler * ) _r;
+    /* The SPU calls this per sample with the same double. Compare the original
+       double, not the float phase_inc: a value such as 1.0000001 does not
+       round-trip through float and must still recompute the reciprocal. */
+    if ( r->has_last_rate && new_factor == r->last_rate )
+        return;
+    r->last_rate = new_factor;
+    r->has_last_rate = 1;
     r->phase_inc = new_factor;
-    new_factor = 1.0 / new_factor;
-    r->inv_phase_inc = new_factor;
+    r->inv_phase_inc = 1.0 / new_factor;
 }
 
 void resampler_write_sample(void *_r, short s)
