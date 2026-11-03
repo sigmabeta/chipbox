@@ -23,6 +23,12 @@ regression, so it is deliberately skipped.
   2020 upstream commits `4bad9bd` / `2e73bc5` / `4209287`, which
   `afb889e "Sync with Cog"` later *dropped*. Removing them reintroduces audible
   filter clipping.
+- **SCSP-only ring-pointer upkeep in `yam.c`** — the modulation ring and its rotation
+  index are SCSP-only state (AICA has no `0x600` ring-buffer registers and no
+  ring-based modulation read). `generate_samples` keeps the index in a local rather
+  than in `state->bufptr`, and `render` seeds/advances the shared pointer only for
+  `version == 1`. Output is bit-identical; an upstream sync would reintroduce the
+  unconditional per-sample read/write of the shared pointer.
 - **Portability adaptations** (needed to build for Android/JVM, non-x86):
   - `yam.c`, `c68k/core.h`: x86 `regparm(3)` / `__fastcall` FASTCALL paths
     disabled.
