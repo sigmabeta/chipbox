@@ -44,8 +44,6 @@
 #include "registers.h"
 #include "isqrt.h"
 
-#include "barray.h"
-
 #if VIO2SF_GPU_ENABLE
 #include "render3D.h"
 #else
@@ -546,14 +544,6 @@ u8 FASTCALL MMU_read8(NDS_state *state, u32 proc, u32 adr)
 	}
 #endif
     
-    if (state->array_rom_coverage)
-    {
-        if (state->MMU->MMU_MEM[proc][(adr>>20)&0xFF] == state->MMU->CART_ROM)
-        {
-            bit_array_set(state->array_rom_coverage, (adr & state->MMU->MMU_MASK[proc][(adr>>20)&0xFF]) / 4);
-        }
-    }
-
         return state->MMU->MMU_MEM[proc][(adr>>20)&0xFF][adr&state->MMU->MMU_MASK[proc][(adr>>20)&0xFF]];
 }
 
@@ -628,14 +618,6 @@ u16 FASTCALL MMU_read16(NDS_state *state, u32 proc, u32 adr)
 		}
 	}
 	
-    if (state->array_rom_coverage)
-    {
-        if (state->MMU->MMU_MEM[proc][(adr>>20)&0xFF] == state->MMU->CART_ROM)
-        {
-            bit_array_set(state->array_rom_coverage, (adr & state->MMU->MMU_MASK[proc][(adr>>20)&0xFF]) / 4);
-        }
-    }
-
     /* Returns data from memory */
 	return T1ReadWord(state->MMU->MMU_MEM[proc][(adr >> 20) & 0xFF], adr & state->MMU->MMU_MASK[proc][(adr >> 20) & 0xFF]);
 }
@@ -780,9 +762,6 @@ u32 FASTCALL MMU_read32(NDS_state *state, u32 proc, u32 adr)
 
                                 if(!state->MMU->dscard[proc].adress) return 0;
 
-                                if (state->array_rom_coverage)
-                                    bit_array_set(state->array_rom_coverage, state->MMU->dscard[proc].adress / 4);
-                
                                 val = T1ReadLong(state->MMU->CART_ROM, state->MMU->dscard[proc].adress);
 
 				state->MMU->dscard[proc].adress += 4;	/* increment adress */
@@ -813,14 +792,6 @@ u32 FASTCALL MMU_read32(NDS_state *state, u32 proc, u32 adr)
 		}
 	}
 	
-    if (state->array_rom_coverage)
-    {
-        if (state->MMU->MMU_MEM[proc][(adr>>20)&0xFF] == state->MMU->CART_ROM)
-        {
-            bit_array_set(state->array_rom_coverage, (adr & state->MMU->MMU_MASK[proc][(adr>>20)&0xFF]) / 4);
-        }
-    }
-    
 	/* Returns data from memory */
 	return T1ReadLong(state->MMU->MMU_MEM[proc][(adr >> 20) & 0xFF], adr & state->MMU->MMU_MASK[proc][(adr >> 20) & 0xFF]);
 }
