@@ -86,6 +86,54 @@ else
   fail "gradlew did not report a version (fix JAVA_HOME first)"
 fi
 
+# ---- native / performance toolchain -----------------------------------------
+head_ "Native / performance toolchain"
+if command -v cc >/dev/null 2>&1 || command -v gcc >/dev/null 2>&1 || command -v clang >/dev/null 2>&1; then
+  ok "C compiler: $(command -v cc 2>/dev/null || command -v gcc 2>/dev/null || command -v clang)"
+else
+  fail "no C compiler (cc/gcc/clang) — native emulator builds unavailable"
+fi
+asan_tmp="$(mktemp -d 2>/dev/null || true)"
+if [ -n "$asan_tmp" ]; then
+  printf 'int main(void){return 0;}\n' > "$asan_tmp/t.c"
+  cc_bin="${CC:-cc}"
+  if command -v "$cc_bin" >/dev/null 2>&1 && "$cc_bin" -fsanitize=address "$asan_tmp/t.c" -o "$asan_tmp/a" >/dev/null 2>&1; then
+    ok "ASan link: $cc_bin -fsanitize=address"
+  else
+    warn "ASan link fails; install libasan (or set CC) — ticket sanitizer gates will be BLOCKED"
+  fi
+  if command -v "$cc_bin" >/dev/null 2>&1 && "$cc_bin" -fsanitize=undefined "$asan_tmp/t.c" -o "$asan_tmp/u" >/dev/null 2>&1; then
+    ok "UBSan link: $cc_bin -fsanitize=undefined"
+  else
+    warn "UBSan link fails; install libubsan — arithmetic-UB reports will be unavailable"
+  fi
+  rm -rf "$asan_tmp"
+fi
+if command -v perf >/dev/null 2>&1; then
+  ok "perf: $(command -v perf)"
+else
+  warn "perf is not on PATH (use manual counters, or install linux-tools for this kernel)"
+fi
+if command -v valgrind >/dev/null 2>&1; then
+  ok "valgrind: $(command -v valgrind)"
+else
+  warn "valgrind is not on PATH (use GCC ASan/UBSan for leak checks)"
+fi
+if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
+  ok "MinGW-w64: $(command -v x86_64-w64-mingw32-gcc) (Windows JDK still required for the cross build)"
+else
+  warn "MinGW-w64 compiler is not on PATH (Windows x86_64 cross build unavailable)"
+fi
+browser=""
+for c in chromium chromium-browser google-chrome google-chrome-stable; do
+  if command -v "$c" >/dev/null 2>&1; then browser="$(command -v "$c")"; break; fi
+done
+if [ -n "$browser" ]; then
+  ok "browser: $browser (headless WASM/audio gates)"
+else
+  warn "no Chromium/Chrome on PATH (browser audio/WASM gates unavailable)"
+fi
+
 # ---- web toolchain ----------------------------------------------------------
 head_ "Web toolchain (-Psage.js=true)"
 if command -v node >/dev/null 2>&1; then

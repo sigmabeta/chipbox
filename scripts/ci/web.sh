@@ -44,6 +44,12 @@ command -v yarn >/dev/null 2>&1 || skip "yarn 1.x is not on PATH (auto-download 
   || skip "emsdk not found at $EMSDK_DIR (set EMSDK or install emsdk: docker/emsdk-version pins the version)"
 export EMSDK="$EMSDK_DIR"
 
+# Kotlin/JS test compilation OOMs on a busy host with several daemons alive. Report the
+# daemons and free memory before the long build so a failure is diagnosable.
+if [ -x "$ROOT/scripts/dev/daemon-preflight.sh" ]; then
+  "$ROOT/scripts/dev/daemon-preflight.sh" --min-free-gb 4 || true
+fi
+
 GRADLE_FLAGS=(
   -Psage.js=true
   -Pchipbox.skipNative

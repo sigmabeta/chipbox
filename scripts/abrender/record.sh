@@ -35,6 +35,11 @@ Render knobs (pass the SAME ones to verify.sh):
   --limit <n>              cap the number of tracks
   --max-wall-seconds <n>   per-track wall-clock cap                 (default: 120)
 
+Timing / durability:
+  --no-lock                don't take the machine-wide perf lock
+  --lock-wait <seconds>    wait for the perf lock                   (default: 1800)
+  --allow-tmp              allow --out under /tmp (ephemeral; warns by default)
+
 Host only:
   --parallel <n>           render with n JVMs over disjoint shards  (default: 1)
 
@@ -64,8 +69,12 @@ OUT="${REPO_ROOT}/ab-runs"
 PARALLEL=1
 SERIAL=""
 SKIP_BUILD=0
+NO_LOCK=0
+LOCK_WAIT="${CHIPBOX_PERF_LOCK_WAIT:-1800}"
+ALLOW_TMP=0
 declare -a FLAGS=()   # CLI render flags (--key value / bare --flag)
 declare -a EARGS=()   # device instrumentation -e key value
+ORIG_ARGS=("$@")      # re-exec through perf-lock.sh preserves the exact invocation
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -80,10 +89,17 @@ while [[ $# -gt 0 ]]; do
                         FLAGS+=("$1" "$2"); EARGS+=(-e "${1#--}" "$2"); shift 2 ;;
     --every-song)       FLAGS+=("--every-song"); EARGS+=(-e every-song true); shift ;;
     --overwrite)        FLAGS+=("--overwrite"); EARGS+=(-e overwrite true); shift ;;
+    --no-lock)          NO_LOCK=1; shift ;;
+    --lock-wait)        LOCK_WAIT="$2"; shift 2 ;;
+    --allow-tmp)        ALLOW_TMP=1; shift ;;
     -h|--help)          usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
+
+case "${LOCK_WAIT}" in
+  ''|*[!0-9]*) echo "error: --lock-wait must be a non-negative integer" >&2; exit 2 ;;
+esac
 
 [[ "${WHERE}" == host || "${WHERE}" == device ]] || { echo "error: --where must be host or device" >&2; exit 2; }
 [[ -n "${CORPUS}" ]] || { echo "error: --corpus <dir> is required" >&2; exit 2; }
@@ -95,7 +111,39 @@ if [[ "${WHERE}" == device && "${PARALLEL}" -gt 1 ]]; then
 fi
 
 OUT="$(mkdir -p "${OUT}" && cd "${OUT}" && pwd)"
+
+# Timing runs serialize on one machine-wide lock. Re-exec so the lock covers the Gradle
+# build and the render; CHIPBOX_PERF_LOCK_HELD stops the child re-acquiring it.
+if (( NO_LOCK == 0 )) && [[ "${CHIPBOX_PERF_LOCK_HELD:-0}" != "1" ]]; then
+  export CHIPBOX_PERF_LOCK_HELD=1
+  exec "${REPO_ROOT}/scripts/dev/perf-lock.sh" --wait "${LOCK_WAIT}" -- "$0" "${ORIG_ARGS[@]}"
+fi
+
+case "${OUT}" in
+  /tmp/*|"${TMPDIR:-/tmp}"/*)
+    if (( ALLOW_TMP == 0 )); then
+      echo "warning: --out ${OUT} is under /tmp and is ephemeral; use the default ab-runs/ (or --allow-tmp)" >&2
+    fi
+    ;;
+esac
+
 RUN_DIR="${OUT}/${LABEL}"
+
+if [[ "${WHERE}" == host ]]; then
+  {
+    printf 'utc=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    printf 'cpus=%s\n' "$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo unknown)"
+    printf 'uptime=%s\n' "$(uptime 2>/dev/null || true)"
+  } >"${OUT}/${LABEL}.host.txt" 2>/dev/null || true
+  if [[ -r /proc/loadavg ]]; then
+    load1="$(awk '{print $1}' /proc/loadavg)"
+    cpus="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
+    case "${cpus}" in ''|*[!0-9]*) cpus=1 ;; esac
+    if awk -v l="${load1}" -v c="${cpus}" 'BEGIN { exit !(l > c * 0.8) }'; then
+      echo "warning: host load ${load1} on ${cpus} CPUs; timing will be noisy" >&2
+    fi
+  fi
+fi
 
 # gq: quote a token for Gradle's --args (ArgumentsSplitter honours double quotes). shq: quote a value
 # for a device shell command line (single quotes, apostrophe-safe) so adb shell doesn't re-split it.

@@ -39,6 +39,9 @@ Reference:
 
 Run store:
   --out <dir>              runs root                               (default: <repo>/ab-runs)
+  --no-lock                don't take the machine-wide perf lock (forwarded)
+  --lock-wait <seconds>    wait for the perf lock (forwarded)
+  --allow-tmp              allow /tmp paths (ephemeral; warns by default)
 
 Render knobs (must match the ones the reference was recorded with):
   --seconds <n>            seconds of audio per track              (default: 30)
@@ -74,6 +77,7 @@ TOLERANCE="auto"
 PARALLEL=1
 SERIAL=""
 SKIP_BUILD=0
+ALLOW_TMP=0
 declare -a FORWARD=()   # render knobs forwarded verbatim to record.sh
 
 while [[ $# -gt 0 ]]; do
@@ -89,6 +93,9 @@ while [[ $# -gt 0 ]]; do
     --seconds|--ext|--game|--subsong|--limit|--max-wall-seconds)
                         FORWARD+=("$1" "$2"); shift 2 ;;
     --every-song)       FORWARD+=("--every-song"); shift ;;
+    --no-lock)          FORWARD+=("--no-lock"); shift ;;
+    --lock-wait)        FORWARD+=("--lock-wait" "$2"); shift 2 ;;
+    --allow-tmp)        ALLOW_TMP=1; FORWARD+=("--allow-tmp"); shift ;;
     -h|--help)          usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
@@ -111,6 +118,14 @@ fi
   echo "       Record one first: ${SCRIPT_DIR}/record.sh --where ${WHERE} --corpus \"${CORPUS}\"" >&2
   exit 2
 }
+
+case "${REF_DIR}" in
+  /tmp/*|"${TMPDIR:-/tmp}"/*)
+    if (( ALLOW_TMP == 0 )); then
+      echo "warning: reference ${REF_DIR} is under /tmp and is ephemeral; keep it under ab-runs/ (or --allow-tmp)" >&2
+    fi
+    ;;
+esac
 
 # Resolve `auto`: compare where each side was rendered. Missing provenance falls back to "device
 # renders are cross-ISA against a host reference", the common golden case.
