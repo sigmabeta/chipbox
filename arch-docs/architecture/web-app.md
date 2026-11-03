@@ -386,9 +386,9 @@ saved snapshot, and reloading a tab restores that snapshot.
   `scripts/ci/web-image-smoke.sh`. `static-analysis` also runs
   `scripts/ci/verify-docker-release.sh` (platform stages, release wiring, no push,
   native-lib arch, pinned toolchain, digest-pinned base images). Locally,
-  `scripts/ci/verify.sh web` mirrors
-  the bundle/tests and `--web-image` adds the image build + smoke; both SKIP (not
-  fail) when the toolchain/daemon is missing.
+  `scripts/ci/verify.sh --web` mirrors the bundle/tests and `--web-image` adds
+  the image build + smoke; both are opt-in and SKIP (not fail) when the
+  toolchain/daemon is missing.
 
 ## Testing
 
@@ -413,8 +413,11 @@ saved snapshot, and reloading a tab restores that snapshot.
   duplicate, disjoint, single) run end-to-end through the real okio source and a
   write-counting repository in `OverlappingRootsTest`.
 - No Playwright or other browser automation. UI and audio are verified manually.
-- `scripts/ci/verify.sh web` mirrors the CI web job and SKIPs cleanly when
-  emsdk/node/yarn are unavailable; `--web-image` adds the Docker build + smoke.
+- `scripts/ci/verify.sh --web` mirrors the CI web job and SKIPs cleanly when
+  emsdk/node/yarn are unavailable; it is opt-in because the Kotlin/JS test
+  compile is slow and only reliable in CI. `--web-image` adds the Docker build +
+  smoke. A default `scripts/ci/verify.sh` run does neither — CI's `web` job is
+  the gate for web changes.
 - `scripts/ci/verify.sh` and the PR `web` job must pass before a push.
 
 ## v1 acceptance checklist
