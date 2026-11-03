@@ -6,7 +6,7 @@
 # JS-side tests (jsNodeTest), and assembles the server distribution. In `image` mode it also builds
 # the amd64 Docker image (or the host arch when buildx is unavailable) and smokes the container.
 #
-# Invoked by scripts/ci/verify.sh (`web`, opt-in `web-image`), or directly:
+# Invoked by scripts/ci/verify.sh (opt-in: `--web`, or `--web-image`), or directly:
 #   scripts/ci/web.sh          # bundle + bundle assertion + jsNodeTest + installDist
 #   scripts/ci/web.sh image    # ... plus Docker image build + container smoke
 #
