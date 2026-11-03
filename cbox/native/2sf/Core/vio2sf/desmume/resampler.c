@@ -423,7 +423,14 @@ static int resampler_run_zoh(resampler * r, float ** out_, float * out_end)
             
             in += (int)phase;
             
-            phase = fmod(phase, 1.0f);
+            /* Exact stand-in for fmod(phase, 1.0f) on the non-negative phase
+               this loop maintains. Every float at or above 2^24 is already an
+               integer, so its fraction is +0; below 2^24 the truncating cast is
+               floor and the subtraction yields the exact fractional part. */
+            if ( phase >= 16777216.0f )
+                phase = 0.0f;
+            else
+                phase -= (float)(int)phase;
         }
         while ( in < in_end );
         
