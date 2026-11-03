@@ -2946,7 +2946,7 @@ struct render_priority
   sint32 channel_number;
   sint32 priority_level;
 };
-int __cdecl render_priority_compare(const void * a, const void * b) {
+static int __cdecl render_priority_compare(const void * a, const void * b) {
   struct render_priority *_a = (struct render_priority *) a;
   struct render_priority *_b = (struct render_priority *) b;
   return _b->priority_level - _a->priority_level;
@@ -2962,6 +2962,7 @@ static void render(struct YAM_STATE *state, uint32 odometer, uint32 samples) {
   uint32 nchannels;
   uint32 bufptr_base;
   int wantreverb = 0;
+  int sort_needed = 0;
   if(!samples) return;
   buf = YAMSTATE->out_buf;
   directout = (buf && (state->dry_out_enabled)) ? outbuf : NULL;
@@ -3008,10 +3009,10 @@ fclose(f);
     for(i = 0; i < nchannels; i++) {
       struct YAM_CHAN *chan = state->chan + i;
       sint32 priority_level = priority_list[i].priority_level + 1;
-      if (chan->mdxsl) priority_list[(i+chan->mdxsl)&31].priority_level = priority_level;
-      if (chan->mdysl) priority_list[(i+chan->mdysl)&31].priority_level = priority_level;
+      if (chan->mdxsl) { sort_needed = 1; priority_list[(i+chan->mdxsl)&31].priority_level = priority_level; }
+      if (chan->mdysl) { sort_needed = 1; priority_list[(i+chan->mdysl)&31].priority_level = priority_level; }
     }
-    qsort(&priority_list, nchannels, sizeof(*priority_list), render_priority_compare);
+    if(sort_needed) qsort(&priority_list, nchannels, sizeof(*priority_list), render_priority_compare);
   }
   bufptr_base = state->bufptr;
   //
@@ -3019,7 +3020,7 @@ fclose(f);
   //
   for(i = 0; i < nchannels; i++) {
     struct YAM_CHAN *chan;
-    j = priority_list[i].channel_number;
+    j = sort_needed ? (uint32)priority_list[i].channel_number : i;
     chan = state->chan + j;
     state->bufptr = bufptr_base + j;
 // is 11
