@@ -153,8 +153,10 @@ struct ARM_STATE {
   // There are no location invariance issues.
   //
   uint32 maxpc;
+  uint32 fetchstart;
   void *fetchbase;
   uint32 fetchbox;
+  int fetchvalid;
 
   int badinsflag;
 };
@@ -166,6 +168,21 @@ uint32 EMU_CALL arm_get_state_size(void) {
 /////////////////////////////////////////////////////////////////////////////
 
 static EMU_INLINE void pcchanged(struct ARM_STATE *state) { state->maxpc = 0; }
+
+//
+// A branch only invalidates the fetch region when it leaves the current
+// pointer-mapped region. fetchstart/maxpc bound the region; callback-backed
+// regions (fetchvalid == 0) are never retained because their instruction is
+// read through the hardware callback. Branch offsets are multiples of four, so
+// skipping renew_fetch_region's word-align mask is safe here.
+//
+static EMU_INLINE void branch_pc_changed(struct ARM_STATE *state) {
+  if((!state->fetchvalid) ||
+     (state->r[15] < state->fetchstart) ||
+     (state->r[15] >= state->maxpc)) {
+    pcchanged(state);
+  }
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -319,12 +336,16 @@ static EMU_INLINE void renew_fetch_region(struct ARM_STATE *state) {
   t = mmwalk(state->map_load, state->r[15]);
   if(t->n == ARM_MAP_TYPE_POINTER) {
     uint32 astart = (state->r[15]) & (~(t->mask));
+    state->fetchstart = astart;
     state->maxpc = astart + ((t->mask) + 1);
     state->fetchbase = ((uint8*)(t->p)) - astart;
+    state->fetchvalid = 1;
   } else {
+    state->fetchstart = state->r[15];
     state->maxpc = state->r[15] + 4;
     state->fetchbase = ((uint8*)(&(state->fetchbox)))-(state->r[15]);
     state->fetchbox = ((arm_load_callback_t)(t->p))(state->hwstate, state->r[15], 0xFFFFFFFF);
+    state->fetchvalid = 0;
   }
 }
 
@@ -881,7 +902,7 @@ static void EMU_CALL insbranch(struct ARM_STATE *state, uint32 insword) {
   insword <<= 8;
   insword = ((sint32)(((sint32)insword) >> 6));
   state->r[15] += 8 + insword;
-  pcchanged(state);
+  branch_pc_changed(state);
 }
 
 static void EMU_CALL insbranchlink(struct ARM_STATE *state, uint32 insword) {
@@ -889,7 +910,7 @@ static void EMU_CALL insbranchlink(struct ARM_STATE *state, uint32 insword) {
   insword <<= 8;
   insword = ((sint32)(((sint32)insword) >> 6));
   state->r[15] += 8 + insword;
-  pcchanged(state);
+  branch_pc_changed(state);
 }
 
 /////////////////////////////////////////////////////////////////////////////
