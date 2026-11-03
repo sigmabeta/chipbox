@@ -22,13 +22,6 @@ const char *get_last_error();
 
 int32_t get_sample_rate();
 
-static int sdsf_load(
-        void *context,
-        const uint8_t *exe, size_t exe_size,
-        const uint8_t *reserved,
-        size_t reserved_size
-);
-
 struct sdsf_loader_state
 {
     void *emu;
