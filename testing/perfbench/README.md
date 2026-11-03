@@ -3,8 +3,9 @@
 The host-side home of the Chipbox performance harness: a test-system module
 (`:testing:perfbench`, run via an explicit `run` task — nothing here is shipped)
 that measures **how fast the emulator cores render audio** (real-time factor, RTF)
-over a corpus you supply, generates a portable **library snapshot** from that
-corpus, and diffs two runs against each other. It is a
+over a corpus you supply, measures the **production PCM cache** cold/warm path,
+generates a portable **library snapshot** from that corpus, and diffs two runs
+against each other. It is a
 **measurement, not a gate** — nothing in CI runs it.
 
 Device axes (UI scroll jank, startup) live in the Android `:benchmark` module;
@@ -48,6 +49,36 @@ output lands in `build/perfbench/wav/`.
 Output paths are relative to the module's working directory, so the default
 `build/perfbench/` resolves to `testing/perfbench/build/perfbench/`, not the repo
 root.
+
+### `cache --dir <corpus> [options]`
+
+Measures the **production PCM cache path** rather than the raw emulator loop. For
+each selected track it uses a fresh cache directory and drives the real
+`RealPcmTrackSourceFactory`:
+
+- **cold** — a miss: staging, native track load, and render-through into the
+  `.pcm` cache file, read to end-of-track;
+- **warm** — the same directory after the cold pass sealed it: repeated opens
+  must return `CachedFilePcmSource` (a complete-cache hit), pooled to a median.
+
+It reports each phase's wall time, time-to-first-frame (measured from before
+`Factory.open`), and native track-load/teardown counts observed through a
+counting decorator around the real 2SF backend. This is the number ticket 05
+(PCM cache) moves: today a warm hit still pays for one native load and teardown
+because the factory constructs `EmulatorPcmSource` before checking the cache.
+Writes `<out>/cache.tsv`.
+
+| option | meaning | default |
+|---|---|---|
+| `--dir <folder>` | corpus root to walk for audio files | **required** |
+| `--filter <glob>` | basename or corpus-relative path glob (same rules as `audio`) | whole corpus |
+| `--repeat <n>` | timed warm opens per file; the headline is the median | `3` |
+| `--seconds <n>` | audio seconds rendered into the cold cache | `30` |
+| `--out <dir>` | results root; `cache.tsv` is written here | `build/perfbench/cache` |
+
+```sh
+./gradlew :testing:perfbench:run --args="cache --dir /path/to/corpus --seconds 30 --repeat 3"
+```
 
 ### `snapshot --dir <corpus> [--out <snapshot>]`
 

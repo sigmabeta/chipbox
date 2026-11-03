@@ -55,6 +55,13 @@ dependencies {
     // The raw-emulator-core render path (EmulatorBank) and corpus walker reused unchanged.
     implementation(projects.testing.abrenderCore)
 
+    // `cache` drives the production PCM cache factory, the real 2SF backend (behind a counting
+    // decorator), and the shared Track/chain-file model — not the raw emulator loop.
+    implementation(projects.cbox.common.player.cache.real)
+    implementation(projects.cbox.common.player.emulators.api)
+    implementation(projects.cbox.common.player.emulators.twosf.real)
+    implementation(projects.cbox.common.models.api)
+
     // `snapshot` runs the real host scanner over a corpus — the same scan stack the headless CLI
     // (apps/cli) assembles by hand: RealScanner, the pure-Kotlin readers, and an okio file walker.
     // The scan's raw output is captured by a write-only Repository in the command itself (no

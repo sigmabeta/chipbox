@@ -2,8 +2,8 @@ package net.sigmabeta.chipbox.perfbench
 
 /**
  * `perfbench` — the host-side performance benchmarking CLI. One entry point, one subcommand per
- * axis; the device axes live in the Android `:benchmark` module instead. v1 ships `audio`,
- * `snapshot`, and `diff`.
+ * axis; the device axes live in the Android `:benchmark` module instead. It ships `audio`,
+ * `cache`, `snapshot`, and `diff`.
  */
 fun main(rawArgs: Array<String>) {
     val command = rawArgs.firstOrNull()
@@ -15,6 +15,8 @@ fun main(rawArgs: Array<String>) {
 
     when (command) {
         "audio" -> runAudio(parseAudioOptions(options))
+
+        "cache" -> runCache(parseCacheOptions(options))
 
         "snapshot" -> runSnapshot(parseSnapshotOptions(options))
 
@@ -52,13 +54,12 @@ private fun parseOptions(tokens: List<String>): Map<String, String> {
     return out
 }
 
-private fun printUsage() {
-    println(
-        """
+private val USAGE = """
         perfbench — performance benchmarking harness for Chipbox.
 
         Usage:
           perfbench audio --dir <corpus> [options]
+          perfbench cache --dir <corpus> [options]
           perfbench snapshot --dir <corpus> [--out <snapshot>]
           perfbench diff --a <runA> --b <runB>
           perfbench reader-parity --dir <corpus> [--reference <tsv>] [--reader <ext>] [--no-padding]
@@ -76,6 +77,17 @@ private fun printUsage() {
           --repeat <n>         timed repeats per file (median of N)       (default: $DEFAULT_REPEAT)
           --seconds <n>        audio seconds rendered per repeat          (default: $DEFAULT_SAMPLE_SECONDS)
           --out <dir>          results root; results.json is written here  (default: $DEFAULT_OUT)
+
+        cache — measure the production PCM cache path over a corpus. Each track gets a fresh cache
+        directory: one cold open (staging + native load + render-through into the cache file) then
+        N warm opens that must hit the sealed cache file. Reports cold/warm wall time,
+        time-to-first-frame, and native track-load/teardown counts per open. Writes cache.tsv.
+
+          --dir <folder>       corpus root to walk for audio files        (required)
+          --filter <glob>      glob over each file's corpus-relative path (default: whole corpus)
+          --repeat <n>         timed warm opens per file (median of N)    (default: $DEFAULT_REPEAT)
+          --seconds <n>        audio seconds rendered into the cold cache (default: $DEFAULT_CACHE_SECONDS)
+          --out <dir>          results root; cache.tsv is written here    (default: $DEFAULT_CACHE_OUT)
 
         snapshot — run the real host scanner once over the corpus and write a portable library
         snapshot (raw scan output with corpus-relative paths) for the app to ingest without rescanning.
@@ -100,6 +112,6 @@ private fun printUsage() {
           --dir <folder>       corpus root; with --reference, only rows under it are run
           --reader <ext>       only files/rows with this extension (default: every reader)
           --no-padding         compare raw probe lengths instead of stored (padded) lengths
-        """.trimIndent(),
-    )
-}
+""".trimIndent()
+
+private fun printUsage() = println(USAGE)
