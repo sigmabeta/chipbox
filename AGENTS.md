@@ -93,7 +93,12 @@ it when a load-bearing fact stops being true.
 scripts/dev/paparazzi-diff.sh                  # check screenshots (use this, NOT the Gradle task)
 scripts/dev/build-benchmark.sh                 # time this machine's builds (--quick / --full / --help)
 scripts/ci/verify.sh --device-audio <corpus>  # also run + gate ONE on-device axis (also -ui / -startup; needs a device; small corpus)
+scripts/ci/verify.sh --web                    # opt-in web suite (WASM bundle + jsNodeTest; slow, CI-only reliable)
 ```
+
+- The web suite is **not** part of a default `verify.sh` run (its Kotlin/JS test
+  compile takes ~an hour and only passes reliably in CI): pass `--web` (or name
+  `web`) to include it. `--web-image` adds the Docker build + smoke.
 
 - Run **ktlint and detekt together**; both gate commit/push.
 - Gradle prints thousands of task lines: redirect a long run to a file and grep it

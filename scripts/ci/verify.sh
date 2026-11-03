@@ -22,9 +22,11 @@
 # you care about; they are independent (one axis per process, so one can't disturb or delete another).
 #
 # The `web` task mirrors CI's web job (scripts/ci/web.sh): WASM + bundle + bundle assertion +
-# jsNodeTest + server installDist. It SKIPs (exit 3) when emsdk/node/yarn are unavailable, so
-# machines without the web toolchain stay green. `--web-image` also builds and smokes the Docker
-# image (skipped without a running daemon).
+# jsNodeTest + server installDist. It is OPT-IN (`--web`, or naming it in the filter): the
+# Kotlin/JS test compile takes the better part of an hour and only passes reliably in CI's
+# prepared environment, so a default run leaves it out. It SKIPs (exit 3) when emsdk/node/yarn
+# are unavailable. `--web-image` (opt-in too) also builds and smokes the Docker image (skipped
+# without a running daemon).
 #
 # The `docker-release` task is the cheap static check (scripts/ci/verify-docker-release.sh) for the
 # multi-arch Dockerfile + release workflow: platform stages, both arches, no push, pinned toolchain,
@@ -37,6 +39,7 @@
 #   scripts/ci/verify.sh --device-audio <corpus-dir>    # also run the on-device audio gate over that corpus
 #   scripts/ci/verify.sh --device-ui <corpus-dir>       # also run the on-device UI-scroll gate
 #   scripts/ci/verify.sh --device-startup <corpus-dir>  # also run the on-device startup gate
+#   scripts/ci/verify.sh --web           # also run the web suite (WASM bundle + jsNodeTest; slow)
 #   scripts/ci/verify.sh --web-image     # also build + smoke the Docker image (needs a daemon)
 #   scripts/ci/verify.sh --rerun         # force every task to re-run (Gradle --rerun-tasks; ignores cache/up-to-date)
 #   scripts/ci/verify.sh --list          # list task names
@@ -80,10 +83,11 @@ ALL_TASKS=(
   "release-jvm|:apps:jvm:chipboxHostNativeLibs"
   "apk|:apps:android:assembleRelease"
 )
-# `web-image` is opt-in (--web-image): it builds and smokes the Docker image, which needs a running
-# daemon and is much slower than the bundle/tests above. `web` itself SKIPs (exit 3) when the
-# emsdk/node/yarn toolchain is unavailable, so a machine without the web toolchain stays green.
-WEB_OPT_IN_TASKS=(web-image)
+# The `web` task is opt-in (`--web`): its Kotlin/JS test compile takes the better part of an hour
+# and only passes reliably in CI, so a default run skips it. `web-image` (`--web-image`) is opt-in
+# too: it builds and smokes the Docker image, which needs a running daemon and is slower still.
+# Both SKIP (exit 3) when their toolchain/daemon is unavailable, so a bare machine stays green.
+WEB_OPT_IN_TASKS=(web web-image)
 APP_BUILD_TASKS="release-jvm apk web web-image"
 
 # The opt-in on-device tasks (run by scripts/benchmark/device-<axis>.sh, not Gradle). Each axis is
@@ -117,6 +121,7 @@ device_corpus_get() {
 filter=()
 skip_apps=0
 rerun=0
+web=0
 web_image=0
 while [ $# -gt 0 ]; do
   arg="$1"
@@ -124,6 +129,7 @@ while [ $# -gt 0 ]; do
     -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; exit 0 ;;
     --list) printf '%s\n' "${ALL_TASKS[@]%%|*}" "${DEVICE_TASK_NAMES[@]}"; exit 0 ;;
     --skip-apps) skip_apps=1 ;;
+    --web) web=1 ;;
     --web-image) web_image=1 ;;
     --rerun|--rerun-tasks) rerun=1 ;;
     --device-audio|--device-ui|--device-startup)
@@ -165,9 +171,13 @@ selected=()
 for entry in "${ALL_TASKS[@]}"; do
   name="${entry%%|*}"
   if [ "$skip_apps" = 1 ] && [[ " $APP_BUILD_TASKS " == *" $name "* ]]; then continue; fi
-  # web-image is opt-in via --web-image; naming it in the filter also selects it.
-  if [ "$name" = "web-image" ] && [ "$web_image" != 1 ] \
-     && [[ "$filter_text" != *" web-image "* ]]; then continue; fi
+  # web / web-image are opt-in (--web, --web-image); naming one in the filter also selects it.
+  if [[ " ${WEB_OPT_IN_TASKS[*]} " == *" $name "* ]]; then
+    case "$name" in
+      web) [ "$web" = 1 ] || [[ "$filter_text" == *" web "* ]] || continue ;;
+      web-image) [ "$web_image" = 1 ] || [[ "$filter_text" == *" web-image "* ]] || continue ;;
+    esac
+  fi
   if [ "${#filter[@]}" -gt 0 ] && [[ "$filter_text" != *" $name "* ]]; then continue; fi
   selected+=("$entry")
 done
