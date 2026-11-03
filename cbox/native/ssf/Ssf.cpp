@@ -2,13 +2,17 @@
 
 const char *last_error;
 
-int16_t *output_buffer;
-uint32_t output_buffer_size_samples;
-uint32_t output_buffer_size_frames;
-
 int xsf_version;
 
 sdsf_loader_state * sdsf_state;
+
+// Loader callback handed to psflib; only this translation unit needs it.
+static int sdsf_load(
+        void *context,
+        const uint8_t *exe, size_t exe_size,
+        const uint8_t *reserved,
+        size_t reserved_size
+);
 
 void loadFile(const char *filename_c_str) {
     teardown();
@@ -17,6 +21,20 @@ void loadFile(const char *filename_c_str) {
     // so a stale string would otherwise make a following good load look failed. Matches the other
     // cores (PSF/USF/NCSF clear here, GME/2SF overwrite on outcome).
     last_error = nullptr;
+
+    sdsf_loader_state image;
+    memset(&image, 0, sizeof(image));
+
+    // Owned by this function until each is either transferred into the live state or released
+    // by the single cleanup path below. `image.data` is psflib's merged program image (up to
+    // 8 MiB) and must outlive every sdsf_load() callback, so it is only freed once upload has
+    // consumed it.
+    sdsf_loader_state *sdsfinfo = nullptr;
+    void *sega_state = nullptr;
+    uint32_t start = 0;
+    uint32_t length = 0;
+    uint32_t max_length = 0;
+    int upload_status = 0;
 
     xsf_version = psf_load(
             filename_c_str,
@@ -37,82 +55,108 @@ void loadFile(const char *filename_c_str) {
             break;
         default:
             last_error = "Not a valid SSF file or DSF file.";
-            return;
+            goto cleanup;
     }
-
-    sdsf_loader_state * sdsfinfo = (sdsf_loader_state*)malloc(sizeof(sdsf_loader_state));
 
     if (sega_init()) {
         last_error = "Sega emulator static initialization failed";
-        return;
+        goto cleanup;
     }
 
-    sdsf_loader_state state;
-
-    memset( &state, 0, sizeof(state) );
-
-    int ret = psf_load(
+    if (psf_load(
             filename_c_str,
             &psf_file_system,
             xsf_version,
             sdsf_load,
-            &state,
+            &image,
             0,
             0,
             0,
             0,
             0
-    );
-
-    if (ret != xsf_version) {
+    ) != xsf_version) {
         last_error = "Failed to load PSF file.";
-        return;
+        goto cleanup;
     }
 
+    if (image.data == nullptr || image.data_size < 4) {
+        last_error = "Loaded file contained no program image.";
+        goto cleanup;
+    }
 
-    uint32_t sega_state_size = sega_get_state_size(xsf_version - 0x10);
-    void * sega_state = static_cast<uint8_t *>(malloc(sega_state_size));
+    sega_state = malloc(sega_get_state_size(xsf_version - 0x10));
 
+    if (sega_state == nullptr) {
+        last_error = "Failed to allocate Sega emulator state.";
+        goto cleanup;
+    }
 
     sega_clear_state(sega_state, xsf_version - 0x10);
 
     sega_enable_dsp_dynarec( sega_state, 0);
 
-    uint32_t start = *(uint32_t*) state.data;
-    uint32_t length = state.data_size;
-    const uint32_t max_length = ( xsf_version == 0x12 ) ? 0x800000 : 0x80000;
+    start = *(uint32_t*) image.data;
+    length = image.data_size;
+    max_length = ( xsf_version == 0x12 ) ? 0x800000 : 0x80000;
 
     if (start + (length - 4) > max_length) {
         length = max_length - start + 4;
     }
 
-    int upload_status = sega_upload_program(sega_state, state.data, length);
+    upload_status = sega_upload_program(sega_state, image.data, length);
+
+    // sega_upload_program copies the program into emulator RAM and resets the CPU, so the
+    // loader image is dead from here on regardless of the result.
+    free(image.data);
+    image.data = nullptr;
+    image.data_size = 0;
 
     if (upload_status == -1) {
         last_error = "Failed to upload program.";
-        return;
+        goto cleanup;
+    }
+
+    sdsfinfo = static_cast<sdsf_loader_state *>(calloc(1, sizeof(sdsf_loader_state)));
+
+    if (sdsfinfo == nullptr) {
+        last_error = "Failed to allocate loader state.";
+        goto cleanup;
     }
 
     sdsfinfo->emu = sega_state;
     sdsfinfo->version = xsf_version;
-
     sdsf_state = sdsfinfo;
+
+    // Transferred to sdsf_state; keep the cleanup path from freeing them.
+    sdsfinfo = nullptr;
+    sega_state = nullptr;
+
+cleanup:
+    free(image.data);
+    free(sega_state);
+    free(sdsfinfo);
 }
 
 int32_t generateBuffer(int16_t *target_array, int32_t output_size_frames) {
-    if (output_buffer_size_samples != output_size_frames * 2) {
-        delete output_buffer;
-
-        output_buffer_size_frames = output_size_frames;
-        output_buffer_size_samples = output_size_frames * 2;
-        output_buffer = static_cast<int16_t *>(malloc(output_size_frames * 4));
+    if (sdsf_state == nullptr || sdsf_state->emu == nullptr) {
+        last_error = "No track loaded.";
+        return 0;
     }
+
+    if (target_array == nullptr || output_size_frames <= 0) {
+        last_error = "Invalid output buffer.";
+        return 0;
+    }
+
+    // Render straight into the caller's array: sega_execute never writes more than the
+    // requested frame count (it caps *sound_samples and tracks the remaining budget).
+    uint32_t frames_produced = static_cast<uint32_t>(output_size_frames);
 
     int32_t cycles_executed = sega_execute(
             sdsf_state->emu,
             0x7FFFFFFF,
-            output_buffer,
-            &output_buffer_size_frames
+            target_array,
+            &frames_produced
     );
 
     if (cycles_executed < 0) {
@@ -120,9 +164,7 @@ int32_t generateBuffer(int16_t *target_array, int32_t output_size_frames) {
         return 0;
     }
 
-    memcpy(target_array, output_buffer, output_buffer_size_frames * 4);
-
-    return output_buffer_size_frames;
+    return static_cast<int32_t>(frames_produced);
 }
 
 void teardown() {
@@ -131,14 +173,6 @@ void teardown() {
         free(sdsf_state);
 
         sdsf_state = nullptr;
-    }
-
-    if (output_buffer != nullptr) {
-        delete output_buffer;
-
-        output_buffer = nullptr;
-        output_buffer_size_samples = 0;
-        output_buffer_size_frames = 0;
     }
 }
 

@@ -2100,11 +2100,13 @@ static uint32 generate_samples(
   uint32 g;
   uint32 base_phaseinc;
   uint32 lfophaseinc = lfophaseinctable[chan->lfof];
-  // The modulation ring and its rotation index are SCSP-only: AICA (version 2) has no 0x600
-  // ring-buffer registers and no ring-based modulation read, so the index stays dead there.
-  // Keeping it in a local also removes the per-sample read/write of the shared pointer: the
-  // block rotation is applied once, in render().
+  // The format is fixed for the lifetime of the state, so hoist it: the SCSP branches below must
+  // cost a DSF (AICA) sample nothing at all.
   const int is_scsp = (state->version == 1);
+  // The modulation ring and its rotation index are SCSP-only too: AICA has no 0x600 ring-buffer
+  // registers and no ring-based modulation read, so the index stays dead there. Keeping it in a
+  // local also removes the per-sample read/write of the shared pointer: the block rotation is
+  // applied once, in render().
   uint32 bufptr = is_scsp ? state->bufptr : 0;
 
 //gfreq[samples]++;
@@ -2237,7 +2239,12 @@ static uint32 generate_samples(
     //
     // Advance filter envelope
     //
-    { uint32 effectiverate = env_adjustrate(chan, chan->fr[chan->lpfstate]);
+    // The SCSP has no filter: its register interface cannot write the filter
+    // envelope, and the filter application above is skipped for it too, so this
+    // would only advance state that nothing ever reads.
+    //
+    if(!is_scsp) {
+      uint32 effectiverate = env_adjustrate(chan, chan->fr[chan->lpfstate]);
       if(env_needstep(effectiverate, odometer)) {
         uint32 d = envdecayvalue[effectiverate][odometer&3];
         uint32 target = chan->flv[chan->lpfstate+1];
@@ -2946,7 +2953,7 @@ struct render_priority
   sint32 channel_number;
   sint32 priority_level;
 };
-int __cdecl render_priority_compare(const void * a, const void * b) {
+static int __cdecl render_priority_compare(const void * a, const void * b) {
   struct render_priority *_a = (struct render_priority *) a;
   struct render_priority *_b = (struct render_priority *) b;
   return _b->priority_level - _a->priority_level;
@@ -2962,6 +2969,7 @@ static void render(struct YAM_STATE *state, uint32 odometer, uint32 samples) {
   uint32 nchannels;
   uint32 bufptr_base;
   int wantreverb = 0;
+  int sort_needed = 0;
   if(!samples) return;
   buf = YAMSTATE->out_buf;
   directout = (buf && (state->dry_out_enabled)) ? outbuf : NULL;
@@ -3008,10 +3016,10 @@ fclose(f);
     for(i = 0; i < nchannels; i++) {
       struct YAM_CHAN *chan = state->chan + i;
       sint32 priority_level = priority_list[i].priority_level + 1;
-      if (chan->mdxsl) priority_list[(i+chan->mdxsl)&31].priority_level = priority_level;
-      if (chan->mdysl) priority_list[(i+chan->mdysl)&31].priority_level = priority_level;
+      if (chan->mdxsl) { sort_needed = 1; priority_list[(i+chan->mdxsl)&31].priority_level = priority_level; }
+      if (chan->mdysl) { sort_needed = 1; priority_list[(i+chan->mdysl)&31].priority_level = priority_level; }
     }
-    qsort(&priority_list, nchannels, sizeof(*priority_list), render_priority_compare);
+    if(sort_needed) qsort(&priority_list, nchannels, sizeof(*priority_list), render_priority_compare);
   }
   bufptr_base = (state->version == 1) ? state->bufptr : 0;
   //
@@ -3019,7 +3027,7 @@ fclose(f);
   //
   for(i = 0; i < nchannels; i++) {
     struct YAM_CHAN *chan;
-    j = priority_list[i].channel_number;
+    j = sort_needed ? (uint32)priority_list[i].channel_number : i;
     chan = state->chan + j;
     if(state->version == 1) { state->bufptr = bufptr_base + j; }
 // is 11
