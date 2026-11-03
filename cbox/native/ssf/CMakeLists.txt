@@ -46,6 +46,11 @@ if (EMSCRIPTEN)
     # WASM build — `Ssf.cpp` keeps its existing `loadFile(const char*)` C API; psflib's
     # internal `fopen` calls resolve against Emscripten's MEMFS. zlib comes from `-sUSE_ZLIB=1`
     # at link time. The thin `Ssf_Web.cpp` shim provides `EMSCRIPTEN_KEEPALIVE` exports.
+    #
+    # Optimization is throughput-oriented and uniform across the target: the core renders 44.1 kHz
+    # audio in real time in the browser, so `-Oz`'s size-for-speed trade costs ~15–30% on
+    # DSP-heavy tracks (measured; see ticket 10). `chipbox_native_common` already builds `-O3`
+    # from `CMAKE_BUILD_TYPE=Release`, so `-O3` here makes the whole target one size class.
     add_executable(${library_name}
             Ssf.cpp Ssf_Web.cpp
             Core/arm.c Core/dcsound.c Core/satsound.c Core/sega.c Core/yam.c
@@ -65,9 +70,9 @@ if (EMSCRIPTEN)
             "-sUSE_ZLIB=1"
             "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
             "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32','FS']"
-            "-Oz"
+            "-O3"
     )
-    target_compile_options(${library_name} PRIVATE "-Oz" "-sUSE_ZLIB=1")
+    target_compile_options(${library_name} PRIVATE "-O3" "-sUSE_ZLIB=1")
 else ()
     add_library(${library_name} SHARED ${libssf_SRCS})
     target_link_libraries(${library_name}
