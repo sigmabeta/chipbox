@@ -87,15 +87,13 @@ class WasmSsfEmulator(private val fileSystem: FileSystem) : Emulator() {
 
     override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int {
         val core = core ?: return 0
-        val pcm = try {
-            core.play(framesPerBuffer)
+        return try {
+            // Renders straight into the caller's buffer (one WASM-heap copy); no temporary array.
+            core.play(framesPerBuffer, buffer)
         } catch (t: Throwable) {
             lastErrorMessage = t.message ?: t::class.simpleName
-            return 0
-        } ?: return 0
-        val toCopy = minOf(pcm.size, buffer.size)
-        pcm.copyInto(buffer, 0, 0, toCopy)
-        return toCopy / SHORTS_PER_FRAME
+            0
+        }
     }
 
     override fun teardownInternal() {
@@ -107,8 +105,6 @@ class WasmSsfEmulator(private val fileSystem: FileSystem) : Emulator() {
     override fun getSampleRateInternal(): Int = core?.sampleRate() ?: 44100
 
     companion object {
-        private const val SHORTS_PER_FRAME = 2
-
         @Suppress("ObjectPropertyName")
         private var loadedModule: ChipboxSsfModule? = null
 
