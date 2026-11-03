@@ -10,7 +10,6 @@
 #include "desmume/cp15.h"
 
 #include "desmume/state.h"
-#include "desmume/barray.h"
 
 #include <chipbox_psf_io.h>
 
@@ -288,7 +287,7 @@ int xsf_start(char *filename)
 	core->arm9_clockdown_level = state.arm9_clockdown_level;
 
 	if (state.rom) {
-		state_setrom(core, state.rom, (u32) state.rom_size, 1);
+		state_setrom(core, state.rom, (u32) state.rom_size);
 	}
 
 	state_loadstate(core, state.state, (u32) state.state_size );
