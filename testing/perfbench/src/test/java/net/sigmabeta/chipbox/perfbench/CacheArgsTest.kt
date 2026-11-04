@@ -18,6 +18,16 @@ class CacheArgsTest {
         assertEquals(3, args.repeat)
         assertEquals(30, args.sampleSeconds)
         assertEquals(File("build/perfbench/cache"), args.outDir)
+        assertEquals(false, args.uncached)
+    }
+
+    @Test
+    fun `bare --uncached selects the cache-bypass path`() {
+        val args = parseCacheOptions(
+            mapOf("dir" to corpus.absolutePath, "uncached" to "true"),
+        )
+
+        assertEquals(true, args.uncached)
     }
 
     @Test

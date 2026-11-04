@@ -78,16 +78,19 @@ private val USAGE = """
           --seconds <n>        audio seconds rendered per repeat          (default: $DEFAULT_SAMPLE_SECONDS)
           --out <dir>          results root; results.json is written here  (default: $DEFAULT_OUT)
 
-        cache — measure the production PCM cache path over a corpus. Each track gets a fresh cache
-        directory: one cold open (staging + native load + render-through into the cache file) then
-        N warm opens that must hit the sealed cache file. Reports cold/warm wall time,
-        time-to-first-frame, and native track-load/teardown counts per open. Writes cache.tsv.
+        cache — measure the production PCM cache path over a corpus (2SF files only: the factory
+        is built with the 2SF backend alone). Each track gets a fresh cache directory: one cold
+        open (staging + native load + render-through into the cache file) then N warm opens that
+        must hit the sealed cache file. Reports cold/warm wall time, time-to-first-frame, and
+        native track-load/teardown counts per open. Writes cache.tsv. With --uncached it drives
+        UncachedPcmTrackSourceFactory instead (N full live opens, no cache) and writes uncached.tsv.
 
           --dir <folder>       corpus root to walk for audio files        (required)
           --filter <glob>      glob over each file's corpus-relative path (default: whole corpus)
-          --repeat <n>         timed warm opens per file (median of N)    (default: $DEFAULT_REPEAT)
-          --seconds <n>        audio seconds rendered into the cold cache (default: $DEFAULT_CACHE_SECONDS)
-          --out <dir>          results root; cache.tsv is written here    (default: $DEFAULT_CACHE_OUT)
+          --repeat <n>         timed opens per file (median of N)         (default: $DEFAULT_REPEAT)
+          --seconds <n>        audio seconds rendered per open            (default: $DEFAULT_CACHE_SECONDS)
+          --uncached           bypass the cache; measure the live emulator path
+          --out <dir>          results root; cache.tsv/uncached.tsv here  (default: $DEFAULT_CACHE_OUT)
 
         snapshot — run the real host scanner once over the corpus and write a portable library
         snapshot (raw scan output with corpus-relative paths) for the app to ingest without rescanning.
