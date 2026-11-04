@@ -58,7 +58,10 @@ GRADLEW="${REPO_ROOT}/gradlew"
 
 PKG="net.sigmabeta.chipbox.abrender.test"
 RUNNER="androidx.test.runner.AndroidJUnitRunner"
-REMOTE_BASE="/sdcard/Android/data/${PKG}/files/abrender"
+# Shared storage, like :benchmark's corpus root. Android 11+ will not let the app read a corpus
+# staged under its own Android/data by the adb shell, so the harness reads shared storage instead
+# and grants itself All Files Access (same appops pattern as :benchmark).
+REMOTE_BASE="/sdcard/Music/chipbox-test/abrender"
 REMOTE_IN="${REMOTE_BASE}/in"
 REMOTE_OUT="${REMOTE_BASE}/out"
 
@@ -222,10 +225,23 @@ render_device() {
   fi
 
   echo "==> Pushing corpus → ${REMOTE_IN}"
-  # Fresh stage each run: pushing over files a prior chmod left world-readable makes adb's fchown fail
-  # on the FUSE mount; then open it up, or the test app (not in adb's group) sees an empty corpus.
+  # All Files Access for the shared-storage corpus; the op is denied by default.
+  "${adb[@]}" shell appops set "${PKG}" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
+  # Fresh stage each run, and world-readable afterwards: adb writes as the shell user, not the app's.
   "${adb[@]}" shell rm -rf "${REMOTE_IN}" 2>/dev/null || true
   "${adb[@]}" shell mkdir -p "${REMOTE_IN}"
+  # adb's `push` creates missing directories through secure_mkdirs, which Android 11+ refuses under
+  # another app's Android/data (the render harness stages there). Pre-create the tree with the shell
+  # so the push only ever writes files, which is allowed.
+  local -a corpus_dirs=()
+  while IFS= read -r -d '' rel; do
+    [[ "${rel}" == "." ]] && continue
+    corpus_dirs+=("$(shq "${REMOTE_IN}/${rel#./}")")
+  done < <(cd "${CORPUS}" && find . -type d -print0)
+  if (( ${#corpus_dirs[@]} > 0 )); then
+    "${adb[@]}" shell "mkdir -p ${corpus_dirs[*]}" || {
+      echo "error: could not create the corpus directory tree under ${REMOTE_IN}" >&2; exit 1; }
+  fi
   "${adb[@]}" push "${CORPUS}/." "${REMOTE_IN}" >/dev/null
   "${adb[@]}" shell chmod -R a+rX "${REMOTE_IN}"
 

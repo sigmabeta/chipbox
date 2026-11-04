@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      The on-device render harness reads a corpus that adb stages in shared storage
+      (/sdcard/Music/chipbox-test/abrender/in) and writes its run back beside it. Staging in the
+      test package's own Android/data does not work on Android 11+: a directory tree created by the
+      adb shell there is not readable by the app process, even world-readable after `chmod a+rX`.
+      The :benchmark module reads its corpus from the same shared root under All Files Access,
+      granted per run with `adb shell appops set <pkg> MANAGE_EXTERNAL_STORAGE allow` (record.sh
+      does that before instrumenting). This test APK has no user-facing UI, so the permission is
+      only ever used against a corpus the harness itself pushed.
+    -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+</manifest>
