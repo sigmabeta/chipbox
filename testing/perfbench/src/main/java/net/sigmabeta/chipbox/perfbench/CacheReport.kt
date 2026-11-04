@@ -13,6 +13,7 @@ internal data class CachePhase(
     val emulatorLoads: Int,
     val emulatorTeardowns: Int,
     val sourceClass: String,
+    val sampleRate: Int,
 )
 
 /** One track's cold + warm cache measurements. A failed track carries [error] and no phases. */
@@ -66,5 +67,41 @@ internal fun cacheRow(measurement: CacheMeasurement): CacheRow {
         warmEmulatorLoadsPerOpen = warm.sumOf { it.emulatorLoads }.toDouble() / warm.size,
         warmEmulatorTeardownsPerOpen = warm.sumOf { it.emulatorTeardowns }.toDouble() / warm.size,
         warmSourceClass = warm.first().sourceClass,
+    )
+}
+
+/**
+ * One track on the **uncached** path: repeated full opens of a live `EmulatorPcmSource`, pooled to
+ * median / min / max per-open wall time. [frames] is the first open's drained length.
+ */
+internal data class UncachedRow(
+    val path: String,
+    val frames: Long,
+    val sampleRate: Int,
+    val opens: Int,
+    val wallMedianSeconds: Double,
+    val wallMinSeconds: Double,
+    val wallMaxSeconds: Double,
+    val firstFrameMedianSeconds: Double,
+    val loadsPerOpen: Double,
+    val teardownsPerOpen: Double,
+    val sourceClass: String,
+)
+
+/** Reduces [phases]' repeated uncached opens to one row. */
+internal fun uncachedRow(path: String, phases: List<CachePhase>, frames: Long): UncachedRow {
+    require(phases.isNotEmpty()) { "at least one uncached open is required" }
+    return UncachedRow(
+        path = path,
+        frames = frames,
+        sampleRate = phases.first().sampleRate,
+        opens = phases.size,
+        wallMedianSeconds = median(phases.map { it.wallSeconds }),
+        wallMinSeconds = phases.minOf { it.wallSeconds },
+        wallMaxSeconds = phases.maxOf { it.wallSeconds },
+        firstFrameMedianSeconds = median(phases.map { it.firstFrameSeconds }),
+        loadsPerOpen = phases.sumOf { it.emulatorLoads }.toDouble() / phases.size,
+        teardownsPerOpen = phases.sumOf { it.emulatorTeardowns }.toDouble() / phases.size,
+        sourceClass = phases.first().sourceClass,
     )
 }

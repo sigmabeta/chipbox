@@ -16,10 +16,19 @@ same arm64 `:native` cores land in its test APK and its RTF results are the phon
   `WavFile`, `CorpusWalker`, `RenderCommand` (`runRender`), `RunDiff` (the sample-wise `diff`),
   `Args`, and `GoldenCheck` (`GoldenReport`/`GoldenTolerance` — the pass/fail semantics `diff --check`
   and verify.sh act on). Pure `java.*` — no Android imports — so it compiles unchanged for both
-  targets. `:testing:abrender` adds only the CLI shell (`Main`, `DiffCommand`).
+  targets. `:testing:abrender` adds only the CLI shell (`Main`, `DiffCommand`). It also holds the
+  shared production-cache harness helpers (`ProductionCacheHarness.kt`): the one `CountingEmulator`
+  decorator the host `perfbench cache` command, the device `DeviceCacheBenchmark`, and the cache
+  factory unit test all wrap their backend in, plus `productionTrack` (the production `Track` +
+  `_lib` chain resolution both harnesses build).
 - `src/androidDeviceTest/kotlin/` — `DeviceRenderTest`, an `androidx.test` instrumentation that runs
-  `runRender` on-device against a corpus pushed to its external files dir and writes the run back there
-  for `adb pull`. There is no on-device comparison test: the host diffs the pulled run.
+  `runRender` on-device against a corpus staged in **shared storage**
+  (`/sdcard/Music/chipbox-test/abrender/{in,out}`, with `MANAGE_EXTERNAL_STORAGE` granted by the
+  runner) and writes the run back there for `adb pull`. Shared storage, not the app's external
+  files dir: on Android 11+ the `adb` shell cannot create dirs under another app's `Android/data`,
+  and the app cannot read a shell-created tree there — `record.sh` stages under
+  `Music/chipbox-test` for the same reason `:benchmark` does. There is no on-device comparison
+  test: the host diffs the pulled run.
 - Harness scripts live in **`scripts/abrender/`**: `record.sh` (render a corpus on host or device) and
   `verify.sh` (render again + `diff --check` against a recorded run). See
   [`testing/abrender/README.md`](../abrender/README.md).
@@ -44,16 +53,21 @@ Direct gradle/adb equivalents, if you don't want the script:
 
 ```sh
 ./gradlew :testing:abrender-core:installAndroidDeviceTest
-adb push <corpus>/. /sdcard/Android/data/net.sigmabeta.chipbox.abrender.test/files/abrender/in
+adb shell appops set net.sigmabeta.chipbox.abrender.test MANAGE_EXTERNAL_STORAGE allow
+adb shell mkdir -p /sdcard/Music/chipbox-test/abrender/in
+adb push <corpus>/. /sdcard/Music/chipbox-test/abrender/in
 adb shell am instrument -w -r \
+  -e dir /sdcard/Music/chipbox-test/abrender/in \
+  -e out /sdcard/Music/chipbox-test/abrender/out \
   -e ext usf,miniusf -e seconds 30 -e label reference \
   net.sigmabeta.chipbox.abrender.test/androidx.test.runner.AndroidJUnitRunner
-adb pull /sdcard/Android/data/net.sigmabeta.chipbox.abrender.test/files/abrender/out/reference ./ab-runs/
+adb pull /sdcard/Music/chipbox-test/abrender/out/reference ./ab-runs/
 ```
 
 Instrumentation args (`-e <key> <value>`) mirror the desktop `render` flags: `dir`, `out`, `label`,
 `seconds`, `ext`, `game`, `every-song`, `subsong`, `limit`, `overwrite`, `max-wall-seconds`, `shards`,
-`shard`. Paths default to `<externalFiles>/abrender/{in,out}`.
+`shard`. Nothing is inferred: pass `dir`/`out` (the shared-storage paths above) explicitly, as
+`record.sh` does. The app's own external files dir is no longer used.
 
 ## The comparison and tolerance
 
