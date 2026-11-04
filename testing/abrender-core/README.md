@@ -66,8 +66,8 @@ adb pull /sdcard/Music/chipbox-test/abrender/out/reference ./ab-runs/
 
 Instrumentation args (`-e <key> <value>`) mirror the desktop `render` flags: `dir`, `out`, `label`,
 `seconds`, `ext`, `game`, `every-song`, `subsong`, `limit`, `overwrite`, `max-wall-seconds`, `shards`,
-`shard`. Nothing is inferred: pass `dir`/`out` (the shared-storage paths above) explicitly, as
-`record.sh` does. The app's own external files dir is no longer used.
+`shard`. Both paths default to the shared root above when omitted, and `record.sh` passes them
+explicitly. The app's own external files dir is no longer used.
 
 ## The comparison and tolerance
 
