@@ -25,6 +25,10 @@ import okio.Path
  * expect a real filesystem path, so source bytes plus any chain files are written into a
  * per-track directory under [stagingDir] before the emulator is constructed. The directory is
  * cleaned up when the source closes.
+ *
+ * When the selected emulator advertises a [Emulator.knownSampleRate], the complete-cache check
+ * runs before staging or constructing anything, so a warm hit performs no native track load,
+ * emulator reset or teardown. Unknown-rate backends keep the negotiate-then-recheck fallback.
  */
 class RealPcmTrackSourceFactory(
     private val emulators: List<Emulator>,
@@ -61,6 +65,27 @@ class RealPcmTrackSourceFactory(
 
         val sourceHash = hasher.hash(track, bytes)
 
+        fileSystem.createDirectories(pcmCacheDir)
+
+        // Fixed-rate backends know the output rate without loading a track, so a complete cache
+        // entry can be served *before* staging or constructing the native emulator. This is the
+        // difference between a warm open and a cold one for 2SF: no native load, reset or teardown.
+        val knownRate = emulator.knownSampleRate
+        if (knownRate != null) {
+            val knownKey = PcmCacheKey(
+                sourceHash = sourceHash,
+                trackNumber = track.trackNumber,
+                sampleRate = knownRate,
+            )
+            val knownReader = PcmCacheFile.openForRead(fileSystem, pcmCacheDir, knownKey)
+            if (knownReader != null) {
+                hatchet.i(
+                    "Cache hit for ${track.title} (${knownKey.filename()}); using CachedFilePcmSource."
+                )
+                return CachedFilePcmSource(knownReader, track.title, hatchet)
+            }
+        }
+
         val stagingTrackDir = stagingDir / "track-${track.id}"
         val stagedFile = stageTrack(
             track = track,
@@ -84,6 +109,10 @@ class RealPcmTrackSourceFactory(
                 fileSystem = fileSystem,
                 hatchet = hatchet,
                 emulatorDispatcher = emulatorDispatcher,
+                // The cache writer measures every committed buffer (after trailing-silence
+                // trimming) and stores/reports that figure; measuring the same frames again inside
+                // the emulator source would be a second full BS.1770 pass for an unused value.
+                measureLoudness = false,
             )
         }
         val key = PcmCacheKey(
@@ -91,8 +120,16 @@ class RealPcmTrackSourceFactory(
             trackNumber = track.trackNumber,
             sampleRate = emulatorSource.sampleRate,
         )
+        if (knownRate != null && knownRate != emulatorSource.sampleRate) {
+            hatchet.w(
+                "Emulator ${emulator::class.simpleName} advertised ${knownRate}Hz for " +
+                    "${track.title} but negotiated ${emulatorSource.sampleRate}Hz; rebuilding " +
+                    "the cache key from the negotiated rate."
+            )
+        }
 
-        fileSystem.createDirectories(pcmCacheDir)
+        // Re-check now that the real rate is known: this is the unknown-rate negotiation path and
+        // also covers a concurrent writer that sealed the entry while we were staging.
         val reader = PcmCacheFile.openForRead(fileSystem, pcmCacheDir, key)
         if (reader != null) {
             hatchet.i("Cache hit for ${track.title} (${key.filename()}); using CachedFilePcmSource.")
