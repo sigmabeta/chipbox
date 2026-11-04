@@ -68,16 +68,30 @@ counting decorator around the real 2SF backend. This is the number ticket 05
 because the factory constructs `EmulatorPcmSource` before checking the cache.
 Writes `<out>/cache.tsv`.
 
+**Only 2SF files are selected** (`2sf`, `mini2sf`): the command builds the
+factory with the 2SF backend alone, so walking another supported extension would
+only produce a per-track error. Everything else in a mixed corpus is skipped,
+not reported as a failure.
+
+`--uncached` switches the command to `UncachedPcmTrackSourceFactory`: every open
+stages, loads the native core, and drains a live `EmulatorPcmSource`, with no
+cache file involved. That is the "cache bypassed" regression axis (ticket 05
+box 6: the cache work must not slow the path that never uses the cache); it
+writes `<out>/uncached.tsv` with per-open median/min/max wall time. The same
+`--filter`/`--seconds`/`--repeat` batch is the comparable unit.
+
 | option | meaning | default |
 |---|---|---|
-| `--dir <folder>` | corpus root to walk for audio files | **required** |
+| `--dir <folder>` | corpus root to walk for 2SF files | **required** |
 | `--filter <glob>` | basename or corpus-relative path glob (same rules as `audio`) | whole corpus |
-| `--repeat <n>` | timed warm opens per file; the headline is the median | `3` |
-| `--seconds <n>` | audio seconds rendered into the cold cache | `30` |
-| `--out <dir>` | results root; `cache.tsv` is written here | `build/perfbench/cache` |
+| `--repeat <n>` | timed warm opens (or uncached opens) per file; the headline is the median | `3` |
+| `--seconds <n>` | audio seconds rendered per open | `30` |
+| `--uncached` | bypass the cache: measure `UncachedPcmTrackSourceFactory` | off |
+| `--out <dir>` | results root; `cache.tsv` / `uncached.tsv` is written here | `build/perfbench/cache` |
 
 ```sh
 ./gradlew :testing:perfbench:run --args="cache --dir /path/to/corpus --seconds 30 --repeat 3"
+./gradlew :testing:perfbench:run --args="cache --dir /path/to/corpus --seconds 30 --repeat 3 --uncached"
 ```
 
 ### `snapshot --dir <corpus> [--out <snapshot>]`

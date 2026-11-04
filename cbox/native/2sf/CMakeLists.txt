@@ -25,7 +25,8 @@ set(libtwosf_SRCS
         Core/vio2sf/desmume/SPU.cpp
         Core/vio2sf/desmume/arm_instructions.c
         Core/vio2sf/desmume/armcpu.c
-        Core/vio2sf/desmume/barray.c
+        # barray.c is vendored but deliberately not built: ROM-coverage accounting (its only 2SF
+        # consumer) was removed. See VENDORING.md — don't re-add it.
         Core/vio2sf/desmume/bios.c
         Core/vio2sf/desmume/cp15.c
         Core/vio2sf/desmume/isqrt.c
