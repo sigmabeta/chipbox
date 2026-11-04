@@ -201,6 +201,17 @@ internal object DeviceBenchmark {
         }
     }
 
+    /**
+     * Writes a free-form artifact (not a perfbench [Axis]) into the same additional-test-output
+     * directory AGP pulls, for a device measurement whose shape has no axis in the perfbench
+     * schema — the production PCM-cache probe. It is pulled next to `results-<axis>.json`, so a
+     * gate such as `scripts/benchmark/device-common.sh` can archive it without knowing the shape.
+     */
+    fun writeArtifact(fileName: String, text: String) {
+        val outDir = resultsOutputDir().apply { mkdirs() }
+        File(outDir, fileName).writeText(text)
+    }
+
     /** The platform thermal-status label, or `"unknown"` on API levels that can't report it. */
     private fun thermalStatusName(context: Context): String {
         val powerManager = context.getSystemService(PowerManager::class.java)

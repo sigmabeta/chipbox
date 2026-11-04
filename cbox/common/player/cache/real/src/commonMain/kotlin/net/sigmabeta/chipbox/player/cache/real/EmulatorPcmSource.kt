@@ -22,6 +22,13 @@ import okio.Path
  *
  * On [close], the source tears down the emulator and deletes its staging directory.
  *
+ * ### Loudness measurement
+ * [measureLoudness] defaults to `true` so a bare, uncached source can drive the speaker's
+ * progressive normalization itself. The cached factory passes `false`: its [CachingPcmSource]
+ * writer already runs an [EbuR128] over exactly these frames (after trailing-silence trimming),
+ * and that is the figure it stores and reports — measuring here too would duplicate the whole
+ * BS.1770 pass on the cold path for a value nobody reads.
+ *
  * ### Threading
  * Every native-emulator call this class makes ([readFrames], [close]) is confined to
  * [emulatorDispatcher] — the single thread that the process-wide-singleton emulators must be
@@ -37,6 +44,7 @@ internal class EmulatorPcmSource(
     private val fileSystem: FileSystem,
     private val hatchet: Hatchet,
     private val emulatorDispatcher: CoroutineDispatcher,
+    private val measureLoudness: Boolean = true,
 ) : PcmTrackSource {
 
     override val sampleRate: Int
@@ -53,7 +61,8 @@ internal class EmulatorPcmSource(
 
     // Live BS.1770 measurer. Without render-ahead, the measurement tracks the playback position —
     // exposed via [loudnessLufs] / [truePeakDbtp] for the speaker's progressive normalization.
-    private val measurer: EbuR128
+    // Null when the wrapping cache writer owns measurement (see [measureLoudness]).
+    private val measurer: EbuR128?
 
     @Volatile
     private var measuredLufs: Double = Double.NaN
@@ -81,7 +90,7 @@ internal class EmulatorPcmSource(
         } else {
             null
         }
-        measurer = EbuR128(sampleRate)
+        measurer = if (measureLoudness) EbuR128(sampleRate) else null
     }
 
     override suspend fun readFrames(buffer: ShortArray): Int {
@@ -94,9 +103,11 @@ internal class EmulatorPcmSource(
             frames
         }
         if (framesGenerated <= 0) return 0
-        measurer.process(buffer, framesGenerated)
-        measuredLufs = measurer.integratedLoudness()
-        measuredTruePeakDbtp = measurer.truePeakDbtp()
+        measurer?.let {
+            it.process(buffer, framesGenerated)
+            measuredLufs = it.integratedLoudness()
+            measuredTruePeakDbtp = it.truePeakDbtp()
+        }
         return framesGenerated
     }
 

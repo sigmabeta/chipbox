@@ -3,8 +3,9 @@
 The host-side home of the Chipbox performance harness: a test-system module
 (`:testing:perfbench`, run via an explicit `run` task — nothing here is shipped)
 that measures **how fast the emulator cores render audio** (real-time factor, RTF)
-over a corpus you supply, generates a portable **library snapshot** from that
-corpus, and diffs two runs against each other. It is a
+over a corpus you supply, measures the **production PCM cache** cold/warm path,
+generates a portable **library snapshot** from that corpus, and diffs two runs
+against each other. It is a
 **measurement, not a gate** — nothing in CI runs it.
 
 Device axes (UI scroll jank, startup) live in the Android `:benchmark` module;
@@ -48,6 +49,50 @@ output lands in `build/perfbench/wav/`.
 Output paths are relative to the module's working directory, so the default
 `build/perfbench/` resolves to `testing/perfbench/build/perfbench/`, not the repo
 root.
+
+### `cache --dir <corpus> [options]`
+
+Measures the **production PCM cache path** rather than the raw emulator loop. For
+each selected track it uses a fresh cache directory and drives the real
+`RealPcmTrackSourceFactory`:
+
+- **cold** — a miss: staging, native track load, and render-through into the
+  `.pcm` cache file, read to end-of-track;
+- **warm** — the same directory after the cold pass sealed it: repeated opens
+  must return `CachedFilePcmSource` (a complete-cache hit), pooled to a median.
+
+It reports each phase's wall time, time-to-first-frame (measured from before
+`Factory.open`), and native track-load/teardown counts observed through a
+counting decorator around the real 2SF backend. This is the number ticket 05
+(PCM cache) moves: today a warm hit still pays for one native load and teardown
+because the factory constructs `EmulatorPcmSource` before checking the cache.
+Writes `<out>/cache.tsv`.
+
+**Only 2SF files are selected** (`2sf`, `mini2sf`): the command builds the
+factory with the 2SF backend alone, so walking another supported extension would
+only produce a per-track error. Everything else in a mixed corpus is skipped,
+not reported as a failure.
+
+`--uncached` switches the command to `UncachedPcmTrackSourceFactory`: every open
+stages, loads the native core, and drains a live `EmulatorPcmSource`, with no
+cache file involved. That is the "cache bypassed" regression axis (ticket 05
+box 6: the cache work must not slow the path that never uses the cache); it
+writes `<out>/uncached.tsv` with per-open median/min/max wall time. The same
+`--filter`/`--seconds`/`--repeat` batch is the comparable unit.
+
+| option | meaning | default |
+|---|---|---|
+| `--dir <folder>` | corpus root to walk for 2SF files | **required** |
+| `--filter <glob>` | basename or corpus-relative path glob (same rules as `audio`) | whole corpus |
+| `--repeat <n>` | timed warm opens (or uncached opens) per file; the headline is the median | `3` |
+| `--seconds <n>` | audio seconds rendered per open | `30` |
+| `--uncached` | bypass the cache: measure `UncachedPcmTrackSourceFactory` | off |
+| `--out <dir>` | results root; `cache.tsv` / `uncached.tsv` is written here | `build/perfbench/cache` |
+
+```sh
+./gradlew :testing:perfbench:run --args="cache --dir /path/to/corpus --seconds 30 --repeat 3"
+./gradlew :testing:perfbench:run --args="cache --dir /path/to/corpus --seconds 30 --repeat 3 --uncached"
+```
 
 ### `snapshot --dir <corpus> [--out <snapshot>]`
 
