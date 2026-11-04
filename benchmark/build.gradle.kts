@@ -92,4 +92,11 @@ dependencies {
     // The reused raw-emulator-core render path (EmulatorBank/runRender) the device audio axis
     // times — the same KMP consumer that pulls each emulator's arm64 `.so` into this test APK.
     implementation(projects.testing.abrenderCore)
+    // The production PCM-cache path the device cache probe drives: the real factory, the real
+    // content-source hash registry, and the 2SF tag reader that resolves `_lib` chain files.
+    implementation(projects.cbox.common.player.cache.real)
+    implementation(projects.cbox.common.contentsource.file.real)
+    implementation(projects.cbox.common.readers.api)
+    implementation(projects.cbox.common.models.api)
+    implementation(projects.cbox.common.player.emulators.twosf.real)
 }
