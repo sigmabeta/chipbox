@@ -240,9 +240,11 @@ same-machine before/after A/B stays strict, so it still catches sub-LSB (roundin
 ## 9. On a device (`--where device`)
 
 `record.sh --where device` builds + installs the self-contained device-test APK (all nine arm64 cores),
-pushes the corpus to the test app's external files dir
-(`/sdcard/Android/data/net.sigmabeta.chipbox.abrender.test/files/abrender`), renders on arm64, and
-pulls the run into `--out`. `verify.sh --where device` does the same for its candidate and then diffs
+grants it All Files Access (`adb shell appops set … MANAGE_EXTERNAL_STORAGE allow`), stages the corpus
+in **shared storage** (`/sdcard/Music/chipbox-test/abrender/in`), renders on arm64, and pulls the run
+(`…/abrender/out/<label>`) into `--out`. Shared storage, not the app's `Android/data`: on Android 11+
+the adb shell cannot create the corpus tree under another app's data dir, and the app cannot read a
+shell-created tree there. `verify.sh --where device` does the same for its candidate and then diffs
 it on the host against the reference — the comparison is architecture-independent code, so it never
 needs to run on the device.
 
