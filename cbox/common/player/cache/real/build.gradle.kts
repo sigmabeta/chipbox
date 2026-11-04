@@ -37,6 +37,9 @@ kotlin {
                 // FileSystem.SYSTEM in jvmSharedTest, alongside the existing PcmCacheFile /
                 // PcmCacheJanitor JVM-only tests.
                 implementation(projects.cbox.common.player.cache.fake)
+                // The one `CountingEmulator` decorator, shared with the host/device cache
+                // harnesses, so this test and the harnesses count the same seam.
+                implementation(projects.testing.abrenderCore)
             }
         }
     }

@@ -3,19 +3,17 @@ package net.sigmabeta.chipbox.perfbench
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
-import net.sigmabeta.chipbox.abrender.EmulatorBank
+import net.sigmabeta.chipbox.abrender.CountingEmulator
 import net.sigmabeta.chipbox.abrender.SelectedTrack
+import net.sigmabeta.chipbox.abrender.productionTrack
 import net.sigmabeta.chipbox.abrender.walkCorpus
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
-import net.sigmabeta.chipbox.models.ChainFile
-import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.cache.real.RealPcmTrackSourceFactory
-import net.sigmabeta.chipbox.player.emulators.Emulator
+import net.sigmabeta.chipbox.player.cache.real.UncachedPcmTrackSourceFactory
 import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
-import net.sigmabeta.chipbox.readers.PsfReader
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import okio.FileSystem
@@ -32,27 +30,30 @@ private const val TRACK_COLUMN_WIDTH = 64
 
 /**
  * The production-cache axis. Unlike `audio`, which drives the raw emulator loop, this command opens
- * every selected track through the real [RealPcmTrackSourceFactory] and measures both halves of
- * playback:
+ * every selected track through the real cache factories and measures playback:
  *
- * - **cold** — a fresh cache directory: staging + `EmulatorPcmSource` construction (native track
- *   load) + render-through into the cache file, read to end-of-track;
- * - **warm** — the same directory after the cold pass sealed it: `Factory.open` must return a
- *   `CachedFilePcmSource`, and repeated opens are pooled to a median wall time and
- *   time-to-first-frame.
+ * - **cached** (default) — the [RealPcmTrackSourceFactory] path: **cold** opens a fresh cache
+ *   directory (staging + native track load + render-through into the cache file, read to
+ *   end-of-track), **warm** re-opens that sealed directory (`Factory.open` must return
+ *   `CachedFilePcmSource`; repeats are pooled to a median wall time and time-to-first-frame).
+ * - **uncached** (`--uncached`) — the [UncachedPcmTrackSourceFactory] path, i.e. what playback
+ *   does when no cache is used: every open stages, loads the native core, and drains a live
+ *   `EmulatorPcmSource`. It is the regression axis for "the cache work did not make the uncached
+ *   path slower" — the same per-open drain, measured repeatedly.
  *
  * A counting decorator around the real [TwosfEmulator] records native track loads and teardowns per
- * phase, so the report shows whether a warm hit still pays for emulator construction. That is the
- * measurement ticket 05 (PCM cache) must move; nothing here is a fake backend.
+ * phase, so the report shows whether a warm hit still pays for emulator construction. Nothing here
+ * is a fake backend. Only 2SF files are selected: the factory is built with the 2SF backend alone,
+ * so walking any other supported extension would only produce per-track errors.
  */
 fun runCache(args: CacheArgs) {
     args.outDir.mkdirs()
     val root = args.corpusDir.absoluteFile
-    val bank = EmulatorBank()
     val matchesFilter = corpusPathFilter(args.filter)
     val tracks = walkCorpus(
         root = root,
-        supported = bank.supportedExtensions,
+        // The factory holds only TwosfEmulator, so only its extensions are drivable here.
+        supported = TwosfEmulator.supportedFileExtensions.toSet(),
         extensionFilter = null,
         gameFilter = null,
         everySong = true,
@@ -60,7 +61,7 @@ fun runCache(args: CacheArgs) {
     ).filter { matchesFilter(corpusRelativePath(root, it.path)) }
 
     if (tracks.isEmpty()) {
-        println("No renderable tracks under $root${args.filter?.let { " matching '$it'" } ?: ""}")
+        println("No renderable 2SF tracks under $root${args.filter?.let { " matching '$it'" } ?: ""}")
         return
     }
 
@@ -74,46 +75,59 @@ fun runCache(args: CacheArgs) {
     val buffer = ShortArray(READ_BUFFER_FRAMES * SHORTS_PER_FRAME)
 
     println(
-        "cache: corpus=$root seconds=${args.sampleSeconds} warm_repeats=${args.repeat} " +
-            "tracks=${tracks.size}",
+        "cache: corpus=$root mode=${if (args.uncached) "uncached" else "cached"} " +
+            "seconds=${args.sampleSeconds} repeat=${args.repeat} tracks=${tracks.size}",
     )
 
-    val outcomes = tracks.mapIndexed { index, selected ->
-        measureTrack(index, selected, root, args, registry, counting, buffer, hatchet)
+    if (args.uncached) {
+        val results = tracks.mapIndexed { index, selected ->
+            measureUncachedTrack(index, selected, args, registry, counting, buffer, hatchet)
+        }
+        val outFile = File(args.outDir, "uncached.tsv")
+        outFile.writeText(uncachedTsv(results))
+        printUncachedTable(results)
+        println("Wrote $outFile")
+        return
     }
 
+    val results = tracks.mapIndexed { index, selected ->
+        measureCachedTrack(index, selected, args, registry, counting, buffer, hatchet)
+    }
     val outFile = File(args.outDir, "cache.tsv")
-    outFile.writeText(cacheTsv(outcomes))
-    printCacheTable(outcomes)
+    outFile.writeText(cacheTsv(results))
+    printCacheTable(results)
     println("Wrote $outFile")
 }
 
-private const val TWOSF_SAMPLE_RATE = 44_100
+/** One track's result: a measured row, or the failure that stopped it (never silently dropped). */
+private sealed interface TrackResult {
+    val path: String
+}
 
-/** One track's result: a row on success, or the failure that stopped it (never silently dropped). */
-private data class CacheOutcome(val path: String, val row: CacheRow?, val error: String?)
+private data class CachedResult(override val path: String, val row: CacheRow) : TrackResult
+
+private data class UncachedResult(override val path: String, val row: UncachedRow) : TrackResult
+
+private data class FailedResult(override val path: String, val error: String) : TrackResult
 
 /**
  * Cold + warm measurement for one track. A fresh per-track work directory guarantees the cold open
  * is a miss; the sealed `.pcm` then makes every warm open a complete hit.
  */
 @Suppress("LongParameterList")
-private fun measureTrack(
+private fun measureCachedTrack(
     index: Int,
     selected: SelectedTrack,
-    root: File,
     args: CacheArgs,
     registry: ContentSourceRegistry,
     counting: CountingEmulator,
     buffer: ShortArray,
     hatchet: Hatchet,
-): CacheOutcome {
-    val relative = corpusRelativePath(root, selected.path)
+): TrackResult {
+    val relative = corpusRelativePath(args.corpusDir.absoluteFile, selected.path)
     val workDir = File(args.outDir, "work/$index").apply { deleteRecursively() }
-    val corpusFile = File(selected.path)
     return try {
-        val bytes = corpusFile.readBytes()
-        val track = buildTrack((index + 1).toLong(), selected, corpusFile, bytes, args.sampleSeconds, hatchet)
+        val (track, bytes) = productionTrack((index + 1).toLong(), selected, args.sampleSeconds, hatchet)
         val factory = RealPcmTrackSourceFactory(
             emulators = listOf(counting),
             stagingDir = File(workDir, "staging").toOkioPath(),
@@ -132,57 +146,62 @@ private fun measureTrack(
                 "warm open used ${phase.sourceClass} instead of $CACHE_HIT_CLASS"
             }
         }
-        CacheOutcome(
+        CachedResult(
             path = relative,
             row = cacheRow(
                 CacheMeasurement(
                     path = relative,
                     frames = coldFrames,
-                    sampleRate = TWOSF_SAMPLE_RATE,
+                    sampleRate = cold.sampleRate,
                     cold = cold,
                     warm = warm.map { it.first },
                 ),
             ),
-            error = null,
         )
     } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-        CacheOutcome(relative, row = null, error = t.message ?: t.javaClass.simpleName)
+        FailedResult(relative, t.message ?: t.javaClass.simpleName)
     }
 }
 
 /**
- * Builds the production [Track] for a corpus file, resolving 2SF `_lib` siblings into staging
- * chain files exactly as the scanner does. The render budget is [seconds] of audio so cold and
- * warm passes are bounded and comparable across tracks.
+ * Repeated uncached opens for one track. Every open stages, loads the native core, and drains a live
+ * emulator source; the median (and min/max) per-open wall time is the regression number. A fresh
+ * work directory per track keeps staging state out of the other tracks' measurements.
  */
-private fun buildTrack(
-    id: Long,
+@Suppress("LongParameterList")
+private fun measureUncachedTrack(
+    index: Int,
     selected: SelectedTrack,
-    file: File,
-    bytes: ByteArray,
-    seconds: Int,
+    args: CacheArgs,
+    registry: ContentSourceRegistry,
+    counting: CountingEmulator,
+    buffer: ShortArray,
     hatchet: Hatchet,
-): Track {
-    val tagInfo = PsfReader(hatchet).readTagInfo(bytes)
-    val chainFiles = tagInfo?.libReferences.orEmpty().mapNotNull { reference ->
-        File(file.parentFile, reference)
-            .takeIf { it.isFile }
-            ?.let { ChainFile(filename = it.name, uri = it.absolutePath) }
+): TrackResult {
+    val relative = corpusRelativePath(args.corpusDir.absoluteFile, selected.path)
+    val workDir = File(args.outDir, "work/$index").apply { deleteRecursively() }
+    return try {
+        val (track, bytes) = productionTrack((index + 1).toLong(), selected, args.sampleSeconds, hatchet)
+        val factory = UncachedPcmTrackSourceFactory(
+            emulators = listOf(counting),
+            stagingDir = File(workDir, "staging").toOkioPath(),
+            fileSystem = FileSystem.SYSTEM,
+            contentSourceRegistry = registry,
+            hatchet = hatchet,
+        )
+        val phases = runBlocking {
+            List(args.repeat) { measurePhase(factory, counting, track, bytes, buffer) }
+        }
+        phases.forEach { (phase, frames) ->
+            require(phase.sourceClass == "EmulatorPcmSource") {
+                "uncached open used ${phase.sourceClass} instead of EmulatorPcmSource"
+            }
+            require(frames > 0) { "uncached open produced no audio" }
+        }
+        UncachedResult(relative, uncachedRow(relative, phases.map { it.first }, phases.first().second))
+    } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+        FailedResult(relative, t.message ?: t.javaClass.simpleName)
     }
-    return Track(
-        id = id,
-        path = file.absolutePath,
-        source = "file",
-        title = selected.title,
-        trackLengthMs = seconds * MILLIS_PER_SECOND,
-        trackNumber = 0,
-        fadeLengthMs = 0L,
-        game = null,
-        artists = null,
-        chainFiles = chainFiles,
-        extension = selected.extension,
-        platform = Platform.NDS,
-    )
 }
 
 /**
@@ -191,7 +210,7 @@ private fun buildTrack(
  * it can hand back a readable source.
  */
 private suspend fun measurePhase(
-    factory: RealPcmTrackSourceFactory,
+    factory: PcmTrackSource.Factory,
     counting: CountingEmulator,
     track: Track,
     bytes: ByteArray,
@@ -214,6 +233,7 @@ private suspend fun measurePhase(
         emulatorLoads = counting.loads,
         emulatorTeardowns = counting.teardowns,
         sourceClass = source.javaClass.simpleName,
+        sampleRate = source.sampleRate,
     ) to frames
 }
 
@@ -242,94 +262,83 @@ private suspend fun readToEnd(source: PcmTrackSource, buffer: ShortArray): Pair<
     return frames to firstFrameNanos
 }
 
-/**
- * Thin counting decorator around the real production backend. It forwards every call to the
- * singleton [TwosfEmulator] and only records native track-load / teardown calls, so the cache
- * command measures the production path rather than a fake emulator.
- */
-private class CountingEmulator(private val delegate: Emulator) : Emulator() {
-    var loads: Int = 0
-        private set
-
-    var teardowns: Int = 0
-        private set
-
-    fun reset() {
-        loads = 0
-        teardowns = 0
-    }
-
-    override fun loadNativeLib() = delegate.loadNativeLib()
-
-    override suspend fun ensureNativeLibReady() = delegate.ensureNativeLibReady()
-
-    override fun loadTrackInternal(path: String) {
-        loads += 1
-        delegate.loadTrackInternal(path)
-    }
-
-    override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int =
-        delegate.generateBufferInternal(buffer, framesPerBuffer)
-
-    override fun teardownInternal() {
-        teardowns += 1
-        delegate.teardownInternal()
-    }
-
-    override fun getLastError(): String? = delegate.getLastError()
-
-    override fun getDiagnostics(): String? = delegate.getDiagnostics()
-
-    override fun getSampleRateInternal(): Int = delegate.getSampleRateInternal()
-
-    // Delegated so a fixed-rate backend (TwosfEmulator) actually takes the factory's warm-hit
-    // path instead of falling back to native rate negotiation.
-    override val knownSampleRate: Int? get() = delegate.knownSampleRate
-
-    override val supportedFileExtensions: List<String> = delegate.supportedFileExtensions
-
-    override fun setTrackNumber(number: Int) = delegate.setTrackNumber(number)
-}
-
-private fun cacheTsv(outcomes: List<CacheOutcome>): String = buildString {
+private fun cacheTsv(results: List<TrackResult>): String = buildString {
     appendLine(
-        "path\tframes\tcold_wall_s\tcold_ttff_s\tcold_loads\tcold_teardowns\tcold_source\t" +
+        "path\tframes\tsample_rate\tcold_wall_s\tcold_ttff_s\tcold_loads\tcold_teardowns\tcold_source\t" +
             "warm_opens\twarm_wall_median_s\twarm_wall_min_s\twarm_wall_max_s\t" +
             "warm_ttff_median_s\twarm_loads_per_open\twarm_teardowns_per_open\twarm_source\terror",
     )
-    for (outcome in outcomes) {
-        val row = outcome.row
-        if (row == null) {
-            appendLine("${outcome.path}\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t${outcome.error.orEmpty()}")
-            continue
+    for (result in results) {
+        when (result) {
+            is CachedResult -> with(result.row) {
+                appendLine(
+                    listOf(
+                        path,
+                        frames.toString(),
+                        sampleRate.toString(),
+                        format(coldWallSeconds),
+                        format(coldFirstFrameSeconds),
+                        format(coldEmulatorLoads),
+                        format(coldEmulatorTeardowns),
+                        coldSourceClass,
+                        warmOpens.toString(),
+                        format(warmWallMedianSeconds),
+                        format(warmWallMinSeconds),
+                        format(warmWallMaxSeconds),
+                        format(warmFirstFrameMedianSeconds),
+                        format(warmEmulatorLoadsPerOpen),
+                        format(warmEmulatorTeardownsPerOpen),
+                        warmSourceClass,
+                        "",
+                    ).joinToString("\t"),
+                )
+            }
+
+            is FailedResult -> appendLine("${result.path}\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t${result.error}")
+
+            // The run is one mode at a time, so this writer never sees the other mode's rows.
+            is UncachedResult -> error("uncached row in a cached run")
         }
-        appendLine(
-            listOf(
-                row.path,
-                row.frames.toString(),
-                format(row.coldWallSeconds),
-                format(row.coldFirstFrameSeconds),
-                format(row.coldEmulatorLoads),
-                format(row.coldEmulatorTeardowns),
-                row.coldSourceClass,
-                row.warmOpens.toString(),
-                format(row.warmWallMedianSeconds),
-                format(row.warmWallMinSeconds),
-                format(row.warmWallMaxSeconds),
-                format(row.warmFirstFrameMedianSeconds),
-                format(row.warmEmulatorLoadsPerOpen),
-                format(row.warmEmulatorTeardownsPerOpen),
-                row.warmSourceClass,
-                "",
-            ).joinToString("\t"),
-        )
+    }
+}
+
+private fun uncachedTsv(results: List<TrackResult>): String = buildString {
+    appendLine(
+        "path\tframes\tsample_rate\topens\twall_median_s\twall_min_s\twall_max_s\t" +
+            "ttff_median_s\tloads_per_open\tteardowns_per_open\tsource\terror",
+    )
+    for (result in results) {
+        when (result) {
+            is UncachedResult -> with(result.row) {
+                appendLine(
+                    listOf(
+                        path,
+                        frames.toString(),
+                        sampleRate.toString(),
+                        opens.toString(),
+                        format(wallMedianSeconds),
+                        format(wallMinSeconds),
+                        format(wallMaxSeconds),
+                        format(firstFrameMedianSeconds),
+                        format(loadsPerOpen),
+                        format(teardownsPerOpen),
+                        sourceClass,
+                        "",
+                    ).joinToString("\t"),
+                )
+            }
+
+            is FailedResult -> appendLine("${result.path}\t\t\t\t\t\t\t\t\t\t\t${result.error}")
+
+            is CachedResult -> error("cached row in an uncached run")
+        }
     }
 }
 
 private fun format(value: Double): String = if (value.isNaN()) "nan" else "%.6f".format(value)
 
-private fun printCacheTable(outcomes: List<CacheOutcome>) {
-    val rows = outcomes.mapNotNull { it.row }
+private fun printCacheTable(results: List<TrackResult>) {
+    val rows = results.filterIsInstance<CachedResult>().map { it.row }
     println(
         "%-64s %9s %9s %5s %9s %9s %5s  %s".format(
             "track",
@@ -356,7 +365,7 @@ private fun printCacheTable(outcomes: List<CacheOutcome>) {
             ),
         )
     }
-    outcomes.filter { it.row == null }.forEach { println("${it.path}: ERROR: ${it.error}") }
+    printFailures(results)
     if (rows.isNotEmpty()) {
         val coldTotal = rows.sumOf { it.coldWallSeconds }
         val warmTotal = rows.sumOf { it.warmWallMedianSeconds }
@@ -368,4 +377,41 @@ private fun printCacheTable(outcomes: List<CacheOutcome>) {
                 "warm_teardowns_per_open=${"%.2f".format(rows.sumOf { it.warmEmulatorTeardownsPerOpen } / rows.size)}",
         )
     }
+}
+
+private fun printUncachedTable(results: List<TrackResult>) {
+    val rows = results.filterIsInstance<UncachedResult>().map { it.row }
+    println(
+        "%-64s %9s %9s %9s %5s  %s".format(
+            "track",
+            "median_s",
+            "min_s",
+            "ttff",
+            "loads",
+            "source",
+        ),
+    )
+    for (row in rows) {
+        println(
+            "%-64s %9.3f %9.3f %9.3f %5.0f  %s".format(
+                row.path.take(TRACK_COLUMN_WIDTH),
+                row.wallMedianSeconds,
+                row.wallMinSeconds,
+                row.firstFrameMedianSeconds,
+                row.loadsPerOpen,
+                row.sourceClass,
+            ),
+        )
+    }
+    printFailures(results)
+    if (rows.isNotEmpty()) {
+        println(
+            "aggregate: ${rows.size} tracks  median_total=${"%.2f".format(rows.sumOf { it.wallMedianSeconds })}s  " +
+                "loads_per_open=${"%.2f".format(rows.sumOf { it.loadsPerOpen } / rows.size)}",
+        )
+    }
+}
+
+private fun printFailures(results: List<TrackResult>) {
+    results.filterIsInstance<FailedResult>().forEach { println("${it.path}: ERROR: ${it.error}") }
 }

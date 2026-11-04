@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
+import net.sigmabeta.chipbox.abrender.CountingEmulator
 import net.sigmabeta.chipbox.models.ChainFile
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
@@ -55,7 +56,7 @@ internal class RealPcmTrackSourceFactoryTest {
         val bytes = "main-bytes".toByteArray()
         val track = trackOf()
         val registry = registryOf()
-        val emulator = CountingEmulator(knownSampleRate = SAMPLE_RATE, reportedSampleRate = SAMPLE_RATE)
+        val emulator = counting(SAMPLE_RATE, SAMPLE_RATE)
         val factory = factoryOf(emulator, registry)
         seedCache(PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, SAMPLE_RATE))
 
@@ -77,7 +78,7 @@ internal class RealPcmTrackSourceFactoryTest {
         val track = trackOf()
         val registry = registryOf()
         val reportedRate = 32_000
-        val emulator = CountingEmulator(knownSampleRate = null, reportedSampleRate = reportedRate)
+        val emulator = counting(knownSampleRate = null, reportedSampleRate = reportedRate)
         val factory = factoryOf(emulator, registry)
         seedCache(PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, reportedRate))
 
@@ -101,7 +102,7 @@ internal class RealPcmTrackSourceFactoryTest {
         // The hint is deliberately wrong (44.1 kHz hint, 48 kHz native output). Only the entry at
         // the negotiated rate exists, so a correct implementation constructs the emulator,
         // notices the mismatch, rebuilds the key, and then serves that entry.
-        val emulator = CountingEmulator(knownSampleRate = SAMPLE_RATE, reportedSampleRate = 48_000)
+        val emulator = counting(SAMPLE_RATE, 48_000)
         val factory = factoryOf(emulator, registry)
         seedCache(
             PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, 48_000),
@@ -126,7 +127,7 @@ internal class RealPcmTrackSourceFactoryTest {
         val contents = mutableMapOf<String, ByteArray>(chainUri to byteArrayOf(1, 2, 3))
         val registry = ContentSourceRegistry(setOf(MapContentSource("test", contents)))
         val track = trackOf(chainFiles = listOf(ChainFile(filename = "game.2sflib", uri = chainUri)))
-        val emulator = CountingEmulator(knownSampleRate = SAMPLE_RATE, reportedSampleRate = SAMPLE_RATE)
+        val emulator = counting(SAMPLE_RATE, SAMPLE_RATE)
         val factory = factoryOf(emulator, registry)
         val oldHash = hashOf(registry, track, bytes)
         seedCache(PcmCacheKey(oldHash, track.trackNumber, SAMPLE_RATE))
@@ -203,30 +204,27 @@ internal class RealPcmTrackSourceFactoryTest {
         override suspend fun openBytes(identifier: String): ByteArray? = contents[identifier]
     }
 
+    /** The shared counting decorator around a deterministic fixed-rate backend. */
+    private fun counting(knownSampleRate: Int?, reportedSampleRate: Int): CountingEmulator =
+        CountingEmulator(
+            FixedRateBackend(knownSampleRate = knownSampleRate, reportedSampleRate = reportedSampleRate),
+        )
+
     /**
-     * Counting native backend. [knownSampleRate] is the factory's non-native hint; the value the
-     * native core would report is [reportedSampleRate]. Track loads / teardowns are counted so a
-     * test can prove the warm path never entered native code.
+     * Deterministic native backend. [knownSampleRate] is the factory's non-native hint; the value
+     * the native core would report is [reportedSampleRate].
      */
-    private class CountingEmulator(
+    private class FixedRateBackend(
         override val knownSampleRate: Int?,
         private val reportedSampleRate: Int,
     ) : Emulator() {
-        var loads: Int = 0
-            private set
-
-        var teardowns: Int = 0
-            private set
-
         private var phase = 0
 
         override val supportedFileExtensions = listOf("2sf")
 
         override fun loadNativeLib() = Unit
 
-        override fun loadTrackInternal(path: String) {
-            loads += 1
-        }
+        override fun loadTrackInternal(path: String) = Unit
 
         override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int {
             for (f in 0 until framesPerBuffer) {
@@ -237,9 +235,7 @@ internal class RealPcmTrackSourceFactoryTest {
             return framesPerBuffer
         }
 
-        override fun teardownInternal() {
-            teardowns += 1
-        }
+        override fun teardownInternal() = Unit
 
         override fun getLastError(): String? = null
 
