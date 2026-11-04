@@ -227,21 +227,10 @@ render_device() {
   echo "==> Pushing corpus → ${REMOTE_IN}"
   # All Files Access for the shared-storage corpus; the op is denied by default.
   "${adb[@]}" shell appops set "${PKG}" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
-  # Fresh stage each run, and world-readable afterwards: adb writes as the shell user, not the app's.
+  # Fresh stage each run. Shared storage is writable by the adb shell, so `push` can create the tree
+  # itself (no secure_mkdirs workaround); chmod only so the app's read is never the failure point.
   "${adb[@]}" shell rm -rf "${REMOTE_IN}" 2>/dev/null || true
   "${adb[@]}" shell mkdir -p "${REMOTE_IN}"
-  # adb's `push` creates missing directories through secure_mkdirs, which Android 11+ refuses under
-  # another app's Android/data (the render harness stages there). Pre-create the tree with the shell
-  # so the push only ever writes files, which is allowed.
-  local -a corpus_dirs=()
-  while IFS= read -r -d '' rel; do
-    [[ "${rel}" == "." ]] && continue
-    corpus_dirs+=("$(shq "${REMOTE_IN}/${rel#./}")")
-  done < <(cd "${CORPUS}" && find . -type d -print0)
-  if (( ${#corpus_dirs[@]} > 0 )); then
-    "${adb[@]}" shell "mkdir -p ${corpus_dirs[*]}" || {
-      echo "error: could not create the corpus directory tree under ${REMOTE_IN}" >&2; exit 1; }
-  fi
   "${adb[@]}" push "${CORPUS}/." "${REMOTE_IN}" >/dev/null
   "${adb[@]}" shell chmod -R a+rX "${REMOTE_IN}"
 
