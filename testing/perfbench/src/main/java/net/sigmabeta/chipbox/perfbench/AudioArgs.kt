@@ -42,7 +42,7 @@ fun parseAudioOptions(options: Map<String, String>): AudioArgs {
 }
 
 /** Reads an integer option, rejecting a present-but-unparseable value instead of silently defaulting. */
-private fun intOption(options: Map<String, String>, key: String): Int? {
+internal fun intOption(options: Map<String, String>, key: String): Int? {
     val value = options[key] ?: return null
     return value.toIntOrNull() ?: error("--$key must be an integer (was '$value')")
 }

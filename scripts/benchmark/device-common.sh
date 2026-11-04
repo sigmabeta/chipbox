@@ -73,13 +73,36 @@ usage() { echo "${R}error:${Z} $*" >&2; exit 2; }
 flag() { echo "${Y}flag:${Z} $*" >&2; }
 skip() { flag "$1"; exit "$EXIT_SKIP"; }
 
+# Absolute-izes a path that may not exist yet. BSD `realpath` (macOS) has no `-m`, and the device
+# host is a Mac, so normalise without it: default relative paths against $PWD and squeeze duplicate
+# slashes. Callers never pass `..` segments.
+absolute_path() {
+  local path="$1"
+  case "$path" in
+    /*) ;;
+    *) path="$PWD/$path" ;;
+  esac
+  while [ "${path#*//}" != "$path" ]; do path="${path%%//*}/${path#*//}"; done
+  printf '%s\n' "$path"
+}
+
 # The baseline dir for one device, from its result's fingerprint (model + ABI), under the override root.
 baseline_dir_for() {
   # -j (no trailing newline) so tr's complement doesn't turn the newline into a stray trailing '_'.
   local label
   label="$(jq -jr '"\(.machine.model)-\(.machine.abi)"' "$1" 2>/dev/null | tr -c 'A-Za-z0-9._-' '_')"
   [ -n "$label" ] || label="unknown"
-  echo "$(realpath -m "${CHIPBOX_PERF_BASELINE:-$ROOT/build/perfbench-baseline/device}/$label")"
+  absolute_path "${CHIPBOX_PERF_BASELINE:-$ROOT/build/perfbench-baseline/device}/$label"
+}
+
+# `timeout` is GNU coreutils; macOS ships none by default. It only bounds the cheap hardware-id
+# probe, so fall back to a plain call rather than making the whole axis unavailable.
+bounded_probe() {
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 20 "$@"
+  else
+    "$@"
+  fi
 }
 
 # ---- the one entry point a wrapper calls -----------------------------------
@@ -148,7 +171,7 @@ EOF
 
   declare -A by_hardware=()
   for s in "${online[@]}"; do
-    hw="$(timeout 20 adb -s "$s" shell getprop ro.serialno 2>/dev/null | tr -d '\r')"
+    hw="$(bounded_probe adb -s "$s" shell getprop ro.serialno 2>/dev/null | tr -d '\r')"
     [ -n "$hw" ] || hw="$s"
     by_hardware["$hw"]+="$s "
   done

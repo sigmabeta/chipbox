@@ -16,7 +16,9 @@ Grouped by role:
 
 - **Factories** — `RealPcmTrackSourceFactory` (production: emulator-by-extension
   selection through `EmulatorSelector`, source hashing, cache-hit vs render-ahead
-  decision, janitor wiring)
+  decision, janitor wiring; a backend whose `knownSampleRate` is non-null gets the
+  cache checked **before** staging/constructing the emulator, so a warm hit does
+  zero native loads/teardowns)
   and `UncachedPcmTrackSourceFactory` (cache-bypass fallback: live emulator per
   track, no read-through, no writer, no janitor — not wired in today).
 - **`PcmTrackSource` implementations** — `CachedFilePcmSource` (cache **hit**:
@@ -25,7 +27,8 @@ Grouped by role:
   reader trails on a separate handle, publishing a `watermark` and `awaitingRender`;
   trims trailing silence, measures loudness, atomically promotes to `.pcm` on
   completion), and `EmulatorPcmSource` (bare live emulator, all native calls
-  confined to the emulator dispatcher; `seek` unsupported).
+  confined to the emulator dispatcher; `seek` unsupported; `measureLoudness`
+  toggles its own BS.1770 pass — off when `CachingPcmSource` is the measurer).
 - **On-disk format** — `PcmCacheFile` (okio-backed read/write `object` with nested
   `Writer`/`Reader`/`Header`: writes the 128-byte little-endian header, appends
   body frames, flips the completion flag, atomically renames temp→final; readers
@@ -43,7 +46,8 @@ Grouped by role:
   emitted by both cache sources).
 - **Tests** (`commonTest` + `jvmSharedTest`) — `LoudnessLogTest`,
   `PcmCacheHasherTest`, and JVM-only `CachingPcmSourceTest`,
-  `EmulatorPcmSourceConfinementTest`, `PcmCacheFileTest`, `PcmCacheJanitorTest`.
+  `EmulatorPcmSourceConfinementTest`, `EmulatorPcmSourceLoudnessTest`,
+  `RealPcmTrackSourceFactoryTest`, `PcmCacheFileTest`, `PcmCacheJanitorTest`.
 
 ## Why depend on this module
 

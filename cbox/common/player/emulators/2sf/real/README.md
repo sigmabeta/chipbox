@@ -11,7 +11,7 @@ companion.
 
 | File | What it is |
 | --- | --- |
-| `TwosfEmulator.kt` | `object TwosfEmulator : Emulator()`. Loads `libtwosf` via `System.loadLibrary("twosf")`; declares extensions `2sf` / `mini2sf`; the load/generate/teardown/error/sample-rate methods are `external` JNI calls. |
+| `TwosfEmulator.kt` | `object TwosfEmulator : Emulator()`. Loads `libtwosf` via `System.loadLibrary("twosf")`; declares extensions `2sf` / `mini2sf`; the load/generate/teardown/error/sample-rate methods are `external` JNI calls. Overrides `knownSampleRate = 44_100` (the core's fixed NDS output rate) so the PCM cache can serve a complete warm hit without a native track load. |
 
 ## Why depend on this module
 

@@ -78,6 +78,27 @@ shared storage is only verifiable on hardware.
   at start, and the Chipbox + sage commits stamped in at build time), and the
   **corpus block** — the manifest of the pushed corpus and the hash of the
   snapshot the library was seeded from.
+- **Production cache probe:** `DeviceCacheBenchmark` has no perfbench axis —
+  it drives the real `RealPcmTrackSourceFactory`/`CachingPcmSource` over a
+  mini2sf with its `.2sflib` sibling and writes `cache-device.tsv` (cold open +
+  drain, warm re-opens with a counting native-load check, seek, trailing-silence
+  trimming, error propagation, and two 60-skip native-heap bounds: the core
+  ownership path and a synthetic SAVE-section fixture). It is self-gating: the
+  warm-hit / trimming / error / heap assertions fail the test run, so its exit
+  status is the gate. Run it over a pushed corpus with the wrapper (one device
+  or many; artifacts land in `build/perfbench-device/cache/<device>/`):
+  ```sh
+  scripts/benchmark/device-cache.sh /path/to/corpus
+  ```
+  or directly (the corpus must already be at `/sdcard/Music/chipbox-test/corpus`):
+  ```sh
+  ./gradlew -Pandroid.testInstrumentationRunnerArguments.class=\
+    net.sigmabeta.chipbox.benchmark.DeviceCacheBenchmark \
+    :benchmark:connectedBenchmarkAndroidTest
+  ```
+  It needs the same pushed corpus as the audio axis (the wrapper stages it;
+  `scripts/benchmark/device-common.sh` can stage it too, but the probe needs no
+  snapshot).
 
 ## Progress logging
 
@@ -102,6 +123,10 @@ attribute pairs (`key=value`). The sections are:
   `section=ui.browse_by_game_scroll`.
 - **startup** — one `section=<StartupScenario id>` pair per cold/warm scenario,
   e.g. `section=startup.cold`.
+- **cache probe** — `grant-storage`, `walk-corpus`, then
+  `cache-cold-warm-seek`, `cache-trailing-silence`, `cache-error-propagation`,
+  `cache-sustained-load` (with `sustained-core` / `sustained-save` fixtures), and
+  `write-result`.
 
 ```
 I: [bench] begin test=audioRealTimeFactor
@@ -141,10 +166,15 @@ A phone attached over two transports at once (mDNS *and* IP) would be run twice
 and collide, so the scripts group the online serials by `ro.serialno` and **skip**
 (enough to `adb disconnect` the duplicate) rather than produce the opaque crash.
 
+The production-cache probe has its own wrapper on the same convention —
+`scripts/benchmark/device-cache.sh <corpus-dir>` — but no baseline: the test's
+own assertions are the gate.
+
 ```sh
 scripts/benchmark/device-audio.sh   /path/to/small-corpus            # gate
 scripts/benchmark/device-ui.sh      /path/to/small-corpus --record   # (re)record the baseline
 scripts/benchmark/device-startup.sh /path/to/small-corpus --threshold 0.97
+scripts/benchmark/device-cache.sh   /path/to/corpus                  # self-gating cache probe
 scripts/ci/verify.sh --device-ui /path/to/small-corpus                  # the same run inside verify.sh
 ```
 
@@ -340,7 +370,13 @@ records none, and its metrics list omits them rather than reporting a zero.
 - **SAGE/module dependencies:** [`testing:perfbench-core`](../testing/perfbench-core/README.md)
   (the result schema / math), [`testing:abrender-core`](../testing/abrender-core/README.md)
   (the reused raw-core render engine for the audio axis), and
-  `sage:android:logging` (the `AndroidHatchet` the axes log progress through). It
-  instruments `:apps:android` via `targetProjectPath` rather than depending on it;
-  test libs only otherwise: `androidx.test.ext.junit`, `androidx.test.runner`,
-  `androidx.test.uiautomator`, `androidx.benchmark.macro.junit4`.
+  `sage:android:logging` (the `AndroidHatchet` the axes log progress through). The
+  cache probe also needs the production path it measures:
+  `cbox:common:player:cache:real` (`RealPcmTrackSourceFactory`),
+  `cbox:common:player:emulators:2sf:real` (the real `TwosfEmulator` behind the counting
+  decorator), `cbox:common:contentsource:file:real` (`LocalFileContentSource`),
+  `cbox:common:readers:api` (`PsfReader`, to resolve `_lib` chain files), and
+  `cbox:common:models:api` (`Track`/`ChainFile`). It instruments `:apps:android` via
+  `targetProjectPath` rather than depending on it; test libs only otherwise:
+  `androidx.test.ext.junit`, `androidx.test.runner`, `androidx.test.uiautomator`,
+  `androidx.benchmark.macro.junit4`.

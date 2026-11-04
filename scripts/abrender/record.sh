@@ -58,7 +58,10 @@ GRADLEW="${REPO_ROOT}/gradlew"
 
 PKG="net.sigmabeta.chipbox.abrender.test"
 RUNNER="androidx.test.runner.AndroidJUnitRunner"
-REMOTE_BASE="/sdcard/Android/data/${PKG}/files/abrender"
+# Shared storage, like :benchmark's corpus root. Android 11+ will not let the app read a corpus
+# staged under its own Android/data by the adb shell, so the harness reads shared storage instead
+# and grants itself All Files Access (same appops pattern as :benchmark).
+REMOTE_BASE="/sdcard/Music/chipbox-test/abrender"
 REMOTE_IN="${REMOTE_BASE}/in"
 REMOTE_OUT="${REMOTE_BASE}/out"
 
@@ -222,8 +225,10 @@ render_device() {
   fi
 
   echo "==> Pushing corpus → ${REMOTE_IN}"
-  # Fresh stage each run: pushing over files a prior chmod left world-readable makes adb's fchown fail
-  # on the FUSE mount; then open it up, or the test app (not in adb's group) sees an empty corpus.
+  # All Files Access for the shared-storage corpus; the op is denied by default.
+  "${adb[@]}" shell appops set "${PKG}" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
+  # Fresh stage each run. Shared storage is writable by the adb shell, so `push` can create the tree
+  # itself (no secure_mkdirs workaround); chmod only so the app's read is never the failure point.
   "${adb[@]}" shell rm -rf "${REMOTE_IN}" 2>/dev/null || true
   "${adb[@]}" shell mkdir -p "${REMOTE_IN}"
   "${adb[@]}" push "${CORPUS}/." "${REMOTE_IN}" >/dev/null

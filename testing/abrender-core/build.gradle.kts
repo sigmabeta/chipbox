@@ -66,6 +66,10 @@ kotlin {
             implementation(projects.cbox.common.player.emulators.vgm.real)
             implementation(projects.cbox.common.player.emulators.vgmstream.real)
             implementation(projects.cbox.common.player.common.api)
+            // The shared PCM-cache harness helpers (a counting decorator + the production Track
+            // builder that resolves 2SF `_lib` siblings). Both are pure JVM/KMP, no native code.
+            implementation(projects.cbox.common.models.api)
+            implementation(projects.cbox.common.readers.api)
         }
 
         getByName("androidDeviceTest").dependencies {
