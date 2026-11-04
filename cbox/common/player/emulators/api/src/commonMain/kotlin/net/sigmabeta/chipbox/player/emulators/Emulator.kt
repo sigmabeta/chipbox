@@ -74,6 +74,18 @@ abstract class Emulator {
     /** Native output sample rate for the loaded track, in Hz. */
     abstract fun getSampleRateInternal(): Int
 
+    /**
+     * Static output sample rate this backend produces for every track it accepts, or `null` when
+     * the rate is only knowable after a native load (a header the core has to parse first).
+     *
+     * The PCM cache uses this hint to build the cache key **before** staging or constructing the
+     * emulator, so a complete warm cache hit can be served without a native track load. A backend
+     * that returns a non-null value promises [getSampleRateInternal] agrees for every track;
+     * [net.sigmabeta.chipbox.player.cache.real.RealPcmTrackSourceFactory] verifies the negotiated
+     * rate and rebuilds the key if the promise is broken, rather than aliasing a wrong entry.
+     */
+    open val knownSampleRate: Int? get() = null
+
     /** File extensions this emulator can decode (lowercase, without leading dot). */
     abstract val supportedFileExtensions: List<String>
 
