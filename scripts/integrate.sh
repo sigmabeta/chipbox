@@ -112,6 +112,12 @@ git diff --stat "$BASE"..."$BRANCH" | sed 's/^/  /'
 if ! scripts/dev/check-worktree-hygiene.sh; then
   fail "worktree hygiene check failed (shared stash or stray .scratch)"
 fi
+# A vendored Core/ change without a matching VENDORING.md is a resync landmine. This is
+# the same check CI runs in static-analysis; run it per merge so it cannot wait for a
+# full verify.sh (the per-ticket loop only builds + A/B).
+if ! scripts/ci/check-vendored-changes.sh --base "$BASE" --head "$BRANCH"; then
+  fail "vendored Core/ change without a VENDORING.md update (see above)"
+fi
 if [ -n "$FEATURE" ]; then
   if ! scripts/dev/check-ticket-gates.sh --feature "$FEATURE"; then
     fail "ticket-gate check failed for '$FEATURE'"
