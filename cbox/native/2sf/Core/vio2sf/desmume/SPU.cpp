@@ -52,8 +52,11 @@
 #include "state.h"
 
 //===================CONFIGURATION========================
-bool isChannelMuted(NDS_state *state, int num) { return state->dwChannelMute&(1<<num) ? true : false; }
-SPUInterpolationMode spuInterpolationMode(NDS_state *state) { return (SPUInterpolationMode)state->dwInterpolation; }
+// Only referenced from this translation unit; `static inline` lets the optimizer fold
+// them into their (per-buffer/per-channel, not per-sample) callers instead of emitting
+// an exported, interposable PLT call.
+static inline bool isChannelMuted(NDS_state *state, int num) { return state->dwChannelMute&(1<<num) ? true : false; }
+static inline SPUInterpolationMode spuInterpolationMode(NDS_state *state) { return (SPUInterpolationMode)state->dwInterpolation; }
 //=========================================================
 
 class WavWriter
@@ -886,55 +889,75 @@ static  void FetchPSGData(SPUInterpolationMode INTERPOLATE_MODE, channel_struct 
 	resampler_remove_sample(chan->resampler, 1);
 }
 
- static void SPU_Mix(int CHANNELS, SPU_struct* SPU, channel_struct *chan, s32 data)
+// Per-sample body, specialized at compile time on the channel's invariant format and pan.
+// FORMAT: 0 = PCM8, 1 = PCM16, 2 = ADPCM, 3 = PSG. CHANNELS: -1 = not mixed (muted or
+// actuallyMix off), 0 = left, 1 = left+right, 2 = right. Specializing keeps the format
+// and pan selection out of the hot per-sample loop; it is chosen once per channel in
+// `chan_dispatch` below. The sample arithmetic (Fetch*, Mix*, spumuldiv7) is unchanged.
+template<int FORMAT>
+static inline void FetchChannelSample(SPUInterpolationMode INTERPOLATE_MODE, NDS_state *state, SPU_struct* const SPU, channel_struct *chan, s32 *data)
+{
+	if constexpr (FORMAT == 0)
+		Fetch8BitData(INTERPOLATE_MODE, state, SPU, chan, data);
+	else if constexpr (FORMAT == 1)
+		Fetch16BitData(INTERPOLATE_MODE, state, SPU, chan, data);
+	else if constexpr (FORMAT == 2)
+		FetchADPCMData(INTERPOLATE_MODE, state, SPU, chan, data);
+	else
+		FetchPSGData(INTERPOLATE_MODE, chan, data);
+}
+
+template<int CHANNELS>
+static inline void MixChannelSample(SPU_struct* SPU, channel_struct *chan, s32 data)
+{
+	if constexpr (CHANNELS == 0)
+		MixL(SPU, chan, data);
+	else if constexpr (CHANNELS == 1)
+		MixLR(SPU, chan, data);
+	else
+		MixR(SPU, chan, data);
+}
+
+template<int FORMAT, int CHANNELS>
+static inline void chan_update(NDS_state *state, SPUInterpolationMode INTERPOLATE_MODE, SPU_struct* const SPU, channel_struct* const chan)
+{
+	if constexpr (CHANNELS == -1)
+	{
+		// Not mixed: the generic loop only advanced bufpos to the end without fetching.
+		SPU->bufpos = SPU->buflength;
+		return;
+	}
+
+	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	{
+		s32 data;
+		FetchChannelSample<FORMAT>(INTERPOLATE_MODE, state, SPU, chan, &data);
+		MixChannelSample<CHANNELS>(SPU, chan, data);
+	}
+}
+
+template<int FORMAT>
+static inline void chan_update_pan(NDS_state *state, int CHANNELS, SPUInterpolationMode INTERPOLATE_MODE, SPU_struct* const SPU, channel_struct* const chan)
 {
 	switch(CHANNELS)
 	{
-		case 0: MixL(SPU, chan, data); break;
-		case 1: MixLR(SPU, chan, data); break;
-		case 2: MixR(SPU, chan, data); break;
+		case -1: chan_update<FORMAT, -1>(state, INTERPOLATE_MODE, SPU, chan); break;
+		case 0:  chan_update<FORMAT,  0>(state, INTERPOLATE_MODE, SPU, chan); break;
+		case 1:  chan_update<FORMAT,  1>(state, INTERPOLATE_MODE, SPU, chan); break;
+		default: chan_update<FORMAT,  2>(state, INTERPOLATE_MODE, SPU, chan); break;
 	}
 }
 
- static void ____SPU_ChanUpdate(NDS_state *state, int CHANNELS, int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, SPU_struct* const SPU, channel_struct* const chan)
+// Exactly one format/pan dispatch per channel per buffer (not per sample).
+static inline void chan_dispatch(NDS_state *state, int FORMAT, int CHANNELS, SPUInterpolationMode INTERPOLATE_MODE, SPU_struct* const SPU, channel_struct* const chan)
 {
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	switch(FORMAT)
 	{
-		if(CHANNELS != -1)
-		{
-			s32 data;
-			switch(FORMAT)
-			{
-				case 0: Fetch8BitData(INTERPOLATE_MODE, state, SPU, chan, &data); break;
-				case 1: Fetch16BitData(INTERPOLATE_MODE, state, SPU, chan, &data); break;
-				case 2: FetchADPCMData(INTERPOLATE_MODE, state, SPU, chan, &data); break;
-				case 3: FetchPSGData(INTERPOLATE_MODE, chan, &data); break;
-			}
-			SPU_Mix(CHANNELS, SPU, chan, data);
-		}
+		case 0: chan_update_pan<0>(state, CHANNELS, INTERPOLATE_MODE, SPU, chan); break;
+		case 1: chan_update_pan<1>(state, CHANNELS, INTERPOLATE_MODE, SPU, chan); break;
+		case 2: chan_update_pan<2>(state, CHANNELS, INTERPOLATE_MODE, SPU, chan); break;
+		default: chan_update_pan<3>(state, CHANNELS, INTERPOLATE_MODE, SPU, chan); break;
 	}
-}
-
- static void ___SPU_ChanUpdate(NDS_state *state, int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
-{
-	if(!actuallyMix)
-		____SPU_ChanUpdate(state,-1,FORMAT,INTERPOLATE_MODE,SPU,chan);
-	else if (chan->pan == 0)
-		____SPU_ChanUpdate(state,0,FORMAT,INTERPOLATE_MODE,SPU,chan);
-	else if (chan->pan == 127)
-		____SPU_ChanUpdate(state,2,FORMAT,INTERPOLATE_MODE,SPU,chan);
-	else
-		____SPU_ChanUpdate(state,1,FORMAT,INTERPOLATE_MODE,SPU,chan);
-}
-
- static void __SPU_ChanUpdate(NDS_state *state, SPUInterpolationMode INTERPOLATE_MODE, const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
-{
-	___SPU_ChanUpdate(state,chan->format,INTERPOLATE_MODE,actuallyMix, SPU, chan);
-}
-
- static void _SPU_ChanUpdate(NDS_state *state, const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
-{
-	__SPU_ChanUpdate(state, spuInterpolationMode(state),actuallyMix, SPU, chan);
 }
 
 
@@ -960,6 +983,10 @@ static void SPU_MixAudio(NDS_state *state, bool actuallyMix, SPU_struct *SPU, in
 
 	vol = T1ReadByte(state->MMU->ARM7_REG, 0x500) & 0x7F;
 
+	// Core-global and invariant across the 16 channels: read once per buffer.
+	const SPUInterpolationMode interpolation_mode = spuInterpolationMode(state);
+	const unsigned long channel_mute = state->dwChannelMute;
+
 	for(int i=0;i<16;i++)
 	{
 		channel_struct *chan = &SPU->channels[i];
@@ -971,7 +998,17 @@ static void SPU_MixAudio(NDS_state *state, bool actuallyMix, SPU_struct *SPU, in
 		SPU->buflength = length;
 
 		// Mix audio
-		_SPU_ChanUpdate(state, !isChannelMuted(state, i) && actuallyMix, SPU, chan);
+		int channels;
+		if (!actuallyMix || (channel_mute & (1<<i)))
+			channels = -1;
+		else if (chan->pan == 0)
+			channels = 0;
+		else if (chan->pan == 127)
+			channels = 2;
+		else
+			channels = 1;
+
+		chan_dispatch(state, chan->format, channels, interpolation_mode, SPU, chan);
 	}
 
 	// convert from 32-bit->16-bit
