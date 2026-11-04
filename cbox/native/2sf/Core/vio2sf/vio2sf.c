@@ -27,6 +27,58 @@ struct twosf_loader_state
 	int arm7_clockdown_level;
 };
 
+NDS_state * core;
+struct twosf_loader_state state;
+
+/* A loader failure after ownership moved into the loader state must not leave a
+ * dangling pointer/size: the caller's error path frees whatever is still there,
+ * so a stale value would be a double free. */
+static void twosf_clear_loader_slot(struct twosf_loader_state *loader, int issave)
+{
+	if (issave)
+	{
+		loader->state = 0;
+		loader->state_size = 0;
+	}
+	else
+	{
+		loader->rom = 0;
+		loader->rom_size = 0;
+	}
+}
+
+/* Frees the process-global core exactly once, unmapping the ROM from the MMU
+ * (via state_deinit) before the loader state releases the ROM buffer. */
+static void twosf_release_core(void)
+{
+	if (core)
+	{
+		state_deinit(core);
+		free(core);
+		core = 0;
+	}
+}
+
+/* Frees every buffer owned by the loader state. The ROM is mapped into the
+ * core for the whole track, so this must only run after the core is gone (or
+ * after a failed load that never mapped it). */
+static void twosf_release_loader_state(void)
+{
+	if (state.rom)
+	{
+		free(state.rom);
+		state.rom = 0;
+	}
+	state.rom_size = 0;
+
+	if (state.state)
+	{
+		free(state.state);
+		state.state = 0;
+	}
+	state.state_size = 0;
+}
+
 static int load_twosf_map(struct twosf_loader_state *state, int issave, const unsigned char *udata, unsigned usize)
 {
 	if (usize < 8) return -1;
@@ -85,6 +137,10 @@ static int load_twosf_map(struct twosf_loader_state *state, int issave, const un
 		xptr = (unsigned char *) realloc(iptr, xofs + rsize + 10);
 		if (!xptr)
 		{
+			/* Ownership had already moved out of the loader state; clear the
+			 * slot so the caller's error path cannot free the pointer a second
+			 * time, then release the buffer here (exactly once). */
+			twosf_clear_loader_slot(state, issave);
 			free(iptr);
 			return -1;
 		}
@@ -232,12 +288,17 @@ static int twosf_info(void * context, const char * name, const char * value)
 	return 0;
 }
 
-NDS_state * core;
-struct twosf_loader_state state;
-
 int xsf_start(char *filename)
 {
+	/* Defensive: a load that failed leaves Kotlin's hasLoadedTrack false, so the
+	 * next loadTrack does not call teardown first. A bare second xsf_start (WASM
+	 * callers, a wrapper bug) must not overwrite the previous core/buffers. */
+	twosf_release_core();
+	twosf_release_loader_state();
+
 	core = ( NDS_state * ) calloc(1, sizeof(NDS_state));
+	if (!core)
+		return -2;
 
 	memset( &state, 0, sizeof(state) );
 	state.initial_frames = -1;
@@ -256,16 +317,17 @@ int xsf_start(char *filename)
 	);
 
 	if (result <= 0) {
-		if (state.rom) free(state.rom);
-		if (state.state) free(state.state);
+		twosf_release_loader_state();
+		twosf_release_core();
 
 		return -1;
 	}
 
 	if (state_init(core)) {
 		state_deinit(core);
-		if (state.rom) free(state.rom);
-		if (state.state) free(state.state);
+		free(core);
+		core = 0;
+		twosf_release_loader_state();
 
 		return -2;
 	}
@@ -292,24 +354,28 @@ int xsf_start(char *filename)
 
 	state_loadstate(core, state.state, (u32) state.state_size );
 
+	/* The core copies what it needs out of the SAVE image during the restore,
+	 * so the buffer is not needed for the life of the track. */
+	if (state.state) {
+		free(state.state);
+		state.state = NULL;
+		state.state_size = 0;
+	}
+
 	return 0;
 }
 
 int xsf_gen(void *pbuffer, unsigned samples)
 {
+	if (!core)
+		return 0;
+
 	state_render(core, (s16*)pbuffer, samples);
 
 	return samples;
 }
 
 void xsf_term(void) {
-    if (core) {
-        state_deinit(core);
-        core = NULL;
-    }
-
-    if (state.rom) {
-        free(state.rom);
-		state.rom = NULL;
-    }
+	twosf_release_core();
+	twosf_release_loader_state();
 }
