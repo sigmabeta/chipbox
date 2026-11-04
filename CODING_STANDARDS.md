@@ -18,6 +18,16 @@ release gate stays `ready-for-human` (or carries an explicit `Manual gates:` lin
 even after its code is merged. The ticket's `## Answer` records what was run and
 what a human still has to run.
 
+## A performance change is retained only on a consistent paired signal
+
+Measure variants interleaved on an otherwise idle host, at least three pairs per
+variant, alternating the order (A→B and B→A). Retain a change only when every
+pair moves in the same direction **and** the paired delta is outside the
+run-to-run spread. An absolute improvement smaller than the spread is not
+evidence, and a batch measured in only one order is not a pair. Report the paired
+deltas, the spread, and the retain/reject decision per half in the ticket; archive
+a rejected patch (do not leave it in the tree).
+
 ## User-facing strings go through the string resources
 
 Every user-facing string is a `ChipboxStringId` backed by a `strings-*.xml`

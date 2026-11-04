@@ -62,9 +62,9 @@ GRADLE_FLAGS=(--build-cache --configuration-cache --console=plain)
 # (AGP's externalNativeBuild isn't cacheable, so building native in lint is pure duplicated cost).
 # static-analysis also runs the non-Gradle checks CI's static-analysis job adds around Gradle:
 # scripts/ci/check-user-facing-strings.sh and scripts/ci/check-vendored-changes.sh first (the same
-# guardrails CI runs as their own steps) and scripts/ci/verify-no-config-git.sh (the
-# no-configuration-time-git gate) after Gradle. They are reported under the one task name, and any
-# failure fails it.
+# guardrails CI runs as their own steps), scripts/dev/perf-lock-test.sh (the lock's stale-holder
+# recovery), and scripts/ci/verify-no-config-git.sh (the no-configuration-time-git gate) after
+# Gradle. They are reported under the one task name, and any failure fails it.
 # The apk/release-jvm tasks build native on purpose. apk builds the RELEASE variant, as CI and
 # release.yml do, so release-only config (the appVersioning versionCode logic) is exercised; without
 # the CHIPBOX_KEY_* signing env it falls back to debug signing, so it builds on any machine. release-jvm builds the desktop emulator natives
@@ -208,6 +208,11 @@ sage_head=$(git -C sage rev-parse HEAD 2>/dev/null)
 if [ -n "$sage_head" ] && [ -z "$(git -C sage branch -r --contains "$sage_head" 2>/dev/null)" ]; then
   warnings+=("sage submodule is at ${sage_head:0:8}, which no remote branch contains — push sage first or CI checkout fails")
 fi
+sage_recorded=$(git ls-tree HEAD sage 2>/dev/null | awk '{print $3}')
+if [ -n "$sage_head" ] && [ -n "$sage_recorded" ] && [ "$sage_head" != "$sage_recorded" ] && \
+   git -C sage merge-base --is-ancestor "$sage_head" "$sage_recorded" 2>/dev/null; then
+  warnings+=("sage is rewound (${sage_head:0:8} is behind the recorded ${sage_recorded:0:8}) — run: git submodule update --init --checkout sage")
+fi
 for w in ${warnings[@]+"${warnings[@]}"}; do echo "${R}warning:${Z} $w" >&2; done
 
 rm -rf "$OUT"
@@ -247,6 +252,9 @@ for entry in "${selected[@]}"; do
     printf '%s──▶ %-16s%s scripts/ci/check-vendored-changes.sh\n' "$B" "" "$Z"
     scripts/ci/check-vendored-changes.sh >>"$LOGS/$name.log" 2>&1
     vendor_rc=$?
+    printf '%s──▶ %-16s%s scripts/dev/perf-lock-test.sh\n' "$B" "" "$Z"
+    scripts/dev/perf-lock-test.sh >>"$LOGS/$name.log" 2>&1
+    lock_rc=$?
     # shellcheck disable=SC2086
     "$GRADLE" $args "${GRADLE_FLAGS[@]}" >>"$LOGS/$name.log" 2>&1
     rc=$?
@@ -255,6 +263,7 @@ for entry in "${selected[@]}"; do
     git_rc=$?
     [ "$strings_rc" -ne 0 ] && rc=$strings_rc
     if [ "$vendor_rc" -ne 0 ] && [ "$rc" -eq 0 ]; then rc="$vendor_rc"; fi
+    if [ "$lock_rc" -ne 0 ] && [ "$rc" -eq 0 ]; then rc="$lock_rc"; fi
     if [ "$git_rc" -ne 0 ] && [ "$rc" -eq 0 ]; then rc="$git_rc"; fi
   else
     printf '%s──▶ %-16s%s ./gradlew %s\n' "$B" "$name" "$Z" "$args"

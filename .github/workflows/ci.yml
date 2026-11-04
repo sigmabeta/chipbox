@@ -35,6 +35,10 @@ jobs:
         run: scripts/ci/verify-docker-release.sh
       - name: User-facing strings (no hardcoded ShowSnackbar literals)
         run: scripts/ci/check-user-facing-strings.sh
+      - name: Vendored Core changes update VENDORING.md
+        run: scripts/ci/check-vendored-changes.sh
+      - name: Perf lock recovers from a dead holder
+        run: scripts/dev/perf-lock-test.sh
       - uses: gradle/actions/setup-gradle@v4
       - name: ktlint + detekt
         run: ./gradlew ktlintCheck detekt --continue --build-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
