@@ -85,4 +85,10 @@ else ()
             # so this also links libz transitively.
             chipbox_native_common
     )
+    # JVM/Android only (WASM keeps EMSCRIPTEN_KEEPALIVE exports). Hide everything except the
+    # explicitly exported entry points: the JNI functions are JNIEXPORT (visibility("default")).
+    # Besides shrinking the dynamic symbol table, this lets the compiler inline the core's own
+    # small helpers (spumuldiv7, u32floor_double) that default visibility made interposable and
+    # therefore un-inlinable at the per-sample mixing call sites.
+    target_compile_options(${library_name} PRIVATE "-fvisibility=hidden")
 endif ()
