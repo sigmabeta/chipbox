@@ -7,8 +7,9 @@
 # run waits (or fails fast) instead of contaminating the first.
 #
 # The lock is a portable atomic mkdir, so it works on Linux and macOS. A lock whose
-# owner pid is gone is cleared automatically. The default location is
-# ~/.cache/chipbox/perf.lock.d, shared by every checkout on the machine; override
+# owner pid is gone is cleared automatically, and so is an ownerless lock older than
+# a minute (the holder died between mkdir and writing `owner`). The default location
+# is ~/.cache/chipbox/perf.lock.d, shared by every checkout on the machine; override
 # with CHIPBOX_PERF_LOCK_DIR or --lock-dir.
 #
 # Usage:
@@ -44,6 +45,8 @@ while [ $# -gt 0 ]; do
         echo "perf-lock: held"
         if [ -f "$LOCK_DIR/owner" ]; then
           sed 's/^/  /' "$LOCK_DIR/owner"
+        elif find "$LOCK_DIR" -maxdepth 0 -mmin +0 -print -quit 2>/dev/null | grep -q .; then
+          echo "  (stale: ownerless for over a minute; the next run reclaims it)"
         else
           echo "  (owner metadata not written yet)"
         fi
@@ -67,12 +70,25 @@ mkdir -p "$(dirname "$LOCK_DIR")" || { echo "perf-lock: cannot create $(dirname 
 
 acquire() {
   mkdir "$LOCK_DIR" 2>/dev/null || return 1
-  {
+  # Write the metadata aside and rename it into place: a reader never sees a
+  # half-written owner file, and a holder killed before the rename leaves only
+  # `.owner.<pid>` behind (an ownerless lock, recovered by the grace period below).
+  local tmp="$LOCK_DIR/.owner.$$"
+  if ! {
     printf 'pid=%s\n' "$$"
     printf 'started=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     printf 'cmd=%s\n' "$*"
-  } > "$LOCK_DIR/owner" 2>/dev/null || true
+  } > "$tmp" 2>/dev/null || ! mv -f "$tmp" "$LOCK_DIR/owner" 2>/dev/null; then
+    rm -rf "$LOCK_DIR"
+    return 1
+  fi
   return 0
+}
+
+# True when the lock directory exists and is older than a full minute. `-mmin +0`
+# is POSIX find and works on both GNU and BSD, unlike `stat -c`/`-f`.
+ownerless_lock_is_stale() {
+  find "$LOCK_DIR" -maxdepth 0 -mmin +0 -print -quit 2>/dev/null | grep -q .
 }
 
 deadline=$((SECONDS + WAIT))
@@ -82,6 +98,12 @@ if ! acquire; then
     owner_pid="$(sed -n 's/^pid=//p' "$LOCK_DIR/owner" 2>/dev/null | head -1)"
     if [ -n "$owner_pid" ] && ! kill -0 "$owner_pid" 2>/dev/null; then
       echo "perf-lock: clearing stale lock (pid $owner_pid is gone)" >&2
+      rm -rf "$LOCK_DIR"
+      acquire && break
+      continue
+    fi
+    if [ -z "$owner_pid" ] && ownerless_lock_is_stale; then
+      echo "perf-lock: clearing stale ownerless lock (holder died before writing owner)" >&2
       rm -rf "$LOCK_DIR"
       acquire && break
       continue

@@ -42,9 +42,14 @@ if [ -f sage/README.md ]; then
   checked="$(git -C sage rev-parse HEAD 2>/dev/null || true)"
   if [ -n "$recorded" ] && [ "$recorded" = "$checked" ]; then
     ok "sage submodule at the recorded pin: ${checked:0:8}"
+  elif [ -n "$recorded" ] && [ -n "$checked" ] && \
+       git -C sage merge-base --is-ancestor "$checked" "$recorded" 2>/dev/null; then
+    # Behind the recorded pin (not just ahead): the build may fail on stale build logic.
+    fail "sage is rewound: at ${checked:0:8}, superproject records ${recorded:0:8}"
+    fail "fix: git submodule update --init --checkout sage"
   else
-    warn "sage is at ${checked:0:8} but the superproject records ${recorded:0:8}"
-    warn "pull latest per AGENTS.md; if the new tip breaks the build, flag it before other work"
+    warn "sage is ahead of the recorded pin: ${checked:0:8} vs ${recorded:0:8}"
+    warn "commit the submodule bump, or reset if the pull was accidental"
   fi
   if [ -n "$(git -C sage status --porcelain 2>/dev/null)" ]; then
     warn "sage submodule has local changes"
