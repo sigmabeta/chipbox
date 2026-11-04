@@ -78,6 +78,18 @@ shared storage is only verifiable on hardware.
   at start, and the Chipbox + sage commits stamped in at build time), and the
   **corpus block** — the manifest of the pushed corpus and the hash of the
   snapshot the library was seeded from.
+- **Production cache probe:** `DeviceCacheBenchmark` has no perfbench axis —
+  it drives the real `RealPcmTrackSourceFactory`/`CachingPcmSource` over a
+  mini2sf with its `.2sflib` sibling and writes `cache-device.tsv` (cold open +
+  drain, warm re-opens with a counting native-load check, seek, trailing-silence
+  trimming, error propagation, and a 60-skip native-heap bound). Run it alone:
+  ```sh
+  ./gradlew -Pandroid.testInstrumentationRunnerArguments.class=\
+    net.sigmabeta.chipbox.benchmark.DeviceCacheBenchmark \
+    :benchmark:connectedBenchmarkAndroidTest
+  ```
+  It needs the same pushed corpus + snapshot as the audio axis
+  (`scripts/benchmark/device-common.sh` stages them).
 
 ## Progress logging
 
@@ -102,6 +114,9 @@ attribute pairs (`key=value`). The sections are:
   `section=ui.browse_by_game_scroll`.
 - **startup** — one `section=<StartupScenario id>` pair per cold/warm scenario,
   e.g. `section=startup.cold`.
+- **cache probe** — `grant-storage`, `walk-corpus`, then
+  `cache-cold-warm-seek`, `cache-trailing-silence`, `cache-error-propagation`,
+  `cache-sustained-load`, and `write-result`.
 
 ```
 I: [bench] begin test=audioRealTimeFactor
