@@ -1,3 +1,7 @@
 [submodule "sage"]
 	path = sage
 	url = git@github.com:sigmabeta/sage.git
+	# Chipbox tracks sage's `main` line. Keep `main` in sync with `beta` by fast-forwarding it
+	# (both branches now require a pull request), and let `git submodule update --remote` follow
+	# `main`, the branch this build is validated against.
+	branch = main
