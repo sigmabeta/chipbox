@@ -46,6 +46,15 @@ if [ -f sage/README.md ]; then
     warn "sage is at ${checked:0:8} but the superproject records ${recorded:0:8}"
     warn "pull latest per AGENTS.md; if the new tip breaks the build, flag it before other work"
   fi
+  # `git submodule update --remote` follows the branch pinned in .gitmodules. Catch a checkout that
+  # is behind that branch (e.g. an old `main` left over from before it was synced with `beta`).
+  sage_branch="$(git config -f .gitmodules --get submodule.sage.branch 2>/dev/null || echo main)"
+  sage_tip="$(git -C sage rev-parse --verify --quiet "origin/$sage_branch" 2>/dev/null || true)"
+  if [ -n "$checked" ] && [ -n "$sage_tip" ] && [ "$checked" != "$sage_tip" ] \
+      && git -C sage merge-base --is-ancestor "$checked" "$sage_tip" 2>/dev/null; then
+    warn "sage is behind origin/$sage_branch (at ${checked:0:8}, $sage_branch ${sage_tip:0:8})"
+    warn "run: git submodule update --remote sage"
+  fi
   if [ -n "$(git -C sage status --porcelain 2>/dev/null)" ]; then
     warn "sage submodule has local changes"
   fi

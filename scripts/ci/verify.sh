@@ -208,6 +208,14 @@ sage_head=$(git -C sage rev-parse HEAD 2>/dev/null)
 if [ -n "$sage_head" ] && [ -z "$(git -C sage branch -r --contains "$sage_head" 2>/dev/null)" ]; then
   warnings+=("sage submodule is at ${sage_head:0:8}, which no remote branch contains — push sage first or CI checkout fails")
 fi
+# The submodule follows the branch pinned in .gitmodules. Flag a checkout that is behind that
+# branch (an old `main` left over from before it was synced with `beta`) before it becomes a commit.
+sage_branch=$(git config -f .gitmodules --get submodule.sage.branch 2>/dev/null || echo main)
+sage_tip=$(git -C sage rev-parse --verify --quiet "origin/$sage_branch" 2>/dev/null)
+if [ -n "$sage_head" ] && [ -n "$sage_tip" ] && [ "$sage_head" != "$sage_tip" ] \
+    && git -C sage merge-base --is-ancestor "$sage_head" "$sage_tip" 2>/dev/null; then
+  warnings+=("sage submodule is behind origin/$sage_branch (${sage_head:0:8} vs ${sage_tip:0:8}) — run 'git submodule update --remote sage'")
+fi
 for w in ${warnings[@]+"${warnings[@]}"}; do echo "${R}warning:${Z} $w" >&2; done
 
 rm -rf "$OUT"
