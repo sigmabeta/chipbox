@@ -9,7 +9,7 @@ this document is the working map and the v1 acceptance gate.
 > verification — the Docker-host image gates and the three-browser manual matrix
 > in the checklist below — plus one deferred feature (artist photos). An
 > unchecked checklist item is still unverified, not shipped. Post-v1 follow-ups
-> are tracked in `.scratch/web-app/issues/` (12–18).
+> were tracked in the legacy `.scratch/web-app/issues/` files (12–18).
 
 ## Topology
 
