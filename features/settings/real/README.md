@@ -2,6 +2,8 @@
 
 > The settings screen's ViewModel and platform Route — persistence wiring plus the per-platform folder picker.
 
+> The screen's `State`/`Action` value types live in `:features:settings:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The `:real` half of the `settings` feature: `SettingsViewModel` and the
 `SettingsRoute` composable that implement the screen whose route key, actions, and
 state-renderer live in `:features:settings:api`. `:real` modules hold the screen

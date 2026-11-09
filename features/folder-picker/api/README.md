@@ -3,16 +3,19 @@
 > The Voyager route key for the in-app folder picker screen — depend on it to navigate there.
 
 The public surface other features import to push the in-app folder picker. This
-is the `:api` half of a feature-screen split: it exports only the
-`@Serializable` route-key destination, so navigation callers stay decoupled from
-the screen's implementation (the ViewModel, Compose `Route`, and filesystem
-helpers all live in `:real`).
+is the `:api` half of a feature-screen split: it exports the `@Serializable`
+route key plus the screen's `State`/`Action` value types and `StorageVolumeInfo`,
+so navigation callers stay decoupled from the screen's implementation (the
+ViewModel, Compose `Route`, and filesystem helpers all live in `:real`).
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `FolderPicker.kt` | `@Serializable data object FolderPicker` — the Voyager route key for the picker screen. |
+| `FolderPickerState.kt` | `FolderPickerState : ListState` plus `FolderPickerEntry` — the pure renderer for the current directory, volume chooser, and CTAs. |
+| `FolderPickerAction.kt` | `FolderPickerAction : ChipboxAction` — add/cancel/up/default/toggle/folder-click actions. |
+| `StorageVolumeInfo.kt` | A mounted volume (`label`, root `path`) supplied by the platform volume provider. |
 
 ## Why depend on this module
 
@@ -45,4 +48,4 @@ that hosts `FolderPickerRoute`.
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.api` plugin transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf; only `kotlinx.serialization` from the plugin)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

@@ -2,9 +2,10 @@
 
 > The in-app folder browser screen — ViewModel, per-OS `expect`/`actual` Route, and an Okio-backed directory lister.
 
+> The screen's `State`/`Action` value types live in `:features:folder-picker:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The `:real` half of the folder-picker feature screen: the implementation the app
-includes to actually show the picker. It bundles the `ChipboxListViewModel`, the
-`State`/`Action`/`Entry` value types, the platform-specific Compose `Route`, and a
+includes to actually show the picker. It bundles the `ChipboxListViewModel`, the `Entry` value type, the platform-specific Compose `Route`, and a
 `FolderLister` filesystem abstraction with an Okio-backed implementation. This is
 the desktop/in-app folder browser that `SettingsRoute` (and `ManageLibraryRoute`)
 push on JVM — instead of a system file dialog, the user descends through real
@@ -13,7 +14,7 @@ directory and kicks off a library scan.
 
 ## Contents
 
-**State / Action types** (`commonMain`)
+**State / Action / volume types** (in `:features:folder-picker:api`)
 - `FolderPickerState.kt` — `FolderPickerState : ListState`, the pure renderer: pins
   the "Add this folder" / "Go up a folder" / show-hidden toggle / "Cancel" CTAs to
   the top, renders one `LabelValueListModel` row per subfolder ("N folders, M
@@ -122,5 +123,5 @@ actual fun FolderPickerRoute(onEvent: (ChipboxEvent) -> Unit, modifier: Modifier
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.real` plugin transitively applies `sage.kmp.js`)
-- **Source set:** `commonMain` (State/Action/VM/`FolderLister`/`OkioFolderLister`/`StorageVolumeProvider`) + `androidMain`/`jvmMain`/`jsMain` Route actuals and the platform `StorageVolumeProvider` bindings (`androidMain`/`jvmMain`); tests in `commonTest`. No `jvmSharedMain` code.
+- **Source set:** `commonMain` (VM/`FolderLister`/`OkioFolderLister`/`StorageVolumeProvider`); the State/Action and `StorageVolumeInfo` types live in `:api` + `androidMain`/`jvmMain`/`jsMain` Route actuals and the platform `StorageVolumeProvider` bindings (`androidMain`/`jvmMain`); tests in `commonTest`. No `jvmSharedMain` code.
 - **SAGE/module dependencies:** `:features:folder-picker:api`, `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:contentsource:api`, `:cbox:common:scanner:api`, `:features:rescan-status:api`, `okio` (commonMain); `androidx.activity.compose` + `:cbox:common:ui:components:api` (androidMain); fakes (`contentsource.fake`, `scanner.fake`, `okio.fakefilesystem`) for tests.

@@ -3,7 +3,7 @@
 > Route key for the debug-only recent-errors viewer.
 
 The `:api` half of the `error-log` feature: a single Voyager route key. `:api`
-modules hold only types — here just the `@Serializable` destination — and stay
+modules hold types — here the `@Serializable` destination plus the screen's State/Action types — and stay
 KMP so the desktop UI builds the same screen.
 
 ## Contents
@@ -11,6 +11,8 @@ KMP so the desktop UI builds the same screen.
 | File | What it is |
 | --- | --- |
 | `ErrorLog.kt` | `@Serializable data object ErrorLog` — the route key for the error-log screen. |
+| `ErrorLogState.kt` | Maps each `HatchetError` to a `NameCaptionListModel` (message as name; `"12:34:56 · tag · thread"` caption, blank pieces dropped). `dataId` is the list index. Empty list renders an `EmptyStateListModel`. |
+| `ErrorTimestamp.kt` | `expect fun formatErrorTimestamp(epochMs)` — wall-clock time-of-day; JVM/Android actuals use `java.time`, JS returns the raw epoch. |
 
 ## Why depend on this module
 
@@ -30,5 +32,5 @@ emit(ChipboxEvent.NavigateTo(ErrorLog))
 
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
-- **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf — only `kotlinx.serialization`, provided by the plugin)
+- **Source set:** `commonMain`, with `src/main/java` (`jvmSharedMain`) + `jsMain` actuals for the formatter/decode helper
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

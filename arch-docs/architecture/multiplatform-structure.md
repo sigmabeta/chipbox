@@ -27,7 +27,8 @@ scripts/     helpers, grouped by role: ci/ (CI entry points), dev/ (local dev to
 
 A logical module splits into variants by suffix:
 
-- `:api` — interfaces, types, route keys. Always KMP (`sage.kmp`).
+- `:api` — interfaces, types, route keys, and a screen's `State`/`Action`
+  value types. Always KMP (`sage.kmp`).
 - `:real` — production impl. Usually KMP; uses `androidMain`/`jvmMain` only for
   genuine platform seams (e.g. `speaker/real` = AudioTrack on Android,
   SourceDataLine on JVM).

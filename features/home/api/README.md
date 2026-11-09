@@ -3,15 +3,18 @@
 > The Home screen's Voyager route key — the navigable destination for the app's landing tab.
 
 The public surface other features depend on to navigate to Home. As a feature
-`:api` module it exports only the `@Serializable` route key (and would hold any
-shared `State`/`Action` types, though Home keeps those in `:real`); the actual
-screen lives in `:features:home:real`.
+`:api` module it exports the `@Serializable` route key, the screen's
+`State`/`Action` types, and the `HomeModule` extension point; the actual screen
+lives in `:features:home:real`.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `Home.kt` | `@Serializable data object Home` — the Voyager route key for the Home screen. `ChipboxScreens.screenFor(Home)` maps it to the `Screen` that renders `HomeRoute`. |
+| `HomeState.kt` | `HomeState : ListState` plus `HomeSectionState` — assembles the section rows and first-run empty state. |
+| `HomeAction.kt` | `HomeAction : ChipboxAction` — game/artist/song clicks, RNG actions, folder/rescan CTAs, and now-playing card events. |
+| `module/HomeModule.kt` | The `HomeModule` extension point and its `HomeModuleSection` result type; concrete modules implement this from `:real`. |
 
 ## Why depend on this module
 
@@ -34,4 +37,4 @@ emit(ChipboxEvent.NavigateTo(Home))
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the
   `feature.api` plugin transitively applies `sage.kmp.js`).
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf) — only `kotlinx.serialization`.
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

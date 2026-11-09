@@ -2,7 +2,7 @@
 
 > Paparazzi golden-image companion for the tracks-for-artist screen.
 
-The visual-regression test companion for `:real`: Compose previews of
+The visual-regression test companion for `:api`: Compose previews of
 `TracksForArtistState` and a parameterized Paparazzi test that snapshots them across
 a set of reference devices. As a `:screenshot` module it is Android-only and exists
 purely to guard the screen's rendering with golden images.
@@ -16,7 +16,7 @@ purely to guard the screen's rendering with golden images.
 
 ## Why depend on this module
 
-Nothing depends on `:screenshot`; it is a test-only leaf that depends on `:real`. It
+Nothing depends on `:screenshot`; it is a test-only leaf that depends on `:api`. It
 catches unintended layout/styling changes to the screen via committed golden images.
 Add or update previews here when the screen's visual output changes.
 
@@ -31,4 +31,4 @@ scripts/dev/paparazzi-diff.sh   # check goldens (preferred entry point)
 - **Plugin:** `chipbox.plugins.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews) + `src/test/java` (Paparazzi test)
-- **SAGE/module dependencies:** `:features:tracks-for-artist:real`
+- **SAGE/module dependencies:** `:features:tracks-for-artist:api`

@@ -3,7 +3,7 @@
 > Paparazzi visual-regression companion for the Home screen.
 
 The `:screenshot` module for the Home feature: Android-only Paparazzi tests that
-snapshot `:features:home:real`'s `HomeState` across a matrix of devices and
+snapshot `:features:home:api`'s `HomeState` across a matrix of devices and
 themes. It renders the **state object** directly through `ListScreenPreview`
 (never the ViewModel), so the goldens stay free of DI, repositories, and the
 scanner — every section is a hand-built `HomeState` fixture.
@@ -19,7 +19,7 @@ scanner — every section is a hand-built `HomeState` fixture.
 
 Nothing depends on `:features:home:screenshot` — it's a test-only leaf. It exists
 so changes to the Home UI (or the SAGE list components it renders) are caught as
-pixel diffs. It needs `:features:home:real` for `HomeState`/`HomeAction`/
+pixel diffs. It needs `:features:home:api` for `HomeState`/`HomeAction`/
 `HomeSectionState`, plus `sage.common.ui.components`, `cbox.common.appcomm.api`,
 and `cbox.common.ui.components.api` because the previews construct sage and
 chipbox `ListModel`s (e.g. `GridImageListModel`, `NowPlayingHomeCardListModel`,
@@ -42,6 +42,6 @@ fixture in `ListScreenPreview`) and a matching `@Test` in `HomeScreenshots.kt`.
 - **Plugin:** `chipbox.screenshot` (Paparazzi)
 - **Targets:** Android only.
 - **Source set:** `src/main/java` (previews) + `src/test/java` (Paparazzi tests).
-- **SAGE/module dependencies:** `:features:home:real`,
+- **SAGE/module dependencies:** `:features:home:api`,
   `sage.common.ui.components`, `cbox/common/appcomm/api`,
   `cbox/common/ui/components/api`.

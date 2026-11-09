@@ -2,8 +2,10 @@
 
 > The game-detail screen: hero art, play/shuffle/favorite/playlist CTAs, a details section, an artist scroller, and the song list.
 
+> The screen's `State`/`Action` value types live in `:features:game-detail:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The implementation behind the `GameDetail` route. As a `:real` module it provides
-the `ChipboxListViewModel`/`ListState` and the Compose entry point that render a
+the `ChipboxListViewModel` and the Compose entry point that render a
 single game — its cover, descriptive metadata, contributing artists, and tracks —
 and that drive playback and navigation. The app includes `:real` to show the screen;
 other features depend on `:api` to reach it.
@@ -12,8 +14,6 @@ other features depend on `:api` to reach it.
 
 | File | What it is |
 | --- | --- |
-| `GameDetailAction.kt` | Sealed `GameDetailAction : ChipboxAction()`: `TrackClicked(position)`, `ArtistClicked(id)`, `PlayAllClicked`, `ShuffleAllClicked`, `AddToFavoritesClicked`, `AddToPlaylistClicked`. |
-| `GameDetailState.kt` | `GameDetailState : ListState()` holding `LCE<Game>`/`LCE<List<Track>>`/`LCE<List<Artist>>` plus `playingTrackId`, `isFavorite`, `notFound`. Builds the hero image, CTA rows, a read-only "Details" section of `LabelValue` rows (release date / genre / copyright / Japanese title — only present fields render; section hidden when none), an artists `HorizontalScroller`, and the songs section. Songs collapse to label/value rows for a single-artist game, name+caption rows when multiple; shows an empty state on `notFound`. Column type `Staggered(320dp)`. |
 | `GameDetailViewModel.kt` | `@AssistedInject GameDetailViewModel : ChipboxListViewModel<GameDetailState>` with `@Assisted gameId: Long`, plus `Repository`, `Director`, `FavoritesRepository`, `StringProvider`, `Hatchet`. Loads the game with tracks+artists, observes `director.metadataState()` and `favorites.isGameFavorite`; `handleAction` starts `GAME` playback sessions, toggles favorite, and navigates to `ArtistDetail` / the `Playlists` picker. Nested `@AssistedFactory @ContributesIntoMap(AppScope) Factory`. |
 | `GameDetailRoute.kt` | `@Composable GameDetailRoute(gameId, onEvent, modifier)` — resolves the VM via `assistedMetroViewModel<…, Factory> { create(gameId) }` and renders `ChipboxListEntry`. |
 | `GameDetailViewModelTest.kt` | `commonTest`: covers the Data→LCE fan-out across the three slots, `notFound` semantics, `playingTrackId`, and action routing using `repository.fake` / `favorites.fake` / `player.director.fake`. |

@@ -25,7 +25,7 @@ import net.sigmabeta.sage.ui.StringProvider
  * (Done, Rename, Delete). The reducer subtracts this when turning a [SageAction.Reorder]'s list
  * indices into track positions — kept here so the layout and the reducer can't drift.
  */
-internal const val PLAYLIST_EDIT_HEADER_ROWS = 3
+const val PLAYLIST_EDIT_HEADER_ROWS = 3
 
 data class PlaylistDetailState(
     val playlist: LCE<Playlist> = LCE.Uninitialized,

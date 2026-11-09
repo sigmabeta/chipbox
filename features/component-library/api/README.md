@@ -14,6 +14,10 @@ route keys, value enums — and stay KMP so the desktop UI builds the same scree
 | `ComponentLibrary.kt` | `@Serializable data object ComponentLibrary` — the landing-menu route key (reached from Settings' debug section, gated behind `shouldShowDebug`). |
 | `ComponentLibraryMode.kt` | `@Serializable data class ComponentLibraryMode(val mode: LibraryMode)` — a single parameterized destination backing all three gallery modes; `mode` is threaded into the ViewModel via assisted injection. |
 | `LibraryMode.kt` | `@Serializable enum class LibraryMode { LIST, GRID, COLUMNS }` — which layout the gallery renders. |
+| `ComponentLibraryState.kt` | `ComponentLibraryState : ListState` — the landing menu, one row per `LibraryMode`. |
+| `ComponentLibraryModeState.kt` | `ComponentLibraryModeState : ListState` — maps the mode to its `ColumnType` and builds the showcase rows. |
+| `ComponentLibraryAction.kt` | `ComponentLibraryAction : ChipboxAction` — open a mode, expand a dropdown. |
+| `SampleContent.kt` | `SampleContent` — the deterministic text/name/caption set held in state. |
 
 ## Why depend on this module
 
@@ -38,4 +42,4 @@ emit(ChipboxEvent.NavigateTo(ComponentLibraryMode(LibraryMode.GRID)))
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.api` plugin transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf — only `kotlinx.serialization`, provided by the plugin)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

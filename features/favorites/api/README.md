@@ -4,15 +4,18 @@
 
 The `:api` half of the Favorites feature screen: it exports the `@Serializable`
 Voyager route key other features navigate to. Being the `:api` module, it carries
-only the public surface — no ViewModel, Compose, or state — so any feature can
-reference the destination without pulling in the screen implementation.
-(`FavoritesState`/`FavoritesAction` live in `:real` for this feature.)
+the route key and the screen's State/Action value types, but no ViewModel or
+Compose — so any feature can reference the destination without pulling in the
+screen implementation. `FavoritesState`/`FavoritesAction` are the value types
+this module adds.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `Favorites.kt` | `@Serializable data object Favorites` — the route key. `ChipboxScreens.kt` maps it to a Voyager `Screen`; emit `ChipboxEvent.NavigateTo(Favorites)` to open the screen. |
+| `FavoritesState.kt` | `FavoritesState : ListState`. Holds `LCE` lists of tracks/games/artists plus `playingTrackId`. `columnType` is `Staggered`; `toListItems` builds a tracks `SectionHeader` + `NameCaptionValueListModel` rows and games/artists `HorizontalScrollerListModel`s of `WideItemListModel`s, collapsing to one `EmptyStateListModel` when all three sections have loaded empty. |
+| `FavoritesAction.kt` | `sealed class FavoritesAction : ChipboxAction()` — `TrackClicked(position)`, `GameClicked(id)`, `ArtistClicked(id)`. |
 
 ## Why depend on this module
 
@@ -34,4 +37,4 @@ emit(ChipboxEvent.NavigateTo(Favorites))
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.api` plugin transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf — only `kotlinx.serialization`)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

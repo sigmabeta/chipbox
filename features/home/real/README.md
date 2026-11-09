@@ -2,9 +2,12 @@
 
 > The Home screen implementation — a modular, card-stacked landing tab assembled from independent `HomeModule`s.
 
-The `:real` half of the Home feature: the `ChipboxListViewModel`, its
-`State`/`Action`, the Compose `Route`, the pluggable `HomeModule` abstraction
-with its concrete card modules, and the Metro DI bindings that wire them in. The
+> The screen's `State`/`Action` value types live in `:features:home:api`; this module holds the ViewModel, Route and runtime helpers.
+
+The `:real` half of the Home feature: the `ChipboxListViewModel`, the Compose
+`Route`, the concrete card modules, and the Metro DI bindings that wire them in.
+The `State`/`Action` types and the pluggable `HomeModule` abstraction live in
+`:features:home:api`. The
 app includes this module to actually render Home; it is the only module that
 depends on the content/playback/scanner repositories. The screen is a list of
 sections, each owned by a `HomeModule` that emits its own `LCE<HomeModuleSection>`
@@ -19,19 +22,19 @@ This is a large module; files are grouped by role.
   (`@ContributesIntoMap(AppScope)` + `@ViewModelKey`, injects `Set<HomeModule>` +
   `Repository`/`Director`/`LibrarySource`/`Scanner`; collects every module's flow,
   drives the first-run empty state off `repository.getAllTracks(limit = 1)`, and
-  routes clicks/random picks/playback toggles in `handleAction`), `HomeState.kt`
+  routes clicks/random picks/playback toggles in `handleAction`), `HomeState.kt` (in `:api`)
   (`HomeState : ListState` + `HomeSectionState`; builds section rows via
   `withStandardErrorAndLoading`, wraps multi-item sections in a
   `HorizontalScrollerListModel`, and renders the empty-state CTAs). Host policy:
   `AppCapabilities.canManageLibrary = false` (web) swaps the empty-state copy to
   "managed on the server" and renders no folder/rescan CTAs; the ViewModel also
   ignores those two actions so a stale event cannot start a browser scan.
-  `HomeAction.kt` (`sealed class HomeAction : ChipboxAction()` — game/artist/song clicks, the
+  `HomeAction.kt` (in `:api`; `sealed class HomeAction : ChipboxAction()` — game/artist/song clicks, the
   random "RNG" actions, folder/rescan CTAs, and now-playing card events),
   `HomeRoute.kt` (`HomeRoute(onEvent, modifier)` → `metroViewModel()` →
   `ChipboxListEntry`). `HomeViewModel` also handles SAGE's
   `SageAction.NotifClearClicked` by removing the notification from `NotifManager`.
-- **Module abstraction** — `module/HomeModule.kt`: the `HomeModule` interface
+- **Module abstraction** (in `:api`) — `module/HomeModule.kt`: the `HomeModule` interface
   (`id`, `priority`, `showHeader`, `state(): Flow<LCE<HomeModuleSection>>`) and
   the `HomeModuleSection` row type (title + pre-built `ListModel`s).
 - **Card modules** — `modules/*HomeModule.kt`, one `HomeModule` per Home row,

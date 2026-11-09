@@ -2,8 +2,10 @@
 
 > The "Browse all tracks" screen — a windowed, paginated list of the whole track catalog.
 
+> The screen's `State`/`Action` value types live in `:features:browse-all-tracks:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The implementation of the browse-all-tracks feature: a `ChipboxListViewModel`,
-its `ListState`, the action type, and the Compose route. As the `:real` module
+the Compose route. As the `:real` module
 it's what the app actually includes to show the screen; the screen is a plain
 (non-assisted) `ViewModel` contributed into the `AppScope` map and registered in
 `ChipboxScreens.kt` as the parameterless `BrowseAllTracksScreen`.
@@ -12,8 +14,6 @@ it's what the app actually includes to show the screen; the screen is a plain
 
 | File | What it is |
 | --- | --- |
-| `BrowseAllTracksAction.kt` | `sealed BrowseAllTracksAction : ChipboxAction()` — `TrackClicked(position: Int)` and `ShuffleAllClicked`. |
-| `BrowseAllTracksState.kt` | `BrowseAllTracksState : ListState()` — single-column (`ColumnType.One`), `PaginationType.Standard()`; holds `LCE<List<Track>>`, `playingTrackId`, and the sliding window (`windowStart`, `hasMoreBefore/After`, `loadingPrevious/More`). Renders a shuffle-all CTA up front, inline header/footer paging spinners, `NameCaptionValue` track rows (click position = absolute catalog index `windowStart + index`), and an empty state when loaded-empty. |
 | `BrowseAllTracksViewModel.kt` | `@Inject @ContributesIntoMap(AppScope, binding<ViewModel>()) @ViewModelKey` plain `ChipboxListViewModel<BrowseAllTracksState>`. Windowed pagination via `repository.getAllTracks(withGame = true, limit, offset)` behind a single in-flight `pageJob`; `loadInitial`/`loadNextPage`/`loadPreviousPage` reducers; observes `director.metadataState()` for the playing track; `handleAction` starts an `ALL_TRACKS` session and handles `LoadMore`/`LoadPrevious`/`InitWithPageNumber`. No `@Assisted`/route args. |
 | `BrowseAllTracksRoute.kt` | `@Composable BrowseAllTracksRoute(onEvent, modifier)` → `metroViewModel<BrowseAllTracksViewModel>()` → `ChipboxListEntry`. Plain `metroViewModel` since there are no route args. |
 | `BrowseAllTracksViewModelTest.kt` | (commonTest) Drives the ViewModel over `FakeRepository`/`FakeDirector` — paging, playback, and the `InitWithPageNumber` prepend seam. |

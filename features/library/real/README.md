@@ -2,8 +2,10 @@
 
 > The Library tab screen — a static six-item navigation menu into the rest of the library.
 
-The implementation of the Library feature screen: a `ChipboxListViewModel`, its
-`ListState`, its `Action` type, and the Compose `Route`. As a feature `:real`
+> The screen's `State`/`Action` value types live in `:features:library:api`; this module holds the ViewModel, Route and runtime helpers.
+
+The implementation of the Library feature screen: a `ChipboxListViewModel` and
+the Compose `Route`. As a feature `:real`
 module it's the code the app includes to actually render and run the screen. The
 ViewModel is pure-navigation — it holds no data, just maps each menu tap to a
 `NavigateTo` event for a sub-screen (Favorites, Playlists, Browse-by-*, All
@@ -13,8 +15,6 @@ Tracks).
 
 | File | What it is |
 | --- | --- |
-| `LibraryState.kt` | `data object LibraryState : ListState` — single-column state that renders the six static `IconNameListModel` menu rows (title + icon + click action) and the "Library" title bar. |
-| `LibraryAction.kt` | `sealed class LibraryAction : ChipboxAction` — the six menu click actions (`FavoritesClicked`, `PlaylistsClicked`, `BrowseByGameClicked`, `BrowseByPlatformClicked`, `BrowseByArtistClicked`, `BrowseAllTracksClicked`). |
 | `LibraryViewModel.kt` | `@Inject` `ChipboxListViewModel<LibraryState>`, Metro-contributed via `@ContributesIntoMap(AppScope)` + `@ViewModelKey`; `handleAction` maps each action to `NavigateTo(<destination route key>)`. |
 | `LibraryRoute.kt` | `@Composable LibraryRoute(onEvent, modifier)` — resolves the VM with `metroViewModel()` and hands it to `ChipboxListEntry`. |
 
@@ -51,5 +51,5 @@ override fun handleAction(action: SageAction) {
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (`feature.real` transitively applies `sage.kmp.js`)
-- **Source set:** `commonMain` (state/action/VM/route all pure-Kotlin); tests in `commonTest`
+- **Source set:** `commonMain` (VM/route all pure-Kotlin); tests in `commonTest`
 - **SAGE/module dependencies:** `:features:library:api` (api); `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`; route keys from `:features:favorites:api`, `:features:playlists:api`, `:features:browse-all-tracks:api`, `:features:browse-by-artist:api`, `:features:browse-by-game:api`, `:features:browse-by-platform:api`

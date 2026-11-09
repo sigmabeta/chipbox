@@ -3,7 +3,7 @@
 > Paparazzi visual-regression companion for the browse-all-tracks screen.
 
 The `:screenshot` module: Android-only Paparazzi previews and golden-image tests
-for `:real`. It renders `BrowseAllTracksState` directly (wrapping the state
+for `:api`. It renders `BrowseAllTracksState` directly (wrapping the state
 object, not the ViewModel) so the list UI can be snapshotted deterministically
 across devices.
 
@@ -17,7 +17,7 @@ across devices.
 ## Why depend on this module
 
 Nothing depends on `:screenshot` — it's a leaf test companion that depends on
-`:real`. It exists only to catch unintended visual changes to the
+`:api`. It exists only to catch unintended visual changes to the
 browse-all-tracks screen; the goldens are the regression baseline.
 
 ## Using it
@@ -32,4 +32,4 @@ browse-all-tracks screen; the goldens are the regression baseline.
 - **Plugin:** `chipbox.plugins.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews) + `src/test/java` (Paparazzi tests)
-- **SAGE/module dependencies:** `implementation` → `:features:browse-all-tracks:real`
+- **SAGE/module dependencies:** `implementation` → `:features:browse-all-tracks:api`

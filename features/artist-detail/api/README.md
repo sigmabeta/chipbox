@@ -12,6 +12,8 @@ screen without depending on the screen itself.
 | File | What it is |
 | --- | --- |
 | `ArtistDetail.kt` | `@Serializable data class ArtistDetail(val id: Long)` — the Chipbox screen destination for one artist, identified by DB id. |
+| `ArtistDetailState.kt` | `ArtistDetailState : ListState()` — LCE-wrapped `artist`/`tracks`/`games`, `playingTrackId`, `isFavorite`, `notFound`. Builds the hero image, CTA rows (play / shuffle / favorite toggle / add-to-playlist), a games `HorizontalScroller`, and a songs section; shows an empty state when `notFound`. Uses `ColumnType.Staggered(320dp)`. The songs section renders as **one non-lazy column** (so it can move between grid columns as a single unit), so it renders at most `SONGS_PREVIEW_COUNT` (50) rows and appends a "View all N songs" CTA when the artist has more — this is the fix for the main-thread freeze on prolific composers (see `arch-docs/artist-detail-loading-stall.md`). |
+| `ArtistDetailAction.kt` | `ArtistDetailAction : ChipboxAction()` — `TrackClicked(position)`, `GameClicked(id)`, `PlayAllClicked`, `ShuffleAllClicked`, `AddToFavoritesClicked`, `AddToPlaylistClicked`, `ViewAllSongsClicked`. |
 
 ## Why depend on this module
 
@@ -33,4 +35,4 @@ emit(NavigateTo(ArtistDetail(id = artist.id)))
 - **Plugin:** `chipbox.plugins.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf; only `kotlinx.serialization` from the plugin)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

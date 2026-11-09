@@ -2,8 +2,10 @@
 
 > The "all songs by an artist" screen — a flat, lazily-scrolling track list.
 
+> The screen's `State`/`Action` value types live in `:features:tracks-for-artist:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The implementation of the tracks-for-artist feature: a `ChipboxListViewModel`,
-its `ListState`, the action vocabulary, and the composable route entry point. This
+the composable route entry point. This
 is the "View all songs" destination that a prolific composer's artist-detail screen
 links to, because the artist-detail song section renders as a single non-lazy
 column (bounded to a preview) and cannot hold hundreds of rows without freezing the
@@ -13,8 +15,6 @@ main thread.
 
 | File | What it is |
 | --- | --- |
-| `TracksForArtistState.kt` | `TracksForArtistState : ListState()` — `artistName`, an `LCE<List<Track>>`, and `playingTrackId`. `columnType` is `One` (a plain lazy `ListScreen`, so length is unbounded). Shows play-all + shuffle-all CTAs up front, then `NameCaptionValueListModel` rows (song title / game caption / length), or an `EmptyStateListModel`. Title is the artist name. |
-| `TracksForArtistAction.kt` | `sealed TracksForArtistAction : ChipboxAction()` — `PlayAllClicked`, `ShuffleAllClicked`, `TrackClicked(position: Int)`. |
 | `TracksForArtistViewModel.kt` | `@AssistedInject ChipboxListViewModel<TracksForArtistState>` — takes the `@Assisted artistId` + `artistName` plus `Repository`, `Director`, `StringProvider`, `Hatchet`. Loads via `repository.getTracksForArtist(artistId, withGame = true, withArtists = false)`; maps a throw to `LCE.Error`. Play/shuffle/tap start an `ARTIST` session through the `Director` (`contentId = artistId`). Nested `@AssistedFactory` is `@ContributesIntoMap(AppScope::class)`. |
 | `TracksForArtistRoute.kt` | `@Composable TracksForArtistRoute(artistId, artistName, onEvent, modifier)` — resolves the VM via `assistedMetroViewModel { create(artistId, artistName) }` and hands it to `ChipboxListEntry`. |
 | `TracksForArtistViewModelTest.kt` (`commonTest`) | Covers title seeding, load result mapping (content/empty/error), and session-start actions over fakes. |

@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.browseByArtist.real)
+    implementation(projects.features.browseByArtist.api)
 }

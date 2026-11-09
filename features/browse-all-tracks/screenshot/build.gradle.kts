@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.browseAllTracks.real)
+    implementation(projects.features.browseAllTracks.api)
 }

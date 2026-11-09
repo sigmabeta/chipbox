@@ -3,7 +3,7 @@
 > Route key for the debug-only crash-report viewer.
 
 The `:api` half of the `crash-log` feature: a single Voyager route key. `:api`
-modules hold only types — here just the `@Serializable` destination — and stay
+modules hold types — here the `@Serializable` destination plus the screen's State/Action types — and stay
 KMP so the desktop UI builds the same screen.
 
 ## Contents
@@ -11,6 +11,8 @@ KMP so the desktop UI builds the same screen.
 | File | What it is |
 | --- | --- |
 | `CrashLog.kt` | `@Serializable data object CrashLog` — the route key for the crash-log screen. |
+| `CrashLogState.kt` | Maps each `CrashReport` to a `CollapsibleDetailsListModel` — a one-line summary title (`"IllegalStateException · 2026-06-07 14:23:01"`) plus expandable detail items (message, build metadata, stack trace, recent-log tail). Empty list renders an `EmptyStateListModel`. |
+| `CrashTimestamp.kt` | `expect fun formatCrashTimestamp(epochMs)` — wall-clock date + time; JVM/Android actuals use `java.time`, JS returns the raw epoch. |
 
 ## Why depend on this module
 
@@ -30,5 +32,5 @@ emit(ChipboxEvent.NavigateTo(CrashLog))
 
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
-- **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf — only `kotlinx.serialization`, provided by the plugin)
+- **Source set:** `commonMain`, with `src/main/java` (`jvmSharedMain`) + `jsMain` actuals for the formatter/decode helper
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin
