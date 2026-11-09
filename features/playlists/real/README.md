@@ -2,8 +2,10 @@
 
 > The playlists list screen: browse your playlists, create new ones, and pick a target for "Add to Playlist".
 
+> The screen's `State`/`Action` value types live in `:features:playlists:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The `:real` half of the `playlists` feature — the actual screen. It supplies a
-`ChipboxListViewModel`, its `ListState`/`Action` value types, and the Compose
+`ChipboxListViewModel` and the Compose
 `PlaylistsRoute` entry point. The app includes this module; the route is registered in
 `cbox/common/appui/api/.../ChipboxScreens.kt` via `screenFor()`.
 
@@ -11,8 +13,6 @@ The `:real` half of the `playlists` feature — the actual screen. It supplies a
 
 | File | What it is |
 | --- | --- |
-| `PlaylistsState.kt` | `PlaylistsState : ListState` — an `LCE<List<Playlist>>` plus an `isPicker` flag. Renders the always-present "New Playlist" CTA, then a loading/empty/error body or one `IconNameCaptionListModel` per playlist (name + track-count caption). Title switches between browse and "Add to Playlist" by `isPicker`. |
-| `PlaylistsAction.kt` | `PlaylistsAction : ChipboxAction` — `PlaylistClicked(id)` and `NewPlaylistClicked`. |
 | `PlaylistsViewModel.kt` | `ChipboxListViewModel<PlaylistsState>` wired with Metro (`@AssistedInject` + `@ContributesIntoMap(AppScope::class)` factory). Collects `PlaylistsRepository.playlists()`; routes clicks to `PlaylistDetail` (browse) or appends tracks and navigates back (picker); creates playlists with a unique-default-name fallback (`uniqueDefaultName`). |
 | `PlaylistsRoute.kt` | `@Composable PlaylistsRoute(pendingTrackIds, suggestedName, onEvent, modifier)` — resolves the assisted VM via `assistedMetroViewModel` and renders it through `ChipboxListEntry`. |
 

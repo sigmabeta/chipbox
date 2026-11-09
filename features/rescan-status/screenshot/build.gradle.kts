@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.rescanStatus.real)
+    implementation(projects.features.rescanStatus.api)
 }

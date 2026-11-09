@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.browseByGame.real)
+    implementation(projects.features.browseByGame.api)
 }

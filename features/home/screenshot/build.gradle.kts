@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.home.real)
+    implementation(projects.features.home.api)
 
     // Home previews build sage list models (GridImageListModel) inline because each
     // HomeModule owns its own item construction — without this, only the State pipeline

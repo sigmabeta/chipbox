@@ -17,9 +17,9 @@ and pins the result as Paparazzi snapshots, so unintended UI changes fail CI.
 ## Why depend on this module
 
 Nothing depends on `:features:playlists:screenshot`; it is a leaf test companion. It
-depends on `:features:playlists:real` purely to render the real `PlaylistsState` /
+depends on `:features:playlists:api` purely to render `PlaylistsState` /
 `ListScreenPreview` output. It exists to keep the screen's appearance under
-regression control, separate from the `:api` route key and `:real` implementation.
+regression control, separate from the `:api` types and `:real` implementation.
 
 ## Using it
 
@@ -37,4 +37,4 @@ Use `scripts/dev/paparazzi-diff.sh` rather than invoking the Gradle task directl
 - **Plugin:** `chipbox.plugins.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews), `src/test/java` (Paparazzi test)
-- **SAGE/module dependencies:** `:features:playlists:real`
+- **SAGE/module dependencies:** `:features:playlists:api`

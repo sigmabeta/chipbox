@@ -2,7 +2,7 @@
 
 > Paparazzi visual-regression goldens for the playlist-detail screen.
 
-The Android-only `:screenshot` companion to `:features:playlist-detail:real`: a set
+The Android-only `:screenshot` companion to `:features:playlist-detail:api`: a set
 of `@DevicePreviews` composables driving `PlaylistDetailState` through
 `ListScreenPreview`, plus a parameterized Paparazzi test that snapshots each across
 the interesting devices and themes.
@@ -19,7 +19,7 @@ the interesting devices and themes.
 Nothing depends on this module — it is a leaf test companion. It exists only to
 host the Paparazzi goldens (under `src/test/snapshots/`) and guard the
 playlist-detail UI against unintended visual changes. It depends on
-`:features:playlist-detail:real` to render the real screen against its state.
+`:features:playlist-detail:api` to render the screen against its state.
 
 ## Using it
 
@@ -33,4 +33,4 @@ playlist-detail UI against unintended visual changes. It depends on
 - **Plugin:** `chipbox.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews), `src/test/java` (Paparazzi test)
-- **SAGE/module dependencies:** `:features:playlist-detail:real`
+- **SAGE/module dependencies:** `:features:playlist-detail:api`

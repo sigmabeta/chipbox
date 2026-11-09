@@ -2,7 +2,7 @@
 
 > Paparazzi golden-image companion for the game-detail screen.
 
-The visual-regression test module for `:features:game-detail:real`. As a
+The visual-regression test module for `:features:game-detail:api`. As a
 `:screenshot` module it renders the screen's `GameDetailState` through the preview
 harness and snapshots it across a set of devices; the goldens guard the screen's
 appearance. Android-only.
@@ -17,7 +17,7 @@ appearance. Android-only.
 ## Why depend on this module
 
 Nothing depends on `:screenshot`; it is a leaf test companion that depends on
-`:real`. It exists so CI (and `verifyPaparazziDebug`) can catch unintended visual
+`:api`. It exists so CI (and `verifyPaparazziDebug`) can catch unintended visual
 changes to the game-detail screen.
 
 ## Using it
@@ -32,4 +32,4 @@ changes to the game-detail screen.
 - **Plugin:** `chipbox.plugins.screenshot` (Paparazzi)
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews) + `src/test/java` (tests)
-- **SAGE/module dependencies:** `implementation` `:features:game-detail:real`
+- **SAGE/module dependencies:** `implementation` `:features:game-detail:api`

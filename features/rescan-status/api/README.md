@@ -12,6 +12,8 @@ the `:api` half of the feature; the screen itself lives in `:real`.
 | File | What it is |
 | --- | --- |
 | `RescanStatus.kt` | `@Serializable data object RescanStatus` — the route key for the live scan-status screen. |
+| `RescanStatusState.kt` | `RescanStatusState : ListState` plus `ScanPhase`, `ScanEventKind`, and `ScanEventItem`. Renders a Progress section (elapsed/games/tracks/failed, a live per-folder "Folder" row above a per-file "Scanning…" heartbeat row, and — when the scan failed — either a "Failed at <path>" row or, for a `CONFIGURATION` failure, the localized configuration-error row) followed by a reversed Changes feed of game-change rows. |
+| `RescanStatusAction.kt` | `RescanStatusAction.GameClicked(gameId)` — tapping an added/updated game row. |
 
 ## Why depend on this module
 
@@ -39,4 +41,4 @@ The route is mapped to its Voyager `Screen` in
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

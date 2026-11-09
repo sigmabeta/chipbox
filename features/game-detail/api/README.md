@@ -12,6 +12,8 @@ types other features need to navigate here — the screen implementation lives i
 | File | What it is |
 | --- | --- |
 | `GameDetail.kt` | `@Serializable data class GameDetail(val id: Long)` — the route key / destination for the game-detail screen, carrying the game's DB id. |
+| `GameDetailAction.kt` | Sealed `GameDetailAction : ChipboxAction()`: `TrackClicked(position)`, `ArtistClicked(id)`, `PlayAllClicked`, `ShuffleAllClicked`, `AddToFavoritesClicked`, `AddToPlaylistClicked`. |
+| `GameDetailState.kt` | `GameDetailState : ListState()` holding `LCE<Game>`/`LCE<List<Track>>`/`LCE<List<Artist>>` plus `playingTrackId`, `isFavorite`, `notFound`. Builds the hero image, CTA rows, a read-only "Details" section of `LabelValue` rows (release date / genre / copyright / Japanese title — only present fields render; section hidden when none), an artists `HorizontalScroller`, and the songs section. Songs collapse to label/value rows for a single-artist game, name+caption rows when multiple; shows an empty state on `notFound`. Column type `Staggered(320dp)`. |
 
 ## Why depend on this module
 
@@ -32,4 +34,4 @@ emit(NavigateTo(GameDetail(id = game.id)))
 - **Plugin:** `chipbox.plugins.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf; only `kotlinx.serialization` from the plugin)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.tracksForArtist.real)
+    implementation(projects.features.tracksForArtist.api)
 }

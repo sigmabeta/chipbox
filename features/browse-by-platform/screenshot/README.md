@@ -1,11 +1,11 @@
 # `:features:browse-by-platform:screenshot`
 
-> Paparazzi visual-regression companion for `:features:browse-by-platform:real`.
+> Paparazzi visual-regression companion for `:features:browse-by-platform:api`.
 
 The `:screenshot` module for the `browse-by-platform` feature: Android-only
 Paparazzi previews and a parameterized test that snapshots the screen across a set
 of devices. It wraps the `BrowseByPlatformState` object directly (no ViewModel),
-producing golden images that guard the `:real` UI against regressions.
+producing golden images that guard the rendered UI against regressions.
 
 ## Contents
 
@@ -36,4 +36,4 @@ Use `verifyPaparazziDebug` unless you intend to re-record.
 - **Plugin:** `chipbox.plugins.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` + `src/test/java`
-- **SAGE/module dependencies:** `implementation` `:features:browse-by-platform:real`
+- **SAGE/module dependencies:** `implementation` `:features:browse-by-platform:api`

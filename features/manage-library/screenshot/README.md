@@ -2,7 +2,7 @@
 
 > Paparazzi visual-regression goldens for the manage-library screen.
 
-The `:screenshot` companion for `:features:manage-library:real`. It's an
+The `:screenshot` companion for `:features:manage-library:api`. It's an
 Android-only Paparazzi module that renders `ManageLibraryState` through the
 shared `ListScreenPreview` harness across a matrix of devices and themes, so
 visual changes to the screen are caught by golden comparison. It contributes no
@@ -17,7 +17,7 @@ production code.
 
 ## Why depend on this module
 
-Nothing depends on this module — it's a test-only leaf that depends on `:real`.
+Nothing depends on this module — it's a test-only leaf that depends on `:api`.
 It exists so CI's `verifyPaparazziDebug` can diff the manage-library screen
 against committed goldens.
 
@@ -40,4 +40,4 @@ intend to re-record.
 - **Targets:** Android only (Paparazzi runs on the JVM unit-test classpath)
 - **Source set:** `src/main/java` (preview composables) + `src/test/java`
   (Paparazzi tests); goldens under `src/test/snapshots/images` (git-LFS)
-- **SAGE/module dependencies:** `:features:manage-library:real`
+- **SAGE/module dependencies:** `:features:manage-library:api`

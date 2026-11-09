@@ -5,14 +5,16 @@
 The public surface of the search feature. It exports only the `@Serializable`
 route key `Search`; this is the `:api` half of the feature-screen split, so any
 module that needs to navigate to search can depend on it without pulling in the
-screen implementation. Unlike `settings`/`game-detail`, search keeps its
-`State`/`Action` types in `:real`, so this module is just the route key.
+screen implementation. The route key and the screen's `State`/`Action` types
+live here; the ViewModel and Compose UI stay in `:real`.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `Search.kt` | `@Serializable data object Search` — the Voyager route key for the search screen. It's a `data object` because the screen takes no arguments. |
+| `SearchState.kt` | `SearchState : ListState`. Holds the live `query`, the debounced `submittedQuery`, and per-category `LCE` results (`gameResults`/`songResults`/`artistResults`) plus `history`. `toListItems` shows recent searches (with an empty-state prompt when sparse) when no query is submitted, otherwise game/song/artist sections built via `withStandardErrorAndLoading`; `title()` returns an empty `TitleBarModel` since the top bar is hidden. |
+| `SearchAction.kt` | `sealed class SearchAction : ChipboxAction()` — `QueryChanged`, `HistoryClicked`, `HistoryRemoved`, `GameClicked`, `SongClicked`, `ArtistClicked`, `BackClicked`. |
 
 ## Why depend on this module
 
@@ -35,4 +37,4 @@ emit(ChipboxEvent.NavigateTo(Search))
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.api` plugin transitively applies `sage.kmp.js`).
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf) — only `kotlinx.serialization`.
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

@@ -2,8 +2,9 @@
 
 > The debug-only error-log screen: Hatchet's recent-errors buffer as a list.
 
-The `:real` half of the `error-log` feature: the ViewModel, state, Route
-composable, and timestamp formatter that implement the screen whose route key
+> The screen's `State`/`Action` value types live in `:features:error-log:api`; this module holds the ViewModel, Route and runtime helpers.
+
+The `:real` half of the `error-log` feature: the ViewModel, Route composable, and timestamp formatter that implement the screen whose route key
 lives in `:features:error-log:api`. `:real` modules hold the screen
 implementation (a `ChipboxListViewModel` wired into the Metro `AppScope` graph,
 Compose content); the app includes this module. There is no `:screenshot`
@@ -19,9 +20,9 @@ name+caption row. Reached from the Settings debug section (gated behind
 | File | What it is |
 | --- | --- |
 | `ErrorLogViewModel.kt` | `@ContributesIntoMap`+`@ViewModelKey`+`@Inject` VM; reads `hatchet.recentErrors.reversed()` into state in `init`. `handleAction` is a no-op (read-only screen). |
-| `ErrorLogState.kt` | Maps each `HatchetError` to a `NameCaptionListModel` (message as name; `"12:34:56 · tag · thread"` caption, blank pieces dropped). `dataId` is the list index. Empty list renders an `EmptyStateListModel`. |
 | `ErrorLogRoute.kt` | `ErrorLogRoute(onEvent, modifier)` — resolves the VM with `metroViewModel()` and hands it to `ChipboxListEntry`. |
-| `ErrorTimestamp.kt` | `expect formatErrorTimestamp(epochMs)` — wall-clock **time-of-day** (`"12:34:56"`). JVM/Android `actual` (`src/main/java`) uses `java.time`; the JS `actual` returns the raw epoch string. |
+
+The `ErrorTimestamp` formatter lives with `ErrorLogState` in `:features:error-log:api`.
 
 ## Why depend on this module
 
@@ -41,5 +42,5 @@ ErrorLog -> ErrorLogScreen        // ErrorLogRoute(onEvent = LocalChipboxEventSi
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
-- **Source set:** `commonMain` (VM, state, route); `src/main/java` (`jvmSharedMain`) + `jsMain` for the timestamp `actual`; `commonTest` for `ErrorLogViewModelTest`
+- **Source set:** `commonMain` (VM, route); `commonTest` for `ErrorLogViewModelTest`. The state and timestamp formatter live in `:api`.
 - **SAGE/module dependencies:** `:features:error-log:api`; `:cbox:common:appcomm:api`, `:cbox:common:ui:list:api`, `:cbox:common:strings:api`; `sage.common.ui.components`

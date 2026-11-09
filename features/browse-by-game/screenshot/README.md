@@ -1,9 +1,9 @@
 # `:features:browse-by-game:screenshot`
 
-> Paparazzi visual-regression companion for `:features:browse-by-game:real`.
+> Paparazzi visual-regression companion for `:features:browse-by-game:api`.
 
 The `:screenshot` module pins the rendered look of the browse-by-game screen with
-golden images. It's an Android-only Paparazzi companion to `:real`: it wraps the
+golden images. It's an Android-only Paparazzi companion to `:api`: it wraps the
 `BrowseByGameState` object (not the ViewModel) in previews and snapshots them
 across a range of devices so unintended UI changes are caught in CI.
 
@@ -16,7 +16,7 @@ across a range of devices so unintended UI changes are caught in CI.
 
 ## Why depend on this module
 
-Nothing depends on `:screenshot` — it's a test-only leaf that depends on `:real`.
+Nothing depends on `:screenshot` — it's a test-only leaf that depends on `:api`.
 Its job is to fail the build when the screen's pixels drift. Add or update its
 previews when you change the browse-by-game UI; recording the goldens is a
 deliberate, separate step (see below).
@@ -33,4 +33,4 @@ deliberate, separate step (see below).
 - **Plugin:** `chipbox.plugins.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews) + `src/test/java` (Paparazzi tests)
-- **SAGE/module dependencies:** `implementation` → `:features:browse-by-game:real`
+- **SAGE/module dependencies:** `implementation` → `:features:browse-by-game:api`

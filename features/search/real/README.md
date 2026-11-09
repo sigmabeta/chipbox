@@ -2,10 +2,12 @@
 
 > The search screen: a debounced live-query ViewModel plus a custom Compose screen with an in-screen search bar over a results grid.
 
+> The screen's `State`/`Action` value types live in `:features:search:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The `:real` half of the search feature — the implementation the app includes to
 actually show the screen. It holds `SearchViewModel`
 (`@ContributesIntoMap(AppScope)` + `@ViewModelKey` + `@Inject`), the
-`SearchState`/`SearchAction` types, and the Compose UI. Unlike a stock
+the Compose UI. Unlike a stock
 list-screen feature, search **does not** route through `ChipboxListEntry` /
 `ListScreen` — it renders its own `SearchContent` (a `LazyVerticalGrid` of SAGE
 `ListModel`s) with `SearchBar` and a status-bar scrim overlaid on top, so the
@@ -16,8 +18,6 @@ usual `*Route → ChipboxListEntry` quartet is replaced by `SearchRoute` +
 
 | File | What it is |
 | --- | --- |
-| `SearchState.kt` | `SearchState : ListState`. Holds the live `query`, the debounced `submittedQuery`, and per-category `LCE` results (`gameResults`/`songResults`/`artistResults`) plus `history`. `toListItems` shows recent searches (with an empty-state prompt when sparse) when no query is submitted, otherwise game/song/artist sections built via `withStandardErrorAndLoading`; `title()` returns an empty `TitleBarModel` since the top bar is hidden. |
-| `SearchAction.kt` | `sealed class SearchAction : ChipboxAction()` — `QueryChanged`, `HistoryClicked`, `HistoryRemoved`, `GameClicked`, `SongClicked`, `ArtistClicked`, `BackClicked`. |
 | `SearchViewModel.kt` | `ChipboxListViewModel<SearchState>`. Debounces typing (300ms, min length 3) into `submittedQuery`, runs `searchGames/Songs/Artists` in parallel via `flatMapLatest`, and records history only after a 3s linger window when results exist. Handles navigation (game/artist detail), plays song results as a `director` setlist, and removes history entries. |
 | `SearchRoute.kt` | `SearchRoute(onEvent, modifier)` — resolves the VM via `metroViewModel()`, hides the app top bar (`ChipboxEvent.RequestTopBarVisibility(false)`), collects `events`, and feeds `uiStateActual.listItems` + raw `query` + `showDebug` into `SearchContent`. |
 | `SearchContent.kt` | The custom screen: a `LazyVerticalGrid` (`GridCells.Adaptive(160.dp)`) of `ListModel`s, with `SearchBar` and a top scrim overlaid in a `Box`. Auto-scrolls to top when the query changes. |

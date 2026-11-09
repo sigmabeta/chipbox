@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.folderPicker.real)
+    implementation(projects.features.folderPicker.api)
 }

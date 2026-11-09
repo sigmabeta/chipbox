@@ -2,9 +2,11 @@
 
 > The live library-scan status screen — real-time progress plus a feed of added/updated/removed games.
 
+> The screen's `State`/`Action` value types live in `:features:rescan-status:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The `:real` implementation of the rescan-status feature: a
 `ChipboxListViewModel` that reduces the `Scanner`'s two flows (`state()` and
-`scanEvents()`) into one batched list state, the `ListState` renderer, and the
+`scanEvents()`) into one batched list state and the
 Compose `Route` content. The app includes this module; navigation targets only
 the `:api` route key.
 
@@ -12,8 +14,6 @@ the `:api` route key.
 
 | File | What it is |
 | --- | --- |
-| `RescanStatusState.kt` | `RescanStatusState : ListState` plus `ScanPhase`, `ScanEventKind`, and `ScanEventItem`. Renders a Progress section (elapsed/games/tracks/failed, a live per-folder "Folder" row above a per-file "Scanning…" heartbeat row, and — when the scan failed — either a "Failed at <path>" row or, for a `CONFIGURATION` failure, the localized configuration-error row) followed by a reversed Changes feed of game-change rows. |
-| `RescanStatusAction.kt` | `RescanStatusAction.GameClicked(gameId)` — tapping an added/updated game row. |
 | `RescanStatusViewModel.kt` | `@ContributesIntoMap` / `@ViewModelKey` / `@Inject` ViewModel. Collects `Scanner.state()` + `Scanner.scanEvents()`, buffers them, and flushes to state on timers; handles `GameClicked` by emitting `NavigateTo(GameDetail(id))`. |
 | `RescanStatusRoute.kt` | `@Composable RescanStatusRoute(onEvent, modifier)` — resolves the VM via `metroViewModel()` and renders it through `ChipboxListEntry`. |
 
@@ -76,5 +76,5 @@ The ViewModel is contributed to the app graph automatically via Metro
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
-- **Source set:** `commonMain` (state, route, ViewModel) and `commonTest` (`RescanStatusViewModelTest`). The ViewModel + route live in `commonMain` because `scanner.api` is now KMP — no `jvmSharedMain` split.
+- **Source set:** `commonMain` (route, ViewModel) and `commonTest` (`RescanStatusViewModelTest`). The ViewModel + route live in `commonMain` because `scanner.api` is now KMP — no `jvmSharedMain` split.
 - **SAGE/module dependencies:** `:features:rescan-status:api` (api), `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:scanner:api`, `:features:game-detail:api`, `sage.common.images`; test: `:cbox:common:scanner:fake`.

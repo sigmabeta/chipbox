@@ -2,6 +2,8 @@
 
 > The full-screen player: artwork, transport, seek bar, inline setlist, context menus, and error log.
 
+> The screen's `State`/`Action` value types live in `:features:now-playing:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The screen implementation behind the `NowPlaying` route. This is the feature's
 `:real` module: it provides a `ChipboxFreeformViewModel` (`@ContributesIntoMap` +
 `@ViewModelKey` + `@Inject`) that drives the player off the `Director`, plus the
@@ -10,7 +12,7 @@ the `NowPlaying` key to `NowPlayingRoute`.
 
 ## Contents
 
-**State types** — `NowPlayingState.kt` (`NowPlayingState`, the `FreeformState`
+**State types (in `:features:now-playing:api`)** — `NowPlayingState.kt` (`NowPlayingState`, the `FreeformState`
 that maps `Director`/`Repository`/`FavoritesRepository` data to a
 `NowPlayingModel`, plus `SetlistRowData`); `NowPlayingModel.kt` (the immutable UI
 model the composables read, plus `NowPlayingError`, `ContextMenuMode`,

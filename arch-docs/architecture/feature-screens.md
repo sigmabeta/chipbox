@@ -11,12 +11,12 @@ Metro DI, and Voyager navigation. Learn one feature and you know them all.
   route key, and so the desktop UI builds the same screen from the same types).
   - Route key: `@Serializable data object Settings` (or `data class GameDetail(val id: Long)`).
   - `<Name>State` (extends `ListState`) and `<Name>Action` (extends `ChipboxAction`).
+  - Declare the public dependencies these types expose (SAGE list/components/
+    strings, models, `ChipboxAction`, …) in the `:api` build file. Keep the
+    ViewModel, Route and anything platform- or runtime-specific in `:real`.
 - `features/<name>/real` (`chipbox.feature.real`, KMP) — the ViewModel and the
   Route composable (the impl).
 - `features/<name>/screenshot` (`chipbox.screenshot`, Android) — Paparazzi tests.
-
-(Some features keep `State`/`Action` in `:real` instead of `:api` — `settings`
-and `game-detail` put them in `:api`. Follow the neighbouring feature.)
 
 ## The ViewModel
 

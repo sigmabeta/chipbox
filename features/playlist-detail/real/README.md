@@ -2,8 +2,9 @@
 
 > The playlist-detail screen: view, play, and edit a single playlist.
 
-The `:real` implementation of the playlist-detail feature — `ViewModel`, state,
-actions, and the Compose route content. Renders a single playlist's tracks with
+> The screen's `State`/`Action` value types live in `:features:playlist-detail:api`; this module holds the ViewModel, Route and runtime helpers.
+
+The `:real` implementation of the playlist-detail feature — `ViewModel` and the Compose route content. Renders a single playlist's tracks with
 play/shuffle CTAs in view mode and inline drag-reorder, remove, rename, and delete
 in edit mode. The app includes this module; `cbox/common/appui/api/.../ChipboxScreens.kt`
 maps the `:api` route key to it via `screenFor()`.
@@ -14,8 +15,6 @@ maps the `:api` route key to it via `screenFor()`.
 | --- | --- |
 | `PlaylistDetailRoute.kt` | `@Composable PlaylistDetailRoute(playlistId, onEvent, modifier)` — resolves the VM via `assistedMetroViewModel` and renders through `ChipboxReorderableEntry`. |
 | `PlaylistDetailViewModel.kt` | `ChipboxListViewModel<PlaylistDetailState>` with `@AssistedInject` (the `playlistId` route arg is `@Assisted`); reduces actions, hydrates tracks, drives the `Director`. Inner `Factory` is `@ContributesIntoMap(AppScope::class)`. |
-| `PlaylistDetailState.kt` | `ListState` subclass: the LCE-wrapped playlist/tracks plus edit/rename/delete flags, and the `toListItems` reducer that builds the row models for each mode. |
-| `PlaylistDetailAction.kt` | `sealed class PlaylistDetailAction : ChipboxAction()` — Play All, Shuffle, TrackClicked, Edit/Done, Rename, Delete, TrackRemoved. |
 
 ## Why depend on this module
 

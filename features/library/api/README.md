@@ -3,7 +3,7 @@
 > The Library tab's Voyager route key — the typed destination other features navigate to.
 
 The public surface of the Library feature screen. As a feature `:api` module it
-exports nothing but the `@Serializable` route key, so any feature can navigate to
+exports the `@Serializable` route key and the screen's State/Action types, so any feature can navigate to
 the Library tab without depending on its implementation.
 
 ## Contents
@@ -11,6 +11,8 @@ the Library tab without depending on its implementation.
 | File | What it is |
 | --- | --- |
 | `Library.kt` | `@Serializable data object Library` — the Voyager route key for the Library tab. |
+| `LibraryState.kt` | `data object LibraryState : ListState` — single-column state that renders the six static `IconNameListModel` menu rows (title + icon + click action) and the "Library" title bar. |
+| `LibraryAction.kt` | `sealed class LibraryAction : ChipboxAction` — the six menu click actions (`FavoritesClicked`, `PlaylistsClicked`, `BrowseByGameClicked`, `BrowseByPlatformClicked`, `BrowseByArtistClicked`, `BrowseAllTracksClicked`). |
 
 ## Why depend on this module
 
@@ -35,4 +37,4 @@ emit(NavigateTo(Library))
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (`feature.api` transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

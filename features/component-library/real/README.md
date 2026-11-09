@@ -2,8 +2,10 @@
 
 > The debug-only component gallery screen: every reusable `ListModel` rendered in each layout mode.
 
-The `:real` half of the `component-library` feature: the ViewModels, states,
-Route composables, and sample-content generator that implement the gallery whose
+> The screen's `State`/`Action` value types live in `:features:component-library:api`; this module holds the ViewModel, Route and runtime helpers.
+
+The `:real` half of the `component-library` feature: the ViewModels, Route
+composables, and sample-content generator that implement the gallery whose
 route keys live in `:features:component-library:api`. `:real` modules hold the
 screen implementation (`ChipboxListViewModel`s wired into the Metro `AppScope`
 graph, Compose content); the app includes this module. There is no `:screenshot`
@@ -16,10 +18,10 @@ Settings debug section (gated behind `shouldShowDebug`).
 ## Contents
 
 - **ViewModels** — `ComponentLibraryViewModel` (`@ContributesIntoMap`+`@ViewModelKey`+`@Inject`) drives the landing menu and emits `NavigateTo(ComponentLibraryMode(...))` when a row is tapped; `ComponentLibraryModeViewModel` (`@AssistedInject` + `Factory`) takes the chosen `LibraryMode`, seeds a stable sample set in `init`, and handles the one interactive control (the dropdown).
-- **States** — `ComponentLibraryState` builds the menu (one `IconNameListModel` per `LibraryMode`); `ComponentLibraryModeState` maps the mode to a `ColumnType` (`One`/`Regular`/`Staggered`) and emits the showcase rows (`listItems`/`gridItems`/`columnItems`).
-- **Action** — `ComponentLibraryAction` (`OpenMode`, `DropdownExpandClicked`); sample rows otherwise use `SageAction.Noop`.
+- **States** (in `:api`) — `ComponentLibraryState` builds the menu (one `IconNameListModel` per `LibraryMode`); `ComponentLibraryModeState` maps the mode to a `ColumnType` (`One`/`Regular`/`Staggered`) and emits the showcase rows (`listItems`/`gridItems`/`columnItems`).
+- **Action** (in `:api`) — `ComponentLibraryAction` (`OpenMode`, `DropdownExpandClicked`); sample rows otherwise use `SageAction.Noop`.
 - **Routes** — `ComponentLibraryRoute` (menu) and `ComponentLibraryModeRoute`; the latter forces `LocalInspectionMode = true` so the synthetic `sourceInfo` strings render deterministic `BitmapGenerator` gradients instead of failing image loads.
-- **Sample content** (`expect`/`actual`) — `SampleContent` + `generateSampleContent`; the JVM/Android `actual` (`src/main/java`) uses SAGE's `StringGenerator`, the JS `actual` returns deterministic placeholders.
+- **Sample content** (`expect`/`actual`) — `generateSampleContent`; the `SampleContent` data type lives in `:api`, while the JVM/Android `actual` (`src/main/java`) uses SAGE's `StringGenerator` and the JS `actual` returns deterministic placeholders.
 
 ## Why depend on this module
 
@@ -41,5 +43,5 @@ is ComponentLibraryMode -> ComponentLibraryModeScreen(destination.mode)  // Comp
 
 - **Plugin:** `chipbox.feature.real`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
-- **Source set:** `commonMain` (ViewModels, states, routes); `src/main/java` (`jvmSharedMain`) for the `StringGenerator`-backed sample `actual`; `jsMain` for the placeholder `actual`
+- **Source set:** `commonMain` (ViewModels, routes); `src/main/java` (`jvmSharedMain`) for the `StringGenerator`-backed sample `actual`; `jsMain` for the placeholder `actual`
 - **SAGE/module dependencies:** `:features:component-library:api`; `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`; `sage.common.images`, `sage.common.ui.components`, `sage.common.ui.strings` (jvmShared), `kotlinx.collections.immutable`
