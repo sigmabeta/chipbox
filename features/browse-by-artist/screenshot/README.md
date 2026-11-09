@@ -3,7 +3,7 @@
 > Paparazzi visual-regression companion for the Browse-by-Artist grid.
 
 The `:screenshot` module for the feature: an Android-only Paparazzi harness that
-renders `:real`'s state object across a set of device configs and diffs the
+renders the `:api` state object across a set of device configs and diffs the
 result against committed golden images. It exists purely to catch unintended
 visual changes to the artist grid — it ships no production code.
 
@@ -16,7 +16,7 @@ visual changes to the artist grid — it ships no production code.
 
 ## Why depend on this module
 
-Nothing depends on `:screenshot` — it's a leaf test companion for `:real`. It
+Nothing depends on `:screenshot` — it's a leaf test companion for `:api`. It
 exists so CI (and developers) can verify the artist grid renders unchanged.
 Because it wraps the `State` object rather than the live `ViewModel`, the
 snapshots are deterministic and need no repository or DI wiring.
@@ -36,4 +36,4 @@ Use `verifyPaparazziDebug` unless you intentionally mean to re-record. Prefer th
 - **Plugin:** `chipbox.plugins.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews) + `src/test/java` (Paparazzi tests)
-- **SAGE/module dependencies:** `implementation` → `:features:browse-by-artist:real`
+- **SAGE/module dependencies:** `implementation` → `:features:browse-by-artist:api`

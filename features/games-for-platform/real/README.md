@@ -2,8 +2,10 @@
 
 > The screen that lists every game for one sound-chip platform as a cover grid.
 
+> The screen's `State`/`Action` value types live in `:features:games-for-platform:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The implementation of the games-for-platform feature: a `ChipboxListViewModel`,
-its `ListState`, the action vocabulary, and the composable route entry point. As
+the composable route entry point. As
 a `:real` module this is what the app includes to actually render the screen
 behind the `:api` route key.
 
@@ -11,8 +13,6 @@ behind the `:api` route key.
 
 | File | What it is |
 | --- | --- |
-| `GamesForPlatformState.kt` | `GamesForPlatformState : ListState()` holding the `Platform?` and an `LCE<List<Game>>`. `columnType` is `Regular(160dp)` (a cover grid); title is "Games for &lt;Platform&gt;"; renders play-all + shuffle-all `CtaListModel` CTAs followed by `GridImageListModel` covers at a 3:4 (`0.75`) aspect ratio, or an `EmptyStateListModel` when there are no games. |
-| `GamesForPlatformAction.kt` | `sealed GamesForPlatformAction : ChipboxAction()` — `PlayAllClicked`, `ShuffleAllClicked`, `GameClicked(id: Long)`. |
 | `GamesForPlatformViewModel.kt` | `@AssistedInject` VM extending `ChipboxListViewModel`; takes the `@Assisted platform` plus `Repository`, `Director`, `StringProvider`, `Hatchet`. Loads via `repository.getGamesForPlatform(platform)`; on play/shuffle-all starts a `PLATFORM` session through the `Director` (`contentId = platform.ordinal`), and on a game tap navigates to `GameDetail`. Nested `@AssistedFactory` is `@ContributesIntoMap(AppScope::class)`. |
 | `GamesForPlatformRoute.kt` | `@Composable GamesForPlatformRoute(platform, onEvent, modifier)` — resolves the VM via `assistedMetroViewModel { create(platform) }` and hands it to `ChipboxListEntry`. |
 | `GamesForPlatformViewModelTest.kt` (`commonTest`) | Covers state seeding, `Data` → `LCE` mapping, and navigation/session actions over fakes. |

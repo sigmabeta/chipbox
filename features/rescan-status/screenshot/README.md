@@ -18,7 +18,7 @@ matrix. It produces no production code — only golden images checked under
 ## Why depend on this module
 
 Nothing depends on this module — it's a verification leaf. It depends on
-`:real` to render the actual screen state and guards it against unintended
+`:api` to render the actual screen state and guards it against unintended
 visual change. Per project convention, run goldens via `scripts/dev/paparazzi-diff.sh`
 (`verifyPaparazziDebug` *checks*; `testDebugUnitTest` *records*/overwrites the
 git-LFS goldens).
@@ -55,4 +55,4 @@ fun rescanStatusScreen() {
 - **Plugin:** `chipbox.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews) and `src/test/java` (Paparazzi test); goldens in `src/test/snapshots/`
-- **SAGE/module dependencies:** `:features:rescan-status:real`
+- **SAGE/module dependencies:** `:features:rescan-status:api`

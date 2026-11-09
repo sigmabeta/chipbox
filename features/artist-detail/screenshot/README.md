@@ -2,7 +2,7 @@
 
 > Paparazzi golden tests for the Artist Detail screen.
 
-The visual-regression companion for `:features:artist-detail:real`: device
+The visual-regression companion for `:features:artist-detail:api`: device
 previews of the screen plus the Paparazzi test that snapshots them. As the
 `:screenshot` module it is Android-only and exists purely to guard the rendered
 UI against unintended pixel changes.
@@ -17,7 +17,7 @@ UI against unintended pixel changes.
 ## Why depend on this module
 
 Nothing depends on `:screenshot`; it is a leaf test companion. It depends on
-`:real` to render the real `ArtistDetailState`. Touch it only when the
+`:api` to render `ArtistDetailState`. Touch it only when the
 artist-detail UI changes and the goldens need re-recording.
 
 ## Using it
@@ -32,4 +32,4 @@ artist-detail UI changes and the goldens need re-recording.
 - **Plugin:** `chipbox.plugins.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews) + `src/test/java` (Paparazzi tests)
-- **SAGE/module dependencies:** implementation `:features:artist-detail:real`
+- **SAGE/module dependencies:** implementation `:features:artist-detail:api`

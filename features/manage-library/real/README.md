@@ -2,6 +2,8 @@
 
 > The manage-library screen: list your library folders, add one (kicks off a scan), tap to remove.
 
+> The screen's `State`/`Action` value types live in `:features:manage-library:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The `:real` implementation of the manage-library feature. It contributes the
 `ManageLibraryViewModel` to the app's Metro graph, renders its state through the
 shared list UI, and exposes the Compose `ManageLibraryRoute` entry point. The
@@ -15,7 +17,7 @@ tapping a folder row removes it from the library.
 
 ## Contents
 
-**State / actions** (`commonMain`)
+**State / actions** (in `:features:manage-library:api`)
 - `ManageLibraryState.kt` — `ManageLibraryState(folders)` extends `ListState`;
   `toListItems(...)` builds a `CtaListModel` ("Add folder") plus one
   `NameCaptionListModel` per folder, or an `EmptyStateListModel` when empty. Also
@@ -78,7 +80,7 @@ ChipboxListEntry(viewModel, routedOnEvent, modifier)
 - **Plugin:** `chipbox.plugins.feature.real` + `chipbox.plugins.kmp.test`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the
   `feature.real` plugin transitively applies `sage.kmp.js`)
-- **Source set:** `commonMain` (state/action/VM + `expect` route) with
+- **Source set:** `commonMain` (VM + `expect` route) with
   `androidMain` / `jvmMain` / `jsMain` actuals for `ManageLibraryRoute`; tests in
   `commonTest`
 - **SAGE/module dependencies:** `:features:manage-library:api`,

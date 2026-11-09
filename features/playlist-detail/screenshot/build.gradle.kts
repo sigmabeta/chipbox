@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.playlistDetail.real)
+    implementation(projects.features.playlistDetail.api)
 }

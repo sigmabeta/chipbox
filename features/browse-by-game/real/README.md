@@ -2,6 +2,8 @@
 
 > The Browse-by-Game screen — a paginated grid of game covers.
 
+> The screen's `State`/`Action` value types live in `:features:browse-by-game:api`; this module holds the ViewModel, Route and runtime helpers.
+
 The `:real` implementation of the browse-by-game feature: a `ChipboxListEntry`
 backed by a `ChipboxListViewModel` that pages the full game catalog into a cover
 grid and navigates to `GameDetail` on tap. This is a pure browse surface — it
@@ -12,8 +14,6 @@ includes `:real` to actually render the screen (`:api` is just the route key).
 
 | File | What it is |
 | --- | --- |
-| `BrowseByGameAction.kt` | `sealed BrowseByGameAction : ChipboxAction()` with one case, `GameClicked(id: Long)` — the only user action. |
-| `BrowseByGameState.kt` | `BrowseByGameState : ListState()`. A 160dp `ColumnType.Regular` cover grid with `PaginationType.Standard()`. Holds `LCE<List<Game>>` plus a sliding paging window (`windowStart`, `hasMoreBefore`/`hasMoreAfter`, `loadingPrevious`/`loadingMore`); renders inline header/footer paging spinners and `GridImageListModel` covers at 3:4 aspect ratio, with an empty state when loaded-empty. |
 | `BrowseByGameViewModel.kt` | `BrowseByGameViewModel : ChipboxListViewModel<BrowseByGameState>`. `@Inject` + `@ContributesIntoMap(AppScope, binding<ViewModel>())` + `@ViewModelKey`; ctor takes `Repository` + `StringProvider` + `Hatchet` (no route args, no `Director`). Windowed pagination over `repository.getAllGames(limit, offset)` with a single in-flight `pageJob`; `loadInitial`/`loadNextPage`/`loadPreviousPage` reducers. `handleAction` navigates to `GameDetail` on tap and handles `SageAction.LoadMoreRequested`/`LoadPreviousRequested` plus a test-only `InitWithPageNumber` seam. |
 | `BrowseByGameRoute.kt` | `@Composable BrowseByGameRoute(onEvent, modifier)` — resolves the VM via `metroViewModel()` and renders it through `ChipboxListEntry`. |
 | `BrowseByGameViewModelTest.kt` | `commonTest` coverage of LCE mapping, navigation, and the paging window (over `repository.fake`). |

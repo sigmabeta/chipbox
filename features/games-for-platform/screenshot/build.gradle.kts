@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.gamesForPlatform.real)
+    implementation(projects.features.gamesForPlatform.api)
 }

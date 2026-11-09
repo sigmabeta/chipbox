@@ -2,7 +2,7 @@
 
 > The navigation key for the "manage library folders" screen.
 
-The public surface of the manage-library feature: just the Voyager route key.
+The public surface of the manage-library feature: the Voyager route key and the screen's State/Action types.
 This is the `:api` module — it holds the `@Serializable` destination that other
 features depend on to navigate here, without pulling in the screen's
 implementation.
@@ -12,6 +12,8 @@ implementation.
 | File | What it is |
 | --- | --- |
 | `ManageLibrary.kt` | `@Serializable data object ManageLibrary` — the route key. `cbox/common/appui/api`'s `screenFor(...)` maps it to the Voyager `ManageLibraryScreen`. |
+| `ManageLibraryState.kt` | `ManageLibraryState(folders) : ListState` — the "Add folder" CTA plus one row per library folder (or an empty state). |
+| `ManageLibraryAction.kt` | `ManageLibraryAction : ChipboxAction` — `AddFolderClicked`, `FolderPicked(uri)`, `FolderClicked(identifier)`. |
 
 ## Why depend on this module
 
@@ -36,4 +38,4 @@ onEvent(ChipboxEvent.NavigateTo(ManageLibrary))
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the
   `feature.api` plugin transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

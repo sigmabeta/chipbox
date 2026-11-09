@@ -2,9 +2,9 @@
 
 > The settings-screen surface: route key, action hierarchy, and the state→`ListModel` renderer.
 
-The `:api` half of the `settings` feature. Unlike most features (which keep
-`State`/`Action` in `:real`), `settings` puts its whole UI-model surface here: the
-Voyager route key, the full `SettingsAction` hierarchy, and `SettingsState` — the
+The `:api` half of the `settings` feature. It carries the whole UI-model
+surface: the Voyager route key, the full `SettingsAction` hierarchy, and
+`SettingsState` — the
 immutable state that renders every settings row. All `commonMain`, so the desktop
 UI builds the same screen from the same types the Android UI does. Only
 `SettingsViewModel` (which needs the runtime managers) lives in `:real`.

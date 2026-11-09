@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.library.real)
+    implementation(projects.features.library.api)
 }

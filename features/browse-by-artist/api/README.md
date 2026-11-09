@@ -11,6 +11,8 @@ public type needed to reach the screen — the implementation lives in `:real`.
 | File | What it is |
 | --- | --- |
 | `BrowseByArtist.kt` | `@Serializable data object BrowseByArtist` — the parameterless Voyager route key, in package `net.sigmabeta.chipbox.features.browsebyartist`. |
+| `BrowseByArtistAction.kt` | `sealed class BrowseByArtistAction : ChipboxAction()` with a single member, `ArtistClicked(id: Long)` — the only user action. |
+| `BrowseByArtistState.kt` | `BrowseByArtistState : ListState()`. `columnType = Regular(160dp)` (a square-cover grid), `paginationType = Standard()`. Holds `LCE<List<Artist>>` plus a sliding paging window (`windowStart`, `hasMoreBefore`, `hasMoreAfter`, `loadingPrevious`, `loadingMore`). Renders inline header/footer paging spinners, a grid of `GridImageListModel` artist photos, and an empty state when loaded-empty. |
 
 ## Why depend on this module
 
@@ -32,4 +34,4 @@ onEvent(ChipboxEvent.NavigateTo(BrowseByArtist))
 - **Plugin:** `chipbox.plugins.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf; only `kotlinx.serialization`)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

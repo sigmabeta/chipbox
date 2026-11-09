@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.gameDetail.real)
+    implementation(projects.features.gameDetail.api)
 }

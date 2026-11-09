@@ -17,13 +17,16 @@ section — not a mini-player bar.
 | File | What it is |
 | --- | --- |
 | `PlaybackStatus.kt` | `@Serializable data object PlaybackStatus` — the Voyager route key for the playback diagnostics screen. |
+| `PlaybackStatusState.kt` | `ListState` subclass that folds a `PlaybackDebugInfo?` into the title bar and the eight diagnostic sections; includes the SAF-path shortener. |
+| `PlaybackStatusAction.kt` | `sealed ChipboxAction` with the single `CopyDebugInfoClicked` action. |
+| `UrlDecode.kt` | `internal expect fun urlDecodeUtf8(value: String)` used by the state's path shortener; JVM/Android uses `java.net.URLDecoder`, JS a best-effort percent-decoder. |
 
 ## Why depend on this module
 
 Depend on `:features:playback-status:api` when you need to *navigate* to the
 playback diagnostics screen (e.g. emitting `NavigateTo(PlaybackStatus)` from a
-Settings row). It carries no implementation, so it stays a tiny leaf and keeps
-callers off the `:real` module. The `:real` module exposes this destination's
+Settings row). It carries only the route key and the screen's pure state/action
+types, keeping callers off the `:real` module and its runtime dependencies. The `:real` module exposes this destination's
 behavior; `cbox/common/appui/api`'s `ChipboxScreens` maps the key to a Voyager
 `Screen`.
 
@@ -38,5 +41,5 @@ onEvent(ChipboxEvent.NavigateTo(PlaybackStatus))
 
 - **Plugin:** `chipbox.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
-- **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf)
+- **Source set:** `commonMain`, with `src/main/java` (`jvmSharedMain`) + `jsMain` actuals for the formatter/decode helper
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

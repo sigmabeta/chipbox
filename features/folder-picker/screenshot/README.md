@@ -18,7 +18,7 @@ dependencies — they exercise the pure `State` → list rendering only.
 ## Why depend on this module
 
 Nothing depends on `:screenshot`; it's a test-only leaf that depends on
-`:features:folder-picker:real` to reach the `FolderPickerState`/`FolderPickerEntry`
+`:features:folder-picker:api` to reach the `FolderPickerState`/`FolderPickerEntry`
 types it builds previews from. It exists purely to catch unintended visual changes
 to the picker screen.
 
@@ -43,4 +43,4 @@ Prefer `scripts/dev/paparazzi-diff.sh` over invoking the Gradle tasks directly.
 - **Plugin:** `chipbox.screenshot`
 - **Targets:** Android only
 - **Source set:** `src/main/java` (previews) + `src/test/java` (Paparazzi tests)
-- **SAGE/module dependencies:** `:features:folder-picker:real`
+- **SAGE/module dependencies:** `:features:folder-picker:api`

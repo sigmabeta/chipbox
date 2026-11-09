@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.favorites.real)
+    implementation(projects.features.favorites.api)
 }

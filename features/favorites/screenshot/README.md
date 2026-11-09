@@ -3,7 +3,7 @@
 > Paparazzi visual-regression companion for the Favorites screen.
 
 The `:screenshot` module for the Favorites feature: an Android-only Paparazzi
-test harness that snapshots the `:real` screen. It builds the UI from
+test harness that snapshots the screen. It builds the UI from
 `FavoritesState` objects (not the VM, so no runtime/DI), wraps them in
 `ListScreenPreview`, and snapshots each across `INTERESTING_DEVICES`.
 
@@ -17,7 +17,7 @@ test harness that snapshots the `:real` screen. It builds the UI from
 ## Why depend on this module
 
 Nothing depends on `:screenshot` — it's a leaf test module that the app never
-ships. It exists so changes to `:features:favorites:real` are caught as visual
+ships. It exists so changes to `:features:favorites:api` are caught as visual
 diffs. Verify with `./gradlew verifyPaparazziDebug` (or `scripts/dev/paparazzi-diff.sh`);
 re-record goldens (overwrites the git-LFS images) with `testDebugUnitTest`.
 
@@ -40,4 +40,4 @@ paparazzi.snapshot { Favorites(syntheticWidthClass = deviceConfig.toWidthClass()
 - **Plugin:** `chipbox.screenshot`
 - **Targets:** Android only (Paparazzi runs on the JVM unit-test classpath)
 - **Source set:** `src/main/java` (previews) + `src/test/java` (Paparazzi tests)
-- **SAGE/module dependencies:** `implementation` → `:features:favorites:real`
+- **SAGE/module dependencies:** `implementation` → `:features:favorites:api`

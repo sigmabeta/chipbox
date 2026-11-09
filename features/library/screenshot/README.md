@@ -2,7 +2,7 @@
 
 > Paparazzi visual-regression goldens for the Library screen.
 
-The screenshot-test companion for `:features:library:real`. As a `:screenshot`
+The screenshot-test companion for `:features:library:api`. As a `:screenshot`
 module it's Android-only and never shipped: it wraps `LibraryState` in
 `ListScreenPreview` and snapshots that preview across the `INTERESTING_DEVICES`
 matrix (phone/tablet sizes × light/dark) so layout regressions surface in CI. It
@@ -20,7 +20,7 @@ dependencies.
 
 Nothing depends on `:features:library:screenshot`; it's a test-only leaf included
 in `settings.gradle.kts` so its goldens run in CI. It depends on
-`:features:library:real` only to reach `LibraryState`.
+`:features:library:api` only to reach `LibraryState`.
 
 ## Using it
 
@@ -37,4 +37,4 @@ Prefer `scripts/dev/paparazzi-diff.sh` over invoking the Gradle tasks directly. 
 - **Plugin:** `chipbox.screenshot`
 - **Targets:** Android only (Paparazzi runs on the JVM unit-test classpath)
 - **Source set:** `src/main/java` (the preview) + `src/test/java` (the test); goldens under `src/test/snapshots/images` (git-LFS)
-- **SAGE/module dependencies:** `:features:library:real`
+- **SAGE/module dependencies:** `:features:library:api`

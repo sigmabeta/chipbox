@@ -4,7 +4,7 @@
 
 The public surface of the now-playing feature: a single `@Serializable` Voyager
 destination that other features navigate to. This is the feature's `:api`
-module, so it carries only the route key (no UI, no impl) and is the thing you
+module, so it carries the route key and the screen's State/Action types (no UI, no ViewModel) and is the thing you
 depend on to open the player. The app wires `:real` for the actual screen.
 
 ## Contents
@@ -12,6 +12,9 @@ depend on to open the player. The app wires `:real` for the actual screen.
 | File | What it is |
 | --- | --- |
 | `NowPlaying.kt` | `@Serializable data object NowPlaying` — the route key for the full player screen. No arguments: the screen reads everything from the running playback session. |
+| `NowPlayingState.kt` | `NowPlayingState : FreeformState<NowPlayingModel>` plus `SetlistRowData` — projects the current track/session/playback into the player UI model. |
+| `NowPlayingModel.kt` | The immutable UI model (`NowPlayingModel`, `NowPlayingError`, `ContextMenuMode`, `NowPlayingArtist`, `NowPlayingTag*`) the composables read. |
+| `NowPlayingAction.kt` | `NowPlayingAction : ChipboxAction` — transport, seek, context-menu and setlist actions. |
 
 ## Why depend on this module
 
@@ -32,4 +35,4 @@ emit(ChipboxEvent.NavigateTo(NowPlaying))
 - **Plugin:** `chipbox.plugins.feature.api`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** none (leaf)
+- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin

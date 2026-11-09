@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.artistDetail.real)
+    implementation(projects.features.artistDetail.api)
 }

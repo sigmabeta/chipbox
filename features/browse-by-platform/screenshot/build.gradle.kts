@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.features.browseByPlatform.real)
+    implementation(projects.features.browseByPlatform.api)
 }
