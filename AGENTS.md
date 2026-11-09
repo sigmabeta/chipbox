@@ -150,23 +150,14 @@ scripts/ci/verify.sh --web                    # opt-in web suite (WASM bundle + 
   macrobenchmark would otherwise wipe an earlier non-macrobenchmark axis's result.
   See `benchmark/README.md`.
 
-## Worktree and ticket guardrails
+## Worktrees
 
 - **Never `git stash` in a multi-worktree run** — the stash is shared across linked
   worktrees, so one agent's stash can transplant a foreign change into another. Revert
   with `git checkout -- <path>` or a `/tmp` patch.
-- **Tracker edits go through the primary checkout's absolute path.** A `.scratch`
-  directory inside a worktree is a bug; `scripts/dev/check-worktree-hygiene.sh` fails
-  on a stray tracker copy or a non-empty shared stash.
-- **Close a ticket only after its gate ran.** `scripts/dev/check-ticket-gates.sh
-  --feature <slug>` rejects a `resolved` ticket with unchecked boxes and a
-  `ready-for-human` ticket without `Manual gates:` + `## Answer`. Before dispatch,
-  `scripts/dev/gate-preflight.sh --feature <slug>` reports which gates this host can
-  actually run; if one is unavailable, decide with the user whether to proceed
-  host-only (and leave that ticket `ready-for-human`) or provision the target.
-- **Merge with `scripts/integrate.sh --branch ticket/<feature>-<nn> --feature
-  <slug>`** — it audits the branch, checks ticket closure, merges `--no-ff`, builds
-  host + Android, and runs the strict A/B gate when given `--corpus`.
+- **Merge with `scripts/integrate.sh --branch ticket/<feature>-<nn>`** — it audits
+  the branch, merges `--no-ff`, builds host + Android, and runs the strict A/B gate
+  when given `--corpus`.
 - **Remove worktrees with `scripts/dev/worktree-rm.sh <path>`** — plain
   `git worktree remove` refuses any worktree that contains the `sage` submodule.
 - **Timing runs take a machine-wide lock** (`scripts/dev/perf-lock.sh`, automatic in
@@ -194,14 +185,6 @@ How to write one, the DSL verbs, and platform gotchas:
 `arch-docs/architecture/ui-test-dsl.md`.
 
 ## Agent skills
-
-### Issue tracker
-
-Issues and specs live as markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Five canonical roles, default label strings (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 

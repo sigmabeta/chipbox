@@ -2,6 +2,9 @@
 #
 # gate-preflight.sh — report whether the manual gates in a feature's tickets can run here.
 #
+# LEGACY: reads `.scratch/<feature>/issues/*.md` only; current work does not use
+# these ticket files.
+#
 # Run this before dispatching implementers. If a ticket needs a device, a Windows JDK,
 # a browser/WASM toolchain, or a sanitizer and the host cannot provide it, the honest
 # outcome is host-only work plus `ready-for-human` tickets — decide that with the user

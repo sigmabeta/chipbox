@@ -236,7 +236,7 @@ else
 fi
 
 # ---- dev scripts ------------------------------------------------------------
-# rg/fd serve .scratch navigation (docs/agents/issue-tracker.md); ImageMagick is
+# rg/fd serve legacy .scratch navigation; ImageMagick is
 # required by scripts/dev/paparazzi-diff.sh (magick/compare/montage).
 head_ "Dev scripts"
 dev_scripts_ok=yes

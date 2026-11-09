@@ -5,9 +5,8 @@
 # 1. `git stash` is shared across every linked worktree. A stash left by one agent can
 #    be popped by another and silently transplant a foreign change. Forbid it during a
 #    multi-worktree run; keep temporary reverts in /tmp patches or `git checkout --`.
-# 2. The issue tracker lives only in the primary checkout (`.scratch/` is gitignored).
-#    A `.scratch` directory inside a worktree means an agent wrote to the wrong copy,
-#    so the real ticket stayed stale.
+# 2. `.scratch/` lived only in the primary checkout (it is gitignored). A `.scratch`
+#    directory inside a worktree still means an agent wrote to a stale legacy copy.
 #
 # Usage:
 #   scripts/dev/check-worktree-hygiene.sh [--worktree <path>] [--allow-stash]
@@ -25,7 +24,7 @@ ONLY=""
 
 usage() {
   cat <<'EOF'
-check-worktree-hygiene.sh — fail on a shared stash or a tracker copy in a worktree.
+check-worktree-hygiene.sh — fail on a shared stash or a stale `.scratch` copy in a worktree.
 
 Usage:
   check-worktree-hygiene.sh [--worktree <path>] [--allow-stash]
@@ -61,7 +60,7 @@ worktrees="$(git worktree list --porcelain 2>/dev/null | awk '/^worktree / {prin
 
 if [ -n "$ONLY" ]; then
   if [ -d "$ONLY/.scratch" ]; then
-    echo "FAIL stray tracker copy in worktree: $ONLY/.scratch"
+    echo "FAIL stray .scratch copy in worktree: $ONLY/.scratch"
     echo "     edit .scratch only by absolute path into $primary"
     findings=$((findings + 1))
   fi
@@ -69,7 +68,7 @@ else
   for wt in $worktrees; do
     [ "$wt" = "$primary" ] && continue
     if [ -d "$wt/.scratch" ]; then
-      echo "FAIL stray tracker copy in worktree: $wt/.scratch"
+      echo "FAIL stray .scratch copy in worktree: $wt/.scratch"
       echo "     edit .scratch only by absolute path into $primary"
       findings=$((findings + 1))
     fi

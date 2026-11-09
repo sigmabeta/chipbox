@@ -2,6 +2,9 @@
 #
 # check-ticket-gates.sh — fail a ticket whose status lies about its gates.
 #
+# LEGACY: reads `.scratch/<feature>/issues/*.md` only; current work does not use
+# these ticket files.
+#
 # CODING_STANDARDS.md: a device/browser/release gate is done when it has run. A ticket
 # that could not run one must stay `ready-for-human` and carry a `Manual gates:` line
 # plus a `## Answer` recording what ran and what a human still has to run.

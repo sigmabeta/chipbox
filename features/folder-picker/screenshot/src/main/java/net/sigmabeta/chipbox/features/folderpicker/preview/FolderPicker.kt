@@ -30,7 +30,7 @@ internal fun FolderPickerEmpty(
     syntheticWidthClass: WidthClass = previewWidthClass(),
 ) {
     ListScreenPreview(
-        screenState = FolderPickerState(currentPath = "/home/sigma/Music"),
+        screenState = FolderPickerState(currentPath = "/home/user/Music"),
         syntheticWidthClass = syntheticWidthClass,
         darkTheme = darkTheme,
     )
@@ -75,14 +75,14 @@ internal fun FolderPickerVolumes(
 }
 
 private fun populatedState() = FolderPickerState(
-    currentPath = "/home/sigma/Music",
+    currentPath = "/home/user/Music",
     entries = listOf(
-        FolderPickerEntry("NSF", "/home/sigma/Music/NSF", childFolderCount = 4, childFileCount = 0),
-        FolderPickerEntry("PSF", "/home/sigma/Music/PSF", childFolderCount = 0, childFileCount = 12),
-        FolderPickerEntry("SPC", "/home/sigma/Music/SPC", childFolderCount = 3, childFileCount = 27),
-        FolderPickerEntry("empty-folder", "/home/sigma/Music/empty", childFolderCount = 0, childFileCount = 0),
+        FolderPickerEntry("NSF", "/home/user/Music/NSF", childFolderCount = 4, childFileCount = 0),
+        FolderPickerEntry("PSF", "/home/user/Music/PSF", childFolderCount = 0, childFileCount = 12),
+        FolderPickerEntry("SPC", "/home/user/Music/SPC", childFolderCount = 3, childFileCount = 27),
+        FolderPickerEntry("empty-folder", "/home/user/Music/empty", childFolderCount = 0, childFileCount = 0),
     ),
     fileCount = 5,
     // Non-null parent so the golden exercises the "Go up a folder" CTA alongside the hidden-files toggle.
-    parentPath = "/home/sigma",
+    parentPath = "/home/user",
 )

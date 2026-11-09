@@ -189,7 +189,7 @@ while validating #3's golden churn.)
 
 ## Re-running the audit
 
-The harness used here (host scripts under `/tmp/opencode/chipbox-perf/` at audit
+The harness used here (host scripts under `/tmp/chipbox-perf/` at audit
 time) is not committed. To reproduce: pin the screen on (`svc power stayon
 true`), launch the app, navigate to a surface, `dumpsys gfxinfo <pkg> reset`,
 run a continuous on-device fling loop (`input swipe`), then dump
