@@ -12,7 +12,7 @@
 #   scripts/integrate.sh --branch ticket/<feature>-<nn> [options]
 #
 #   --base <ref>         integration branch (default: the current branch)
-#   --feature <slug>     run scripts/dev/check-ticket-gates.sh first
+#   --feature <slug>     legacy: run the .scratch ticket-gate check when that feature exists
 #   --corpus <dir>       corpus for scripts/abrender/verify.sh
 #   --against <ref>      recorded run label or path (default: reference)
 #   --ab-out <dir>       abrender run store (default: <repo>/ab-runs)
@@ -54,7 +54,7 @@ Usage:
 
 Options:
   --base <ref>         integration branch (default: current branch)
-  --feature <slug>     run scripts/dev/check-ticket-gates.sh first
+  --feature <slug>     legacy: run the .scratch ticket-gate check when that feature exists
   --corpus <dir>       corpus for scripts/abrender/verify.sh
   --against <ref>      recorded run label or path (default: reference)
   --ab-out <dir>       abrender run store (default: <repo>/ab-runs)
@@ -113,11 +113,15 @@ if ! scripts/dev/check-worktree-hygiene.sh; then
   fail "worktree hygiene check failed (shared stash or stray .scratch)"
 fi
 if [ -n "$FEATURE" ]; then
-  if ! scripts/dev/check-ticket-gates.sh --feature "$FEATURE"; then
-    fail "ticket-gate check failed for '$FEATURE'"
+  if [ -d "$ROOT/.scratch/$FEATURE" ]; then
+    if ! scripts/dev/check-ticket-gates.sh --feature "$FEATURE"; then
+      fail "ticket-gate check failed for legacy feature '$FEATURE'"
+    fi
+  else
+    echo "note: '$FEATURE' has no legacy .scratch directory — skipping the ticket-gate check."
   fi
 else
-  echo "note: pass --feature <slug> to enforce ticket status/gate closure before merging"
+  echo "note: pass --feature <slug> to run the legacy .scratch ticket-gate check before merging."
 fi
 
 if [ "$DO_BUILD" -eq 0 ] && [ "$DO_AB" -eq 0 ]; then
