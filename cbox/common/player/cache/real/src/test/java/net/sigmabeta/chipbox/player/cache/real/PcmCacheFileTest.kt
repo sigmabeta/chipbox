@@ -34,7 +34,7 @@ internal class PcmCacheFileTest {
     private lateinit var workDir: File
     private lateinit var cacheDir: Path
 
-    private val key = PcmCacheKey(sourceHash = "abc123def4567890", trackNumber = 3, sampleRate = 44_100)
+    private val key = PcmCacheKey(sourceHash = "abc123def4567890", trackNumber = 3, renderVersion = 1)
 
     @BeforeTest
     fun setUp() {
@@ -48,10 +48,63 @@ internal class PcmCacheFileTest {
     }
 
     @Test
+    fun `the sample rate comes from the header, whatever the key`() {
+        // The key no longer carries the rate; a backend that renders at a track-dependent rate
+        // (GSF) writes it here and every later hit reads it back without loading the track.
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 65_536,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
+        writer.appendFrames(shortArrayOf(1, 2), framesToWrite = 1)
+        writer.complete(trackId = 1L, trackLengthMs = 0L, integratedLufs = -14.0, truePeakDbtp = -1.0)
+        writer.promote()
+
+        val reader = assertNotNull(PcmCacheFile.openForRead(fileSystem, cacheDir, key))
+        try {
+            assertEquals(65_536, reader.sampleRate)
+            assertEquals(1, reader.header.renderVersion)
+        } finally {
+            reader.close()
+        }
+    }
+
+    @Test
+    fun `an entry whose header carries another render version reads as a miss`() {
+        // Belt and braces behind the filename: a file renamed or copied under another version's
+        // name must not be served as that version's audio.
+        val other = key.copy(renderVersion = 2)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
+        writer.appendFrames(shortArrayOf(1, 2), framesToWrite = 1)
+        writer.complete(trackId = 1L, trackLengthMs = 0L, integratedLufs = -14.0, truePeakDbtp = -1.0)
+        writer.promote()
+        fileSystem.atomicMove(cacheDir / key.filename(), cacheDir / other.filename())
+
+        assertNull(PcmCacheFile.openForRead(fileSystem, cacheDir, other))
+    }
+
+    @Test
     fun `write then read round-trips the frames and header fields`() {
         val frames = shortArrayOf(1, 2, 3, 4, 5, 6, 7, 8) // 8 shorts = 4 stereo frames
 
-        val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 42L, trackLengthMs = 1234L)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 42L,
+            trackLengthMs = 1234L,
+        )
         writer.appendFrames(frames, framesToWrite = 4)
         writer.complete(trackId = 42L, trackLengthMs = 1234L, integratedLufs = -14.5, truePeakDbtp = -1.25)
         writer.promote()
@@ -82,7 +135,14 @@ internal class PcmCacheFileTest {
 
     @Test
     fun `header uses the documented little-endian layout`() {
-        val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 7L, trackLengthMs = 999L)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 7L,
+            trackLengthMs = 999L,
+        )
         writer.appendFrames(shortArrayOf(10, 20), framesToWrite = 1)
         writer.complete(trackId = 7L, trackLengthMs = 999L, integratedLufs = -9.0, truePeakDbtp = -2.0)
         writer.promote()
@@ -115,7 +175,14 @@ internal class PcmCacheFileTest {
 
     @Test
     fun `an incomplete write is not readable and leaves only a temp file`() {
-        val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
         writer.appendFrames(shortArrayOf(1, 2, 3, 4), framesToWrite = 2)
         // no complete()
 
@@ -127,7 +194,14 @@ internal class PcmCacheFileTest {
 
     @Test
     fun `complete seals the header and promote renames temp to final`() {
-        val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
         assertTrue(fileSystem.exists(cacheDir / key.tempFilename()))
         writer.appendFrames(shortArrayOf(1, 2), framesToWrite = 1)
         writer.complete(
@@ -149,7 +223,14 @@ internal class PcmCacheFileTest {
 
     @Test
     fun `abort deletes the temp file`() {
-        val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
         writer.appendFrames(shortArrayOf(1, 2), framesToWrite = 1)
         writer.abort()
 
@@ -159,7 +240,14 @@ internal class PcmCacheFileTest {
 
     @Test
     fun `reader rejects a complete file whose key does not match`() {
-        val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
         writer.appendFrames(shortArrayOf(1, 2), framesToWrite = 1)
         writer.complete(
             trackId = 1L,
@@ -179,7 +267,14 @@ internal class PcmCacheFileTest {
     @Test
     fun `readFrames honors a non-zero start position`() {
         val frames = ShortArray(20) { (it + 1).toShort() } // 10 stereo frames
-        val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
         writer.appendFrames(frames, framesToWrite = 10)
         writer.complete(
             trackId = 1L,

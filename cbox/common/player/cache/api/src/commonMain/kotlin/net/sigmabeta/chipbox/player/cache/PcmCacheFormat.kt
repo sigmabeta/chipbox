@@ -16,7 +16,12 @@ object PcmCacheFormat {
     /** Big-endian "CBPC" — easy to spot in a hex dump. */
     const val MAGIC: Int = 0x43425043
 
-    const val VERSION: Int = 1
+    /**
+     * 2 adds the render version to the header and coincides with the filename dropping the
+     * sample rate. Version-1 files would never be looked up again under the new names, so the
+     * startup sweep deleting them (an unreadable version counts as corrupt) frees their space.
+     */
+    const val VERSION: Int = 2
 
     /** Always 2 — every emulator emits interleaved stereo. */
     const val CHANNELS: Short = 2

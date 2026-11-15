@@ -11,7 +11,7 @@ matching `:native` companion.
 
 | File | What it is |
 | --- | --- |
-| `GbaEmulator.kt` | `object GbaEmulator : Emulator()`. Loads `libgba` via `System.loadLibrary("gba")`; declares extensions `gsf` / `minigsf`; the load/generate/teardown/error/sample-rate methods are `external` JNI calls. |
+| `GbaEmulator.kt` | `object GbaEmulator : Emulator()`. Loads `libgba` via `System.loadLibrary("gba")`; declares extensions `gsf` / `minigsf`; the load/generate/teardown/error/sample-rate methods are `external` JNI calls. Output is at the GSF driver's own settled rate (32768 or 65536 Hz, read after `loadTrack`), not a fixed 44.1 kHz, so `renderVersion = 2`; keep it in step with the JS `WasmGbaEmulator`, which runs the same `Gba.cpp`. |
 
 ## Why depend on this module
 

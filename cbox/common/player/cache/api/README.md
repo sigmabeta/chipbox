@@ -15,9 +15,9 @@ call-recording test doubles in `:cbox:common:player:cache:fake`.
 | File | What it is |
 | --- | --- |
 | `PcmTrackSource.kt` | The core interface: `sampleRate`, `totalFrames`, `cachedFrames`, `loudnessLufs`/`truePeakDbtp`, `suspend readFrames(buffer)`/`seek(frame)`, `isOver`, `awaitingRender`, `getLastError`/`getDiagnostics`, `suspend close`. Nested `Factory` (with `requiresContent`) resolves a `Track` + its bytes to the right backing source. |
-| `PcmCacheKey.kt` | `data class PcmCacheKey(sourceHash, trackNumber, sampleRate)` — the cache entry's stable identity, plus `filename()`/`tempFilename()` deriving the `.pcm`/`.pcm.tmp` names. |
+| `PcmCacheKey.kt` | `data class PcmCacheKey(sourceHash, trackNumber, renderVersion)` — the cache entry's stable identity, plus `filename()`/`tempFilename()` deriving the `.pcm`/`.pcm.tmp` names. `renderVersion` is the backend's `Emulator.renderVersion`; the sample rate is not in the key, it lives in the file header. |
 | `PcmCacheFormat.kt` | `object` of on-disk layout constants for a `.pcm` file: `MAGIC` (`"CBPC"`), `VERSION`, fixed `HEADER_SIZE_BYTES` (128), `CHANNELS`/`BITS_PER_SAMPLE`, `BYTES_PER_FRAME`, the in-progress/complete flags, and the source-hash field width. |
-| `PcmCacheKeyTest.kt` (`commonTest`) | Pins the filename derivation and that `trackNumber`/`sampleRate` are part of cache identity. |
+| `PcmCacheKeyTest.kt` (`commonTest`) | Pins the filename derivation and that `trackNumber`/`renderVersion` are part of cache identity. |
 
 ## Why depend on this module
 
@@ -50,8 +50,8 @@ while (!source.isOver) {
 source.close()
 
 // Cache identity for an entry on disk:
-val key = PcmCacheKey(sourceHash = hash, trackNumber = 0, sampleRate = rate)
-val onDisk = key.filename()       // "<hash>-0-<rate>.pcm"
+val key = PcmCacheKey(sourceHash = hash, trackNumber = 0, renderVersion = emulator.renderVersion)
+val onDisk = key.filename()       // "<hash>-0-r<renderVersion>.pcm"
 ```
 
 ## Module facts

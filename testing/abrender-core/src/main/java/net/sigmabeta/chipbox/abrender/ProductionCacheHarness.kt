@@ -55,9 +55,8 @@ class CountingEmulator(private val delegate: Emulator) : Emulator() {
 
     override fun getSampleRateInternal(): Int = delegate.getSampleRateInternal()
 
-    // Delegated so a fixed-rate backend (TwosfEmulator) actually takes the factory's warm-hit
-    // path instead of falling back to native rate negotiation.
-    override val knownSampleRate: Int? get() = delegate.knownSampleRate
+    // Delegated so cache entries carry the real backend's version, not the base default.
+    override val renderVersion: Int get() = delegate.renderVersion
 
     override val supportedFileExtensions: List<String> = delegate.supportedFileExtensions
 

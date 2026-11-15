@@ -20,7 +20,9 @@ same arm64 `:native` cores land in its test APK and its RTF results are the phon
   shared production-cache harness helpers (`ProductionCacheHarness.kt`): the one `CountingEmulator`
   decorator the host `perfbench cache` command, the device `DeviceCacheBenchmark`, and the cache
   factory unit test all wrap their backend in, plus `productionTrack` (the production `Track` +
-  `_lib` chain resolution both harnesses build).
+  `_lib` chain resolution both harnesses build). `hostEmulators()` (in `Renderer.kt`) is the one
+  list of JVM backends, in playback's selection order, that `EmulatorBank` and `perfbench cache`
+  both use.
 - `src/androidDeviceTest/kotlin/` — `DeviceRenderTest`, an `androidx.test` instrumentation that runs
   `runRender` on-device against a corpus staged in **shared storage**
   (`/sdcard/Music/chipbox-test/abrender/{in,out}`, with `MANAGE_EXTERNAL_STORAGE` granted by the

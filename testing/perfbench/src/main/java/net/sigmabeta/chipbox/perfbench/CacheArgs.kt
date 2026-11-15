@@ -18,6 +18,7 @@ data class CacheArgs(
     val outDir: File,
     val sampleSeconds: Int,
     val uncached: Boolean,
+    val onePerGame: Boolean,
 )
 
 /**
@@ -45,5 +46,6 @@ fun parseCacheOptions(options: Map<String, String>): CacheArgs {
         outDir = File(options["out"] ?: DEFAULT_CACHE_OUT),
         sampleSeconds = sampleSeconds,
         uncached = options.containsKey("uncached"),
+        onePerGame = options.containsKey("one-per-game"),
     )
 }

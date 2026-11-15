@@ -75,17 +75,14 @@ abstract class Emulator {
     abstract fun getSampleRateInternal(): Int
 
     /**
-     * Static output sample rate this backend produces for every track it accepts, or `null` when
-     * the rate is only knowable after a native load (a header the core has to parse first).
+     * Version of the PCM this backend renders. Anything that caches rendered audio keys it on
+     * this, so bump it whenever a change makes the same input render different PCM: a new output
+     * rate, an emulation fix, a different backend taking over an extension. Old cache entries then
+     * stop matching instead of replaying stale audio.
      *
-     * Any consumer that keys cached audio on the sample rate can use this to build its key
-     * **before** staging or constructing the emulator, so a complete warm hit can be served
-     * without a native track load. A backend that returns a non-null value promises
-     * [getSampleRateInternal] agrees for every track; a consumer that relies on the hint is
-     * expected to verify the negotiated rate and rebuild its key if the promise is broken,
-     * rather than aliasing a wrong entry.
+     * Needs no native load to read, which is what lets a warm cache hit skip loading the track.
      */
-    open val knownSampleRate: Int? get() = null
+    open val renderVersion: Int get() = 1
 
     /** File extensions this emulator can decode (lowercase, without leading dot). */
     abstract val supportedFileExtensions: List<String>

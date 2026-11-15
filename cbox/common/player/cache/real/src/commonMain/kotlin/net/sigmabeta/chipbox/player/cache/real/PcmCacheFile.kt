@@ -27,6 +27,7 @@ internal object PcmCacheFile {
         fileSystem: FileSystem,
         cacheDir: Path,
         key: PcmCacheKey,
+        sampleRate: Int,
         trackId: Long,
         trackLengthMs: Long,
     ): Writer {
@@ -41,12 +42,13 @@ internal object PcmCacheFile {
         try {
             writeHeader(
                 handle = handle,
-                sampleRate = key.sampleRate,
+                sampleRate = sampleRate,
                 frameCount = 0L,
                 completion = PcmCacheFormat.COMPLETION_IN_PROGRESS,
                 sourceHash = key.sourceHash,
                 trackId = trackId,
                 trackNumber = key.trackNumber,
+                renderVersion = key.renderVersion,
                 trackLengthMs = trackLengthMs,
                 integratedLufs = Double.NaN,
                 truePeakDbtp = Double.NEGATIVE_INFINITY,
@@ -57,7 +59,7 @@ internal object PcmCacheFile {
             throw t
         }
 
-        return Writer(fileSystem, handle, tempPath, finalPath, key)
+        return Writer(fileSystem, handle, tempPath, finalPath, key, sampleRate)
     }
 
     fun openForRead(fileSystem: FileSystem, cacheDir: Path, key: PcmCacheKey): Reader? {
@@ -70,7 +72,8 @@ internal object PcmCacheFile {
             if (header == null || header.completion != PcmCacheFormat.COMPLETION_COMPLETE) {
                 handle.close()
                 null
-            } else if (header.sampleRate != key.sampleRate ||
+            } else if (header.sampleRate <= 0 ||
+                header.renderVersion != key.renderVersion ||
                 header.sourceHash != key.sourceHash ||
                 header.trackNumber != key.trackNumber
             ) {
@@ -130,6 +133,7 @@ internal object PcmCacheFile {
         // rejects them and leaves audio un-normalized.
         val integratedLufs = Double.fromBits(buf.readLongLe())
         val truePeakDbtp = Double.fromBits(buf.readLongLe())
+        val renderVersion = buf.readIntLe()
         // Remaining bytes are reserved; ignore.
 
         return Header(
@@ -142,6 +146,7 @@ internal object PcmCacheFile {
             trackLengthMs = trackLengthMs,
             integratedLufs = integratedLufs,
             truePeakDbtp = truePeakDbtp,
+            renderVersion = renderVersion,
         )
     }
 
@@ -157,6 +162,7 @@ internal object PcmCacheFile {
         trackLengthMs: Long,
         integratedLufs: Double,
         truePeakDbtp: Double,
+        renderVersion: Int,
     ) {
         val buf = Buffer()
         buf.writeIntLe(PcmCacheFormat.MAGIC)
@@ -175,6 +181,7 @@ internal object PcmCacheFile {
         buf.writeLongLe(trackLengthMs)
         buf.writeLongLe(integratedLufs.toRawBits())
         buf.writeLongLe(truePeakDbtp.toRawBits())
+        buf.writeIntLe(renderVersion)
         // Pad reserved bytes to fill the fixed header.
         repeat((PcmCacheFormat.HEADER_SIZE_BYTES - buf.size).toInt()) { buf.writeByte(0) }
 
@@ -192,6 +199,7 @@ internal object PcmCacheFile {
         val trackLengthMs: Long,
         val integratedLufs: Double,
         val truePeakDbtp: Double,
+        val renderVersion: Int,
     )
 
     /**
@@ -207,6 +215,7 @@ internal object PcmCacheFile {
         val tempPath: Path,
         val finalPath: Path,
         private val key: PcmCacheKey,
+        private val sampleRate: Int,
     ) {
         @Volatile
         private var framesWrittenInternal: Long = 0L
@@ -248,12 +257,13 @@ internal object PcmCacheFile {
             try {
                 writeHeader(
                     handle = handle,
-                    sampleRate = key.sampleRate,
+                    sampleRate = sampleRate,
                     frameCount = framesWrittenInternal,
                     completion = PcmCacheFormat.COMPLETION_COMPLETE,
                     sourceHash = key.sourceHash,
                     trackId = trackId,
                     trackNumber = key.trackNumber,
+                    renderVersion = key.renderVersion,
                     trackLengthMs = trackLengthMs,
                     integratedLufs = integratedLufs,
                     truePeakDbtp = truePeakDbtp,

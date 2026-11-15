@@ -63,15 +63,15 @@ each selected track it uses a fresh cache directory and drives the real
 
 It reports each phase's wall time, time-to-first-frame (measured from before
 `Factory.open`), and native track-load/teardown counts observed through a
-counting decorator around the real 2SF backend. This is the number ticket 05
-(PCM cache) moves: today a warm hit still pays for one native load and teardown
-because the factory constructs `EmulatorPcmSource` before checking the cache.
-Writes `<out>/cache.tsv`.
+counting decorator around every real host backend (abrender-core's
+`hostEmulators()`, in playback's selection order). Writes `<out>/cache.tsv`.
 
-**Only 2SF files are selected** (`2sf`, `mini2sf`): the command builds the
-factory with the 2SF backend alone, so walking another supported extension would
-only produce a per-track error. Everything else in a mixed corpus is skipped,
-not reported as a failure.
+Every supported extension is walked (plus `rsn`, which staging unpacks to an
+SPC), so a mixed corpus like a full music library checks cached playback for
+every backend at once. A warm open is an **error** unless it loads no native
+track, plays at the cold render's sample rate (read back from the cache header),
+and returns the cold render's exact PCM (a 64-bit FNV-1a over every sample).
+`--one-per-game` takes the first playable file per folder instead of every file.
 
 `--uncached` switches the command to `UncachedPcmTrackSourceFactory`: every open
 stages, loads the native core, and drains a live `EmulatorPcmSource`, with no
@@ -82,11 +82,12 @@ writes `<out>/uncached.tsv` with per-open median/min/max wall time. The same
 
 | option | meaning | default |
 |---|---|---|
-| `--dir <folder>` | corpus root to walk for 2SF files | **required** |
+| `--dir <folder>` | corpus root to walk (every supported extension) | **required** |
 | `--filter <glob>` | basename or corpus-relative path glob (same rules as `audio`) | whole corpus |
 | `--repeat <n>` | timed warm opens (or uncached opens) per file; the headline is the median | `3` |
 | `--seconds <n>` | audio seconds rendered per open | `30` |
 | `--uncached` | bypass the cache: measure `UncachedPcmTrackSourceFactory` | off |
+| `--one-per-game` | first playable file per folder, not every file | off |
 | `--out <dir>` | results root; `cache.tsv` / `uncached.tsv` is written here | `build/perfbench/cache` |
 
 ```sh

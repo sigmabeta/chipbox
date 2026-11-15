@@ -29,6 +29,15 @@ data class SelectedTrack(
 )
 
 /**
+ * Every JVM backend, in the order playback's [EmulatorSelector] tries them. One list so the A/B
+ * renderer and the production-cache harness can't drift apart on which backend plays a format.
+ */
+fun hostEmulators(): List<Emulator> = listOf(
+    TwosfEmulator, GbaEmulator, GmeEmulator, NcsfEmulator,
+    PsfEmulator, SsfEmulator, VgmEmulator, UsfEmulator, VgmstreamEmulator,
+)
+
+/**
  * Owns the singleton emulator backends and renders one track at a time. Every backend is an `object`
  * with process-lifetime native state, so this class is single-threaded by construction: one track is
  * loaded, drained, and torn down before the next.
@@ -39,10 +48,7 @@ data class SelectedTrack(
  * identical across builds, not whatever length the track metadata declares.
  */
 class EmulatorBank {
-    private val emulators: List<Emulator> = listOf(
-        TwosfEmulator, GbaEmulator, GmeEmulator, NcsfEmulator,
-        PsfEmulator, SsfEmulator, VgmEmulator, UsfEmulator, VgmstreamEmulator,
-    )
+    private val emulators: List<Emulator> = hostEmulators()
     private val nativeLoaded = HashSet<Emulator>()
 
     /** Extensions any backend can decode — used to skip unsupported tracks before rendering. */

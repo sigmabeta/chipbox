@@ -22,6 +22,12 @@ class WasmGbaEmulator(private val fileSystem: FileSystem) : Emulator() {
     private var core: GbaWasmCore? = null
     private var lastErrorMessage: String? = null
 
+    /**
+     * 2: output is the GSF driver's own settled rate (32768 or 65536 Hz) instead of a resample to
+     * 44100 Hz. Keep in step with `GbaEmulator`, which runs the same `Gba.cpp`.
+     */
+    override val renderVersion: Int = 2
+
     override val supportedFileExtensions: List<String> = listOf(
         "gsf", // GBA Sound Format
         "minigsf", // GSF that depends on a `_lib.gsf` sibling

@@ -26,8 +26,8 @@ import kotlin.test.assertIs
 /**
  * Cache-identity and warm-open tests for [RealPcmTrackSourceFactory].
  *
- * The point of the fixed-rate path is that a complete cache entry is reachable **before** staging
- * or constructing the native emulator, so a warm open performs zero native loads and zero native
+ * The point is that a complete cache entry is reachable **before** staging or constructing the
+ * native emulator, for every backend, so a warm open performs zero native loads and zero native
  * teardowns. These tests drive the real factory with a counting fake backend (not a mocked
  * factory) and a real on-disk cache entry, so they exercise the actual staging, hashing and
  * header-validation code.
@@ -52,71 +52,62 @@ internal class RealPcmTrackSourceFactoryTest {
     }
 
     @Test
-    fun `known-rate warm hit returns the cached file with zero native loads and teardowns`() = runBlocking {
+    fun `warm hit returns the cached file with zero native loads and teardowns`() = runBlocking {
         val bytes = "main-bytes".toByteArray()
         val track = trackOf()
         val registry = registryOf()
-        val emulator = counting(SAMPLE_RATE, SAMPLE_RATE)
+        val emulator = counting(renderVersion = RENDER_VERSION, reportedSampleRate = SAMPLE_RATE)
         val factory = factoryOf(emulator, registry)
-        seedCache(PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, SAMPLE_RATE))
+        seedCache(PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, RENDER_VERSION))
 
         val source = factory.open(track, bytes)
 
         assertIs<CachedFilePcmSource>(source)
-        assertEquals(0, emulator.loads, "a known-rate warm hit must not load the native track")
-        assertEquals(0, emulator.teardowns, "a known-rate warm hit must not tear the native core down")
+        assertEquals(0, emulator.loads, "a warm hit must not load the native track")
+        assertEquals(0, emulator.teardowns, "a warm hit must not tear the native core down")
         assertFalse(
             fileSystem.exists(stagingDir / "track-${track.id}"),
-            "a known-rate warm hit must not stage the source",
+            "a warm hit must not stage the source",
         )
         source.close()
     }
 
     @Test
-    fun `null-rate backend still negotiates natively and serves a complete hit`() = runBlocking {
+    fun `warm hit takes its sample rate from the cache header, not the backend`() = runBlocking {
         val bytes = "main-bytes".toByteArray()
         val track = trackOf()
         val registry = registryOf()
-        val reportedRate = 32_000
-        val emulator = counting(knownSampleRate = null, reportedSampleRate = reportedRate)
-        val factory = factoryOf(emulator, registry)
-        seedCache(PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, reportedRate))
-
-        val source = factory.open(track, bytes)
-
-        assertIs<CachedFilePcmSource>(source)
-        assertEquals(1, emulator.loads, "an unknown-rate backend must negotiate the rate natively")
-        assertEquals(1, emulator.teardowns, "the negotiated emulator must be closed on the hit")
-        assertFalse(
-            fileSystem.exists(stagingDir / "track-${track.id}"),
-            "closing the unused emulator source must remove its staging directory",
-        )
-        source.close()
-    }
-
-    @Test
-    fun `rate mismatch rebuilds the key from the negotiated rate instead of aliasing the hint`() = runBlocking {
-        val bytes = "main-bytes".toByteArray()
-        val track = trackOf()
-        val registry = registryOf()
-        // The hint is deliberately wrong (44.1 kHz hint, 48 kHz native output). Only the entry at
-        // the negotiated rate exists, so a correct implementation constructs the emulator,
-        // notices the mismatch, rebuilds the key, and then serves that entry.
-        val emulator = counting(SAMPLE_RATE, 48_000)
+        // The backend would report 44.1 kHz if loaded; the entry was rendered at 65536 Hz (a GSF
+        // driver's settled rate). The hit must play it at the rate it was rendered at.
+        val emulator = counting(renderVersion = RENDER_VERSION, reportedSampleRate = SAMPLE_RATE)
         val factory = factoryOf(emulator, registry)
         seedCache(
-            PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, 48_000),
-            frames = shortArrayOf(777, 777),
+            PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, RENDER_VERSION),
+            sampleRate = 65_536,
         )
 
         val source = factory.open(track, bytes)
 
         assertIs<CachedFilePcmSource>(source)
-        val buffer = ShortArray(8)
-        assertEquals(1, source.readFrames(buffer), "the entry at the negotiated rate should be readable")
-        assertEquals(777.toShort(), buffer[0], "must read the actual-rate entry, not a stale alias")
-        assertEquals(1, emulator.loads)
-        assertEquals(1, emulator.teardowns)
+        assertEquals(65_536, source.sampleRate)
+        assertEquals(0, emulator.loads)
+        source.close()
+    }
+
+    @Test
+    fun `bumping the render version misses the old entry`() = runBlocking {
+        val bytes = "main-bytes".toByteArray()
+        val track = trackOf()
+        val registry = registryOf()
+        val emulator = counting(renderVersion = RENDER_VERSION + 1, reportedSampleRate = SAMPLE_RATE)
+        val factory = factoryOf(emulator, registry)
+        seedCache(PcmCacheKey(hashOf(registry, track, bytes), track.trackNumber, RENDER_VERSION))
+
+        val source = factory.open(track, bytes)
+
+        assertIs<CachingPcmSource>(source, "an entry from an older render version must not be served")
+        assertEquals(1, emulator.loads, "the miss must stage and construct the emulator")
+        assertEquals(SAMPLE_RATE, source.sampleRate, "a fresh render runs at the backend's rate")
         source.close()
     }
 
@@ -127,10 +118,10 @@ internal class RealPcmTrackSourceFactoryTest {
         val contents = mutableMapOf<String, ByteArray>(chainUri to byteArrayOf(1, 2, 3))
         val registry = ContentSourceRegistry(setOf(MapContentSource("test", contents)))
         val track = trackOf(chainFiles = listOf(ChainFile(filename = "game.2sflib", uri = chainUri)))
-        val emulator = counting(SAMPLE_RATE, SAMPLE_RATE)
+        val emulator = counting(renderVersion = RENDER_VERSION, reportedSampleRate = SAMPLE_RATE)
         val factory = factoryOf(emulator, registry)
         val oldHash = hashOf(registry, track, bytes)
-        seedCache(PcmCacheKey(oldHash, track.trackNumber, SAMPLE_RATE))
+        seedCache(PcmCacheKey(oldHash, track.trackNumber, RENDER_VERSION))
 
         // A byte-identical source with different chain-file bytes must not reuse the old entry.
         contents[chainUri] = byteArrayOf(9, 9, 9)
@@ -166,11 +157,16 @@ internal class RealPcmTrackSourceFactoryTest {
         emulatorDispatcher = Dispatchers.Unconfined,
     )
 
-    private fun seedCache(key: PcmCacheKey, frames: ShortArray = shortArrayOf(111, 111, 222, 222)) {
+    private fun seedCache(
+        key: PcmCacheKey,
+        frames: ShortArray = shortArrayOf(111, 111, 222, 222),
+        sampleRate: Int = SAMPLE_RATE,
+    ) {
         val writer = PcmCacheFile.openForWrite(
             fileSystem = fileSystem,
             cacheDir = cacheDir,
             key = key,
+            sampleRate = sampleRate,
             trackId = 1L,
             trackLengthMs = 100L,
         )
@@ -205,17 +201,14 @@ internal class RealPcmTrackSourceFactoryTest {
     }
 
     /** The shared counting decorator around a deterministic fixed-rate backend. */
-    private fun counting(knownSampleRate: Int?, reportedSampleRate: Int): CountingEmulator =
+    private fun counting(renderVersion: Int, reportedSampleRate: Int): CountingEmulator =
         CountingEmulator(
-            FixedRateBackend(knownSampleRate = knownSampleRate, reportedSampleRate = reportedSampleRate),
+            FixedRateBackend(renderVersion = renderVersion, reportedSampleRate = reportedSampleRate),
         )
 
-    /**
-     * Deterministic native backend. [knownSampleRate] is the factory's non-native hint; the value
-     * the native core would report is [reportedSampleRate].
-     */
+    /** Deterministic native backend; [reportedSampleRate] is what the native core would report. */
     private class FixedRateBackend(
-        override val knownSampleRate: Int?,
+        override val renderVersion: Int,
         private val reportedSampleRate: Int,
     ) : Emulator() {
         private var phase = 0
@@ -244,5 +237,6 @@ internal class RealPcmTrackSourceFactoryTest {
 
     private companion object {
         const val SAMPLE_RATE = 44_100
+        const val RENDER_VERSION = 3
     }
 }

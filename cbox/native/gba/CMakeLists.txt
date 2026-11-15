@@ -1276,6 +1276,8 @@ set(library_name gba)
 set(libgba_SRCS
 		kotlin-jni.cpp
 		Gba.cpp
+		GbaResampler.cpp
+		GbaOutput.cpp
 		src/util/memory.c
 		)
 

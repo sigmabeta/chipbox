@@ -18,7 +18,9 @@ Emscripten/WASM builds):
 
 | File / dir | What it is |
 | --- | --- |
-| `Gba.cpp` / `Gba.h` | Chipbox load/generate/teardown wrapper over the core. |
+| `Gba.cpp` / `Gba.h` | Chipbox load/generate/teardown wrapper over the core. `loadFile` pre-rolls ~0.5 s (30 frames) so the GSF driver can program its mixing rate, then fixes the track's output rate at the settled rate, capped at 65536 Hz. The pre-roll audio is kept as the start of the track. |
+| `GbaOutput.cpp` / `.h` | Output stage: frames the core made at the output rate pass straight through; any other rate (the 32768 Hz start before the driver switches, a later switch, a 131072/262144 Hz driver above the cap) is resampled to it. Passing through instead of resampling everything to 44.1 kHz is what lifted the old ~13.5× real-time cap. |
+| `GbaResampler.cpp` / `.h` | Faster drop-in for mGBA's stereo sinc resampler with bit-identical output, used by `GbaOutput` for the segments it has to resample. The upstream path used to take ~70% of GSF render time. |
 | `kotlin-jni.cpp` | JNI bridge mapping `…gba.GbaEmulator` natives onto the wrapper. |
 | `src/`, `include/`, `version.cmake` | The vendored **mGBA** core, built in `LIBMGBA_ONLY` mode (static lib, GBA+GB cores, frontends/deps disabled). |
 | `CMakeLists.txt` | mGBA's own build script; builds the `gba` target and links the shared `native-common` (psflib, PSF file I/O and the shared `chipbox_env.h` debug-switch header). |

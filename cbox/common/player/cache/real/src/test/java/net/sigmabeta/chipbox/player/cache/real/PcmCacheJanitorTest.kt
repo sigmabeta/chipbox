@@ -40,7 +40,14 @@ internal class PcmCacheJanitorTest {
     fun `startup cleanup removes temp and corrupt files but keeps complete ones`() {
         val complete = writeCompleteFile(keyFor("aaaaaaaaaaaaaaaa"), frames = 1, mtime = 1_000L)
         // a .pcm.tmp left by an interrupted write
-        PcmCacheFile.openForWrite(fileSystem, cacheDir, keyFor("bbbbbbbbbbbbbbbb"), trackId = 1L, trackLengthMs = 0L)
+        PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            keyFor("bbbbbbbbbbbbbbbb"),
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
         val tmp = cacheDir / keyFor("bbbbbbbbbbbbbbbb").tempFilename()
         // a malformed .pcm (header can't be parsed)
         val corrupt = cacheDir / "garbage.pcm"
@@ -61,7 +68,14 @@ internal class PcmCacheJanitorTest {
         janitor.runStartupCleanup()
 
         // A temp file created after the first run should NOT be swept by a second call.
-        PcmCacheFile.openForWrite(fileSystem, cacheDir, keyFor("cccccccccccccccc"), trackId = 1L, trackLengthMs = 0L)
+        PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            keyFor("cccccccccccccccc"),
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
         val tmp = cacheDir / keyFor("cccccccccccccccc").tempFilename()
 
         janitor.runStartupCleanup()
@@ -104,10 +118,17 @@ internal class PcmCacheJanitorTest {
     private fun janitor(capBytes: Long = PcmCacheJanitor.DEFAULT_CAP_BYTES) =
         PcmCacheJanitor(fileSystem, cacheDir, capBytes, BluntHatchet())
 
-    private fun keyFor(hash: String) = PcmCacheKey(sourceHash = hash, trackNumber = 0, sampleRate = 44_100)
+    private fun keyFor(hash: String) = PcmCacheKey(sourceHash = hash, trackNumber = 0, renderVersion = 1)
 
     private fun writeCompleteFile(key: PcmCacheKey, frames: Int, mtime: Long): Path {
-        val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
+        val writer = PcmCacheFile.openForWrite(
+            fileSystem,
+            cacheDir,
+            key,
+            sampleRate = 44_100,
+            trackId = 1L,
+            trackLengthMs = 0L,
+        )
         writer.appendFrames(ShortArray(frames * 2), frames)
         writer.complete(
             trackId = 1L,

@@ -16,9 +16,10 @@ Grouped by role:
 
 - **Factories** — `RealPcmTrackSourceFactory` (production: emulator-by-extension
   selection through `EmulatorSelector`, source hashing, cache-hit vs render-ahead
-  decision, janitor wiring; a backend whose `knownSampleRate` is non-null gets the
-  cache checked **before** staging/constructing the emulator, so a warm hit does
-  zero native loads/teardowns)
+  decision, janitor wiring; the cache is checked **before** staging or
+  constructing the emulator for every backend, and the hit's sample rate comes
+  from the file header, so a warm hit does zero native loads/teardowns — and on
+  JS skips the WASM module fetch)
   and `UncachedPcmTrackSourceFactory` (cache-bypass fallback: live emulator per
   track, no read-through, no writer, no janitor — not wired in today).
 - **`PcmTrackSource` implementations** — `CachedFilePcmSource` (cache **hit**:
