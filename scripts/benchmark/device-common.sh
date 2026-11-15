@@ -95,6 +95,32 @@ baseline_dir_for() {
   absolute_path "${CHIPBOX_PERF_BASELINE:-$ROOT/build/perfbench-baseline/device}/$label"
 }
 
+# The harness's device label for an attached serial: `<model>-<abi>` with every character outside
+# [A-Za-z0-9._-] replaced by '_'. It is the key the result documents, the baselines and the
+# InfluxDB device tag all share, so a device with no document can still be named.
+device_label_for() {
+  local serial="$1" model abi
+  model="$(bounded_probe adb -s "$serial" shell getprop ro.product.model 2>/dev/null | tr -d '\r')"
+  abi="$(bounded_probe adb -s "$serial" shell getprop ro.product.cpu.abi 2>/dev/null | tr -d '\r')"
+  # -c on a newline-less printf, so the complement does not turn a trailing newline into '_'.
+  printf '%s-%s' "$model" "$abi" | tr -c 'A-Za-z0-9._-' '_'
+}
+
+# The benchmark's own explanation for a device that produced no document. A macrobenchmark
+# device-state refusal (LOW-BATTERY, a locked screen) writes its reason into that device's message
+# file, which is the only place the cause survives the failed Gradle task.
+device_note() {
+  local model="$1" dir file note
+  [ -n "$model" ] || return 0
+  dir="$(find "$ADDITIONAL_OUT" -maxdepth 4 -type d -name "$model - *" 2>/dev/null | head -1)"
+  [ -n "$dir" ] || return 0
+  file="$(find "$dir" -maxdepth 1 -name 'additionaltestoutput.benchmark.message_*' 2>/dev/null | head -1)"
+  [ -n "$file" ] || return 0
+  note="$(grep -m1 -E 'ERRORS \(not suppressed\)|low battery|Unable to|java\.lang\.' "$file" 2>/dev/null |
+    tr -d '\r' | cut -c1-200)"
+  printf '%s' "$note"
+}
+
 # `timeout` is GNU coreutils; macOS ships none by default. It only bounds the cheap hardware-id
 # probe, so fall back to a plain call rather than making the whole axis unavailable.
 bounded_probe() {
@@ -195,13 +221,41 @@ EOF
     die "snapshot generation failed"
 
   echo "==> Pushing corpus + snapshot to ${#online[@]} device(s)"
+  # A phone that drops out between the scan and the push (wireless adb over mDNS flaps) used to take
+  # the whole run with it. It is one device's problem: flag it, drop it from this run, and measure
+  # the rest.
+  staged=()
+  setup_failed=0
   for s in "${online[@]}"; do
     # Clear the corpus first: adb push merges into whatever is already there, so stale files from an
     # earlier (larger) corpus would otherwise linger and the audio axis would render them too.
-    adb -s "$s" shell rm -rf "$REMOTE_ROOT/corpus" >/dev/null || die "adb corpus clean failed on $s"
-    adb -s "$s" shell mkdir -p "$REMOTE_ROOT/corpus" >/dev/null || die "adb mkdir failed on $s"
-    adb -s "$s" push "$SNAPSHOT" "$REMOTE_ROOT/" >/dev/null || die "adb push of the snapshot failed on $s"
-    adb -s "$s" push "$CORPUS/." "$REMOTE_ROOT/corpus/" >/dev/null || die "adb push of the corpus failed on $s"
+    if adb -s "$s" shell rm -rf "$REMOTE_ROOT/corpus" >/dev/null 2>&1 &&
+      adb -s "$s" shell mkdir -p "$REMOTE_ROOT/corpus" >/dev/null 2>&1 &&
+      adb -s "$s" push "$SNAPSHOT" "$REMOTE_ROOT/" >/dev/null 2>&1 &&
+      adb -s "$s" push "$CORPUS/." "$REMOTE_ROOT/corpus/" >/dev/null 2>&1; then
+      staged+=("$s")
+    else
+      flag "$(device_label_for "$s"): could not stage the corpus — dropped from this run ($s)"
+      setup_failed=1
+    fi
+  done
+  online=("${staged[@]}")
+  if [ "${#online[@]}" -eq 0 ]; then
+    echo "${R}${B}x no device could be staged${Z} — the corpus push failed on every attached device"
+    return "$EXIT_FAIL"
+  fi
+  echo "==> ${#online[@]} device(s) staged: ${online[*]}"
+
+  # A dozing phone draws nothing: a startup axis never sees first content and a scroll axis records
+  # no frames, so the measurement fails for a reason that has nothing to do with the code. A farm
+  # phone is plugged in, so `stayon` keeps it awake for the whole axis instead of letting the screen
+  # time out between iterations — nothing new here touches the screen, so a plain wake is not enough.
+  # All three commands are idempotent. Best effort: a device that stays asleep shows up in the
+  # per-device pass below rather than failing here.
+  for s in "${online[@]}"; do
+    adb -s "$s" shell svc power stayon true >/dev/null 2>&1
+    adb -s "$s" shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1
+    adb -s "$s" shell wm dismiss-keyguard >/dev/null 2>&1
   done
 
   # ---- run this axis on every device ---------------------------------------
@@ -209,17 +263,23 @@ EOF
   # keeps the reused Gradle daemon in play (see the header on why pinning a serial doesn't).
   echo "==> Running the $AXIS benchmark (${TEST_CLASS##*.}) on all devices"
   rm -rf "$ADDITIONAL_OUT"
+  local bench_rc=0
   ./gradlew --console=plain \
     -Pandroid.testInstrumentationRunnerArguments.class="$TEST_CLASS" \
-    :benchmark:connectedBenchmarkAndroidTest ||
-    die "the on-device $AXIS benchmark failed"
+    :benchmark:connectedBenchmarkAndroidTest 2>&1 |
+    tee "$OUT/last-run.log" || bench_rc=$?
+  if [ "$bench_rc" -ne 0 ]; then
+    # One phone refusing to start fails the whole Gradle task: macrobenchmark's LOW-BATTERY and other
+    # device-state checks abort that device's test, and AGP treats the task as failed. The phones
+    # that did measure have already written their documents, so keep them — the refusal belongs to
+    # one cell, not to everyone else's measurement.
+    echo "${Y}warning:${Z} the benchmark task exited $bench_rc — keeping the results it produced"
+  fi
 
   # ---- collect -------------------------------------------------------------
   rm -rf "$CURRENT"
   mkdir -p "$CURRENT"
   mapfile -t results < <(find "$ADDITIONAL_OUT" -name "$RESULT_FILE" -type f 2>/dev/null | sort)
-  [ "${#results[@]}" -gt 0 ] ||
-    die "the run produced no $RESULT_FILE under $ADDITIONAL_OUT"
 
   # ---- record or gate, per device ------------------------------------------
   regressed=0
@@ -243,7 +303,8 @@ EOF
     # Diff against the sanitized copy, never $f: AGP's per-device output dir is named after the
     # device (e.g. "Pixel 6a - 13"), and its spaces would be split by Gradle's --args into bogus
     # positional arguments. $CURRENT/$label/$RESULT_FILE is the space-free copy made above.
-    report="$(./gradlew -q --console=plain :testing:perfbench:run --args="diff --a $baseline/$RESULT_FILE --b $CURRENT/$label/$RESULT_FILE --json" 2>/dev/null)"
+    # </dev/null: never let the diff's Gradle run read the caller's stdin.
+    report="$(./gradlew -q --console=plain :testing:perfbench:run --args="diff --a $baseline/$RESULT_FILE --b $CURRENT/$label/$RESULT_FILE --json" </dev/null 2>/dev/null)"
     if [ $? -ne 0 ]; then
       flag "$label: diff failed for the $AXIS axis"
       flagged=1
@@ -265,9 +326,34 @@ EOF
     fi
   done
 
+  # ---- devices that produced nothing ---------------------------------------
+  # A device the run attached but that has no document refused to start (macrobenchmark's
+  # LOW-BATTERY and other device-state checks abort its test) or never reached the measurement.
+  # Name each one and fail the axis, but only their own cells: every phone that did measure has
+  # already printed its verdict above, and sagefarm attributes the outcome per device from those
+  # lines. This is what stops one drained phone from discarding the whole night's data.
+  local missing=()
+  local s model label note
+  for s in "${online[@]}"; do
+    model="$(bounded_probe adb -s "$s" shell getprop ro.product.model 2>/dev/null | tr -d '\r')"
+    label="$(device_label_for "$s")"
+    [ -f "$CURRENT/$label/$RESULT_FILE" ] && continue
+    note="$(device_note "$model")"
+    flag "$label: no $AXIS result — ${note:-the benchmark produced no document for this device}"
+    missing+=("$label")
+  done
+
   # ---- verdict -------------------------------------------------------------
   if [ "$regressed" -eq 1 ]; then
     echo "${R}${B}x the $AXIS axis regressed on at least one device${Z} — re-run once to rule out noise, or --record to accept"
+    return "$EXIT_FAIL"
+  fi
+  if [ "${#missing[@]}" -gt 0 ]; then
+    echo "${R}${B}x no $AXIS result from ${#missing[@]} device(s):${Z} ${missing[*]} — charge and unlock the device(s) and re-run"
+    return "$EXIT_FAIL"
+  fi
+  if [ "$setup_failed" -eq 1 ]; then
+    echo "${R}${B}x ${#online[@]} device(s) could not be staged${Z} — see the flags above; the rest measured normally"
     return "$EXIT_FAIL"
   fi
   if [ "$flagged" -eq 1 ]; then

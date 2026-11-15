@@ -166,6 +166,31 @@ A phone attached over two transports at once (mDNS *and* IP) would be run twice
 and collide, so the scripts group the online serials by `ro.serialno` and **skip**
 (enough to `adb disconnect` the duplicate) rather than produce the opaque crash.
 
+### One phone's problem is one phone's cell
+
+A farm runs unattended, so the engine keeps a single device's trouble from
+erasing everyone else's measurement:
+
+- **A refused device fails its own cell, not the axis.** Macrobenchmark's
+  device-state checks (`LOW-BATTERY`, a locked screen) abort that phone's test,
+  and AGP then fails the whole `connectedBenchmarkAndroidTest`. The engine keeps
+  the task's exit code but still collects the documents the other phones wrote:
+  each of those prints its own `ok`/`REGRESSION` verdict, and a device with no
+  document is named in a `flag:` line. The axis still exits `1`, but a healthy
+  phone's cell stays `ok` — a drained battery costs one cell, not the night.
+- **A phone that drops out while staging is dropped, not fatal.** The corpus
+  push used to `die` on the first device that vanished (wireless adb over mDNS
+  flaps); now that device is flagged and left out of the run.
+- **A sleeping phone is woken first.** A dozing screen draws nothing, so a
+  startup axis never sees first content and a scroll axis records no frames. The
+  engine runs `svc power stayon true`, `KEYCODE_WAKEUP` and `wm dismiss-keyguard`
+  on every staged device before measuring — idempotent, and `stayon` keeps a
+  plugged-in farm phone awake for the whole axis instead of letting the screen
+  time out between iterations.
+- **The reason survives.** For a device with no document, the engine reads that
+  device's `additionaltestoutput.benchmark.message_*.txt` and quotes the
+  macrobenchmark refusal in the flag, so a failed cell names its cause.
+
 The production-cache probe has its own wrapper on the same convention —
 `scripts/benchmark/device-cache.sh <corpus-dir>` — but no baseline: the test's
 own assertions are the gate.
