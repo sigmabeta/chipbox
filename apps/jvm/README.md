@@ -68,5 +68,5 @@ the live `SourceDataLineSpeaker`.
 | VGM (vgm/vgz) | libvgm.so | ✅ Genesis .vgz, 44.1 kHz |
 | USF (usf/miniusf) | libusf.so | ✅ Star Fox 64 .miniusf, 32 kHz |
 | 2SF (2sf/mini2sf) | libtwosf.so | ✅ Sonic Rush .mini2sf, 44.1 kHz |
-| GBA (gsf/minigsf) | libgba.so | ✅ Iridion 3D .minigsf (mgba), 44.1 kHz |
+| GBA (gsf/minigsf) | libgba.so | ✅ Iridion 3D .minigsf (mgba), driver rate (32768/65536 Hz) |
 | SSF/DSF | libssf.so | ✅ Panzer Dragoon .ssf + Skies .dsf (chain) |

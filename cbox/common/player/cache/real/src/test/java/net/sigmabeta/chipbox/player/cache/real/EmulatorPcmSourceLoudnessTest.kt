@@ -81,11 +81,12 @@ internal class EmulatorPcmSourceLoudnessTest {
     fun `CachingPcmSource measures frames the emulator source left unmeasured`() = runTest {
         val emulatorSource = newEmulatorSource(measureLoudness = false)
 
-        val key = PcmCacheKey(sourceHash = "loudness", trackNumber = 0, sampleRate = SAMPLE_RATE)
+        val key = PcmCacheKey(sourceHash = "loudness", trackNumber = 0, renderVersion = 1)
         val writer = PcmCacheFile.openForWrite(
             fileSystem = fileSystem,
             cacheDir = workDir.absolutePath.toPath(),
             key = key,
+            sampleRate = SAMPLE_RATE,
             trackId = 1L,
             trackLengthMs = 0L,
         )

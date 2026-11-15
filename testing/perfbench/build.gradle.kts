@@ -55,11 +55,11 @@ dependencies {
     // The raw-emulator-core render path (EmulatorBank) and corpus walker reused unchanged.
     implementation(projects.testing.abrenderCore)
 
-    // `cache` drives the production PCM cache factory, the real 2SF backend (behind a counting
-    // decorator), and the shared Track/chain-file model — not the raw emulator loop.
+    // `cache` drives the production PCM cache factory over every host backend (abrender-core's
+    // `hostEmulators()`, each behind a counting decorator) and the shared Track/chain-file model —
+    // not the raw emulator loop.
     implementation(projects.cbox.common.player.cache.real)
     implementation(projects.cbox.common.player.emulators.api)
-    implementation(projects.cbox.common.player.emulators.twosf.real)
     implementation(projects.cbox.common.models.api)
 
     // `snapshot` runs the real host scanner over a corpus — the same scan stack the headless CLI

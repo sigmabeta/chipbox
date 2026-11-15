@@ -96,7 +96,10 @@ host-builds the same `cbox/native/<emu>` tree into `apps/jvm/libs`. See
 ## Cache + render-ahead — `cbox/common/player/cache`
 
 `RealPcmTrackSourceFactory.open(track, bytes)` hashes the source + chain files
-into a `PcmCacheKey(sourceHash, trackNumber, sampleRate)` and returns one of:
+into a `PcmCacheKey(sourceHash, trackNumber, renderVersion)` (the backend's
+`Emulator.renderVersion`; the sample rate lives in the file header, not the key)
+and checks the cache before staging or loading anything, so a hit never touches
+the emulator. It returns one of:
 
 - `CachedFilePcmSource` — cache **hit**: a complete `.pcm` file; instant seek.
 - `CachingPcmSource` — cache **miss**: a writer coroutine runs the emulator

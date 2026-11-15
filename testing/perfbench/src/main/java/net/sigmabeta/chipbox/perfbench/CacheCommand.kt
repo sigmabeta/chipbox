@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.abrender.CountingEmulator
 import net.sigmabeta.chipbox.abrender.SelectedTrack
+import net.sigmabeta.chipbox.abrender.hostEmulators
 import net.sigmabeta.chipbox.abrender.productionTrack
 import net.sigmabeta.chipbox.abrender.walkCorpus
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
@@ -13,7 +14,6 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.cache.real.RealPcmTrackSourceFactory
 import net.sigmabeta.chipbox.player.cache.real.UncachedPcmTrackSourceFactory
-import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import okio.FileSystem
@@ -27,6 +27,10 @@ private const val SHORTS_PER_FRAME = 2
 private const val CACHE_HIT_CLASS = "CachedFilePcmSource"
 private const val CACHE_MISS_CLASS = "CachingPcmSource"
 private const val TRACK_COLUMN_WIDTH = 64
+private const val RSN_EXTENSION = "rsn"
+private const val FNV_OFFSET_BASIS = -0x340d631b7bdddcdbL
+private const val FNV_PRIME = 0x100000001b3L
+private const val UNSIGNED_SHORT_MASK = 0xFFFFL
 
 /**
  * The production-cache axis. Unlike `audio`, which drives the raw emulator loop, this command opens
@@ -41,27 +45,31 @@ private const val TRACK_COLUMN_WIDTH = 64
  *   `EmulatorPcmSource`. It is the regression axis for "the cache work did not make the uncached
  *   path slower" — the same per-open drain, measured repeatedly.
  *
- * A counting decorator around the real [TwosfEmulator] records native track loads and teardowns per
- * phase, so the report shows whether a warm hit still pays for emulator construction. Nothing here
- * is a fake backend. Only 2SF files are selected: the factory is built with the 2SF backend alone,
- * so walking any other supported extension would only produce per-track errors.
+ * The factory holds every host backend ([hostEmulators], in playback's selection order), each behind
+ * a counting decorator that records native track loads and teardowns per phase, so the report shows
+ * whether a warm hit still pays for emulator construction. Nothing here is a fake backend.
+ *
+ * Every warm open must also return exactly the PCM the cold open played, at the same sample rate:
+ * the rate comes back from the cache file's header, not from the backend, so this is what proves a
+ * cached track still plays correctly. A track that breaks either rule is reported as an error.
  */
 fun runCache(args: CacheArgs) {
     args.outDir.mkdirs()
     val root = args.corpusDir.absoluteFile
     val matchesFilter = corpusPathFilter(args.filter)
+    val counters = hostEmulators().map(::CountingEmulator)
     val tracks = walkCorpus(
         root = root,
-        // The factory holds only TwosfEmulator, so only its extensions are drivable here.
-        supported = TwosfEmulator.supportedFileExtensions.toSet(),
+        // RSN archives aren't a backend extension: staging unpacks them to an SPC.
+        supported = counters.flatMap { it.supportedFileExtensions }.map { it.lowercase() }.toSet() + RSN_EXTENSION,
         extensionFilter = null,
         gameFilter = null,
-        everySong = true,
+        everySong = !args.onePerGame,
         subsong = 0,
     ).filter { matchesFilter(corpusRelativePath(root, it.path)) }
 
     if (tracks.isEmpty()) {
-        println("No renderable 2SF tracks under $root${args.filter?.let { " matching '$it'" } ?: ""}")
+        println("No renderable tracks under $root${args.filter?.let { " matching '$it'" } ?: ""}")
         return
     }
 
@@ -71,12 +79,13 @@ fun runCache(args: CacheArgs) {
         locationsFile = File(args.outDir, "locations.txt").toOkioPath(),
     )
     val registry = ContentSourceRegistry(setOf(librarySource))
-    val counting = CountingEmulator(TwosfEmulator)
+    val counting = CountingBackends(counters)
     val buffer = ShortArray(READ_BUFFER_FRAMES * SHORTS_PER_FRAME)
 
     println(
         "cache: corpus=$root mode=${if (args.uncached) "uncached" else "cached"} " +
-            "seconds=${args.sampleSeconds} repeat=${args.repeat} tracks=${tracks.size}",
+            "seconds=${args.sampleSeconds} repeat=${args.repeat} tracks=${tracks.size} " +
+            "one_per_game=${args.onePerGame}",
     )
 
     if (args.uncached) {
@@ -120,7 +129,7 @@ private fun measureCachedTrack(
     selected: SelectedTrack,
     args: CacheArgs,
     registry: ContentSourceRegistry,
-    counting: CountingEmulator,
+    counting: CountingBackends,
     buffer: ShortArray,
     hatchet: Hatchet,
 ): TrackResult {
@@ -129,21 +138,29 @@ private fun measureCachedTrack(
     return try {
         val (track, bytes) = productionTrack((index + 1).toLong(), selected, args.sampleSeconds, hatchet)
         val factory = RealPcmTrackSourceFactory(
-            emulators = listOf(counting),
+            emulators = counting.backends,
             stagingDir = File(workDir, "staging").toOkioPath(),
             pcmCacheDir = File(workDir, "pcm").toOkioPath(),
             fileSystem = FileSystem.SYSTEM,
             contentSourceRegistry = registry,
             hatchet = hatchet,
         )
-        val (cold, coldFrames) = runBlocking { measurePhase(factory, counting, track, bytes, buffer) }
+        val (cold, coldPcm) = runBlocking { measurePhase(factory, counting, track, bytes, buffer) }
         require(cold.sourceClass == CACHE_MISS_CLASS) {
             "cold open unexpectedly used ${cold.sourceClass} (fresh cache was not fresh)"
         }
+        val coldFrames = coldPcm.frames
         val warm = runBlocking { List(args.repeat) { measurePhase(factory, counting, track, bytes, buffer) } }
-        warm.forEach { (phase, _) ->
+        warm.forEach { (phase, pcm) ->
             require(phase.sourceClass == CACHE_HIT_CLASS) {
                 "warm open used ${phase.sourceClass} instead of $CACHE_HIT_CLASS"
+            }
+            require(phase.emulatorLoads == 0) { "warm hit loaded the native track ${phase.emulatorLoads}x" }
+            require(phase.sampleRate == cold.sampleRate) {
+                "warm hit played at ${phase.sampleRate} Hz; the cold render was ${cold.sampleRate} Hz"
+            }
+            require(pcm == coldPcm) {
+                "warm hit PCM differs from the cold render (${pcm.frames} vs ${coldPcm.frames} frames)"
             }
         }
         CachedResult(
@@ -174,7 +191,7 @@ private fun measureUncachedTrack(
     selected: SelectedTrack,
     args: CacheArgs,
     registry: ContentSourceRegistry,
-    counting: CountingEmulator,
+    counting: CountingBackends,
     buffer: ShortArray,
     hatchet: Hatchet,
 ): TrackResult {
@@ -183,7 +200,7 @@ private fun measureUncachedTrack(
     return try {
         val (track, bytes) = productionTrack((index + 1).toLong(), selected, args.sampleSeconds, hatchet)
         val factory = UncachedPcmTrackSourceFactory(
-            emulators = listOf(counting),
+            emulators = counting.backends,
             stagingDir = File(workDir, "staging").toOkioPath(),
             fileSystem = FileSystem.SYSTEM,
             contentSourceRegistry = registry,
@@ -192,13 +209,13 @@ private fun measureUncachedTrack(
         val phases = runBlocking {
             List(args.repeat) { measurePhase(factory, counting, track, bytes, buffer) }
         }
-        phases.forEach { (phase, frames) ->
+        phases.forEach { (phase, pcm) ->
             require(phase.sourceClass == "EmulatorPcmSource") {
                 "uncached open used ${phase.sourceClass} instead of EmulatorPcmSource"
             }
-            require(frames > 0) { "uncached open produced no audio" }
+            require(pcm.frames > 0) { "uncached open produced no audio" }
         }
-        UncachedResult(relative, uncachedRow(relative, phases.map { it.first }, phases.first().second))
+        UncachedResult(relative, uncachedRow(relative, phases.map { it.first }, phases.first().second.frames))
     } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
         FailedResult(relative, t.message ?: t.javaClass.simpleName)
     }
@@ -207,24 +224,24 @@ private fun measureUncachedTrack(
 /**
  * Opens one source, reads it to end-of-track, and closes it. Time-to-first-frame starts before
  * `open` on purpose: it is the user-visible latency, including everything the factory does before
- * it can hand back a readable source.
+ * it can hand back a readable source. Returns the phase and a fingerprint of the PCM it played.
  */
 private suspend fun measurePhase(
     factory: PcmTrackSource.Factory,
-    counting: CountingEmulator,
+    counting: CountingBackends,
     track: Track,
     bytes: ByteArray,
     buffer: ShortArray,
-): Pair<CachePhase, Long> {
+): Pair<CachePhase, PcmFingerprint> {
     counting.reset()
     val started = System.nanoTime()
     val source = factory.open(track, bytes)
-    val (frames, firstFrameNanos) = try {
+    val (pcm, firstFrameNanos) = try {
         readToEnd(source, buffer)
     } finally {
         source.close()
     }
-    if (frames == 0L) throw IllegalStateException("no audio produced")
+    if (pcm.frames == 0L) throw IllegalStateException("no audio produced")
     val wall = (System.nanoTime() - started) / NANOS_PER_SECOND
     val firstFrame = if (firstFrameNanos < 0) Double.NaN else (firstFrameNanos - started) / NANOS_PER_SECOND
     return CachePhase(
@@ -234,16 +251,17 @@ private suspend fun measurePhase(
         emulatorTeardowns = counting.teardowns,
         sourceClass = source.javaClass.simpleName,
         sampleRate = source.sampleRate,
-    ) to frames
+    ) to pcm
 }
 
 /**
- * Reads [source] to end-of-track, returning `(framesRead, firstFrameNanos)`. A render-ahead writer
+ * Reads [source] to end-of-track, returning `(pcm, firstFrameNanos)`. A render-ahead writer
  * may not have produced the frames under the cursor yet; the generator contract is to poll rather
  * than treat one empty read as end-of-track. The deadline bounds a genuinely stalled writer.
  */
-private suspend fun readToEnd(source: PcmTrackSource, buffer: ShortArray): Pair<Long, Long> {
+private suspend fun readToEnd(source: PcmTrackSource, buffer: ShortArray): Pair<PcmFingerprint, Long> {
     var frames = 0L
+    var hash = FNV_OFFSET_BASIS
     var firstFrameNanos = -1L
     val deadline = System.currentTimeMillis() + MAX_PHASE_WALL_SECONDS * MILLIS_PER_SECOND
     while (!source.isOver) {
@@ -254,12 +272,27 @@ private suspend fun readToEnd(source: PcmTrackSource, buffer: ShortArray): Pair<
         if (read > 0) {
             if (firstFrameNanos < 0) firstFrameNanos = System.nanoTime()
             frames += read.toLong()
+            for (i in 0 until read * SHORTS_PER_FRAME) {
+                hash = (hash xor (buffer[i].toLong() and UNSIGNED_SHORT_MASK)) * FNV_PRIME
+            }
             continue
         }
         source.getLastError()?.let { throw IllegalStateException(it) }
         yield()
     }
-    return frames to firstFrameNanos
+    return PcmFingerprint(frames, hash) to firstFrameNanos
+}
+
+/** Frame count plus a 64-bit FNV-1a over every sample read: enough to tell two reads apart. */
+private data class PcmFingerprint(val frames: Long, val hash: Long)
+
+/** The counting decorators the factory selects from, reset and summed together per phase. */
+private class CountingBackends(val backends: List<CountingEmulator>) {
+    val loads: Int get() = backends.sumOf { it.loads }
+
+    val teardowns: Int get() = backends.sumOf { it.teardowns }
+
+    fun reset() = backends.forEach { it.reset() }
 }
 
 private fun cacheTsv(results: List<TrackResult>): String = buildString {

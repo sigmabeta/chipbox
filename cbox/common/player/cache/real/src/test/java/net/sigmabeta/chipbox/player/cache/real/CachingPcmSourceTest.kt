@@ -230,7 +230,7 @@ internal class CachingPcmSourceTest {
 
     // ---- helpers ----
 
-    private val key = PcmCacheKey(sourceHash = "test", trackNumber = 0, sampleRate = 1000)
+    private val key = PcmCacheKey(sourceHash = "test", trackNumber = 0, renderVersion = 1)
 
     private fun finalPath(): Path = cacheDir / key.filename()
     private fun tempPath(): Path = cacheDir / key.tempFilename()
@@ -244,6 +244,7 @@ internal class CachingPcmSourceTest {
             fileSystem = fileSystem,
             cacheDir = cacheDir,
             key = key,
+            sampleRate = 1000,
             trackId = 1L,
             trackLengthMs = 0L,
         )

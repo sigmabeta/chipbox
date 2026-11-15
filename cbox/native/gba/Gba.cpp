@@ -1,6 +1,9 @@
 #include "Gba.h"
+#include "GbaOutput.h"
 
+#include <algorithm>
 #include <cstdarg>
+#include <vector>
 
 #include <mgba/core/log.h>
 
@@ -10,7 +13,27 @@ struct mCore *m_core;
 
 gsf_loader_state m_rom;
 
-struct gsf_running_state m_output;
+static GbaOutput m_output;
+
+// One runFrame's worth of core audio, copied out of mGBA's ring buffer.
+static std::vector<int16_t> m_frame_audio;
+
+// How much of the track loadFile() renders before it settles the output rate.
+// GSF drivers set their mixing rate during init; across 100 games the last
+// change landed 0.27 s in, so ~0.5 s (30 frames at 59.73 Hz) leaves headroom.
+static const int kPrerollFrames = 30;
+
+// The output rate is the driver's settled rate, capped here. Nearly every GSF
+// settles at 65536 or 32768 Hz; the rare 131072/262144 Hz driver is resampled
+// down so it doesn't cost 2-4x the cache space and speaker work.
+static const int32_t kMaxOutputRate = 65536;
+
+// What mGBA starts at, used if the pre-roll produced no audio at all.
+static const int32_t kDefaultRate = 32768;
+
+static const char *const kDerailError =
+        "GSF file appears corrupt or unsupported: the emulated GBA CPU "
+        "hit an illegal opcode and produced no audio.";
 
 // --- GBA log shim: silence trace spam, detect a derailed CPU -----------------
 //
@@ -73,6 +96,19 @@ static void install_log_shim() {
     }
 }
 
+// Runs one GBA frame and moves the audio it made into m_frame_audio. Returns
+// the frame count; *rate is the rate the core mixed at.
+static size_t run_core_frame(int32_t *rate) {
+    m_core->runFrame(m_core);
+    // Read the rate after the frame: the driver can reprogram SOUNDBIAS at
+    // any time, and this is the rate the frame's tail was mixed at.
+    *rate = (int32_t) m_core->audioSampleRate(m_core);
+    struct mAudioBuffer *src = m_core->getAudioBuffer(m_core);
+    const size_t frames = mAudioBufferAvailable(src);
+    m_frame_audio.resize(frames * GbaOutput::kChannels);
+    return mAudioBufferRead(src, m_frame_audio.data(), frames);
+}
+
 // True if every sample in the just-rendered buffer is zero. Paired with the
 // illegal-opcode signal, this distinguishes a derailed (silent) track from a
 // healthy one that merely tripped -- and recovered from -- a stray opcode.
@@ -132,8 +168,6 @@ void loadFile(const char *filename_c_str) {
         return;
     }
 
-    memset(&m_output, 0, sizeof(m_output));
-
     core->init(core);
     mCoreInitConfig(core, NULL);
 
@@ -146,45 +180,56 @@ void loadFile(const char *filename_c_str) {
     core->reset(core);
 
     m_core = core;
+
+    // Pre-roll: render the driver's init so the output rate is the one it
+    // settles on. The audio is kept and becomes the start of the track.
+    struct Chunk {
+        int32_t rate;
+        size_t offset;
+        size_t frames;
+    };
+    std::vector<int16_t> preroll;
+    std::vector<Chunk> chunks;
+    for (int i = 0; i < kPrerollFrames; ++i) {
+        int32_t rate;
+        const size_t frames = run_core_frame(&rate);
+        if (frames == 0) {
+            continue;
+        }
+        if (!chunks.empty() && chunks.back().rate == rate) {
+            chunks.back().frames += frames;
+        } else {
+            chunks.push_back({rate, preroll.size() / GbaOutput::kChannels, frames});
+        }
+        preroll.insert(preroll.end(), m_frame_audio.begin(), m_frame_audio.end());
+    }
+
+    // A derailed ROM shows up here first: illegal opcodes and nothing but
+    // silence for the whole pre-roll. See generateBuffer for the reasoning.
+    if (illegal_opcode_count > 0 &&
+        is_silent(preroll.data(), (int32_t) (preroll.size() / GbaOutput::kChannels))) {
+        last_error = kDerailError;
+        return;
+    }
+
+    const int32_t settled = chunks.empty() ? kDefaultRate : chunks.back().rate;
+    m_output.start(std::min(settled, kMaxOutputRate));
+    for (const Chunk &chunk : chunks) {
+        m_output.feed(preroll.data() + chunk.offset * GbaOutput::kChannels,
+                      chunk.frames, chunk.rate);
+    }
 }
 
 int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
-
-    if (!m_output.audio_inited || m_output.buffer_size_frames != buffer_size_frames) {
-        if (m_output.audio_inited) {
-            mAudioResamplerDeinit(&m_output.resampler);
-            mAudioBufferDeinit(&m_output.resampled);
-        }
-
-        // GBA's internal audio buffer is hard-capped at 0x4000 frames upstream.
-        size_t core_buffer = buffer_size_frames > 0x4000 ? 0x4000 : buffer_size_frames;
-        m_core->setAudioBufferSize(m_core, core_buffer);
-
-        // Destination is fixed 44100 Hz stereo, with 2x headroom so one
-        // resample pass can overshoot a request without stalling the loop.
-        mAudioBufferInit(&m_output.resampled, buffer_size_frames * 2, 2);
-        mAudioResamplerInit(&m_output.resampler, mINTERPOLATOR_SINC);
-        mAudioResamplerSetDestination(&m_output.resampler, &m_output.resampled, 44100.0);
-
-        m_output.buffer_size_frames = buffer_size_frames;
-        m_output.audio_inited = true;
-    }
-
-    struct mAudioBuffer *src = m_core->getAudioBuffer(m_core);
-
     const long illegal_before = illegal_opcode_count;
 
-    while ((int32_t) mAudioBufferAvailable(&m_output.resampled) < buffer_size_frames) {
-        m_core->runFrame(m_core);
-        // Re-query the source rate every pass: the GSF driver can reprogram
-        // SOUNDBIAS at any time, and the resampler adapts on the fly.
-        mAudioResamplerSetSource(&m_output.resampler, src,
-                                 m_core->audioSampleRate(m_core), true);
-        mAudioResamplerProcess(&m_output.resampler);
+    while ((int32_t) m_output.queued() < buffer_size_frames) {
+        int32_t rate;
+        const size_t frames = run_core_frame(&rate);
+        m_output.feed(m_frame_audio.data(), frames, rate);
     }
 
-    int32_t frames = mAudioBufferRead(&m_output.resampled, target_array,
-                                      buffer_size_frames);
+    int32_t frames = (int32_t) m_output.read(target_array, buffer_size_frames);
 
     // An illegal opcode means the CPU executed something that isn't an
     // instruction -- in practice a corrupt or unsupported ROM that has run off
@@ -196,9 +241,7 @@ int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
     // one. Returning 0 frames matches the PSF wrapper's on-error convention.
     if (!last_error && illegal_opcode_count > illegal_before &&
         is_silent(target_array, frames)) {
-        last_error =
-                "GSF file appears corrupt or unsupported: the emulated GBA CPU "
-                "hit an illegal opcode and produced no audio.";
+        last_error = kDerailError;
         return 0;
     }
 
@@ -208,18 +251,15 @@ int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
 void teardown() {
     illegal_opcode_count = 0;
 
-    if (m_output.audio_inited) {
-        mAudioResamplerDeinit(&m_output.resampler);
-        mAudioBufferDeinit(&m_output.resampled);
-        m_output.audio_inited = false;
-    }
+    m_output.stop();
 
     if (m_core) {
         m_core->deinit(m_core);
         m_core = NULL;
     }
 
-    delete m_rom.data;
+    // gsf_loader allocates with malloc/realloc, so it must be freed, not deleted.
+    free(m_rom.data);
     m_rom.data = nullptr;
     m_rom.data_size = 0;
 }
@@ -229,10 +269,9 @@ const char *get_last_error() {
 }
 
 int32_t get_sample_rate() {
-    // generateBuffer() resamples the core's native (and possibly varying)
-    // output to a fixed 44100 Hz, so this is constant and safe to read
+    // Fixed by loadFile()'s pre-roll for the whole track, so it's safe to read
     // before any frames are generated.
-    return 44100;
+    return m_output.outputRate() != 0 ? m_output.outputRate() : kDefaultRate;
 }
 
 inline unsigned get_le32(void const *p) {
