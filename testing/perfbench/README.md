@@ -120,8 +120,9 @@ device's corpus location.
 
 ### `reader-parity --dir <corpus> [--reference <tsv>] [--reader <ext>] [--no-padding]`
 
-Dev-only parity check for the pure-Kotlin streamed-audio header readers
-(see `.scratch/vgmstream-reader/`). It runs the **registered** reader for each
+Dev-only parity check for the pure-Kotlin streamed-audio header readers (see the
+parity-harness section of `arch-docs/architecture/streamed-audio-readers.md`). It
+runs the **registered** reader for each
 reference row or corpus file, then compares `readerLengthMs + padding` against
 the reference's stored length. Padding defaults to `2000 ms` — the scanner's
 `ZERO_FADE_PADDING_MS`, which it adds to every zero-fade track, so streamed
