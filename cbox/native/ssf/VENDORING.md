@@ -51,6 +51,18 @@ regression, so it is deliberately skipped.
   base/size, `yam_setram`, enable/clear). No executable memory and no JIT —
   `ENABLE_DYNAREC` / `dynacompile` stay dead. An upstream sync must keep the table
   *and* every invalidation site, or renders go stale.
+- **Flag-derived DSP operands in `yam.c`** — `dsp_build_ops()` also stores each
+  step's NEGB mask, B-select masks (`bacc` / `btemp`), saturation bounds
+  (`sat_lo` / `sat_hi`, the full `sint32` range when SAT is off), shift amount and
+  `mem_in_data` slots, so `dsp_sample_interpret` does mask/clamp arithmetic instead
+  of testing flag bits per step. Bit-identical on SSF and DSF; about 7% fewer
+  instructions per SSF render. Lives on top of the predecode table above.
+- **Register-derived channel settings hoisted in `generate_samples` (`yam.c`)** —
+  `lpoff`, `voff`, `tl`, the ALFO/PLFO settings, the ring-modulation and ring-write
+  conditions, and `env_adjustrate()` of all four `ar[]` rates are read once per call.
+  Only register stores change them and every store flushes first, so they are
+  constant for the call; `readnextsample()` writing through `chan` had forced a
+  reload every sample. Bit-identical on SSF and DSF; about 5% fewer instructions.
 - **DSF ARM fetch-region retention across local branches in `arm.c`** —
   `renew_fetch_region` records `fetchstart` / `fetchvalid`; `branch_pc_changed()`
   keeps a pointer-mapped region across a same-region `B` / `BL` instead of clearing
