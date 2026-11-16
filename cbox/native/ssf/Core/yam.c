@@ -285,6 +285,16 @@ struct DSP_OP {
   uint32 mdec_mask; // ~TABLE: 0 or 0xFFFFFFFF
   uint32 adrmask;   // ADREB: 0 or 0xFFFFFFFF
   sint32 coef;      // COEF[CRA] at decode time
+  // Flag-derived operands, resolved at decode time so a step does arithmetic
+  // on them instead of testing flag bits:
+  sint32 negb;      // NEGB: 0 or -1, for b = (b ^ negb) - negb
+  sint32 bacc;      // B = ACC: -1, else 0
+  sint32 btemp;     // B = TEMP: -1, else 0 (both 0 selects ZERO)
+  sint32 sat_lo;    // SAT: -0x800000, else INT32_MIN (no clamp)
+  sint32 sat_hi;    // SAT:  0x7FFFFF, else INT32_MAX (no clamp)
+  uint8 shift;      // SHIFT: 1, else 0
+  uint8 in_slot;    // mem_in_data slot written to INPUTS: step & 3
+  uint8 mrd_slot;   // mem_in_data slot a memory read lands in: (step + 2) & 3
   uint8 step;       // original microprogram step (0..127)
   uint8 tra;        // temp read index (7 bits)
   uint8 twa;        // temp write index (7 bits)
@@ -573,6 +583,14 @@ static void dsp_build_ops(struct YAM_STATE *state) {
     if(mpro->negb) { flags |= DSPOP_NEGB; }
     if(mwf & 0x01) { flags |= DSPOP_SHIFT; }
     op->flags = flags;
+    op->negb = (flags & DSPOP_NEGB) ? (-1) : 0;
+    op->bacc = (op->bsel == XZBCHOICE_ACC) ? (-1) : 0;
+    op->btemp = (op->bsel == XZBCHOICE_TEMP) ? (-1) : 0;
+    op->sat_lo = (flags & DSPOP_SAT) ? (-0x800000) : (-0x7FFFFFFF - 1);
+    op->sat_hi = (flags & DSPOP_SAT) ? ( 0x7FFFFF) : ( 0x7FFFFFFF);
+    op->shift = (flags & DSPOP_SHIFT) ? 1 : 0;
+    op->in_slot = (uint8)(i & 3);
+    op->mrd_slot = (uint8)((i + 2) & 3);
   }
   state->dsp_op_count = (uint8)count;
   state->dsp_ops_valid = 1;
@@ -2219,6 +2237,24 @@ static uint32 generate_samples(
   // local also removes the per-sample read/write of the shared pointer: the block rotation is
   // applied once, in render().
   uint32 bufptr = is_scsp ? state->bufptr : 0;
+  // Register-derived channel settings. Only register stores change them, and every store flushes
+  // first, so they are constant for this call. readnextsample() writes through chan, which would
+  // otherwise make the compiler reload each of them every sample.
+  const int ringmod = is_scsp && (chan->mdl!=0 || chan->mdxsl!=0 || chan->mdysl!=0);
+  const int ringwrite = is_scsp && !chan->stwinh;
+  const int lpoff = chan->lpoff;
+  const int voff = chan->voff;
+  const uint32 tl4 = ((uint32)(chan->tl)) << 2;
+  const uint8 alfos = chan->alfos;
+  const uint8 alfows = chan->alfows;
+  const uint8 plfos = chan->plfos;
+  const uint8 plfows = chan->plfows;
+  // env_adjustrate() of each state's rate; envstate itself still moves per sample.
+  uint32 env_effrate[4];
+  env_effrate[0] = env_adjustrate(chan, chan->ar[0]);
+  env_effrate[1] = env_adjustrate(chan, chan->ar[1]);
+  env_effrate[2] = env_adjustrate(chan, chan->ar[2]);
+  env_effrate[3] = env_adjustrate(chan, chan->ar[3]);
 
 //gfreq[samples]++;
 
@@ -2246,7 +2282,7 @@ static uint32 generate_samples(
     if(buf) {
       sint32 s, s_cur, s_next, f;
       // Apply SCSP ring modulation, if necessary
-      if(is_scsp && (chan->mdl!=0 || chan->mdxsl!=0 || chan->mdysl!=0)) {
+      if(ringmod) {
         sint32 smp=(state->ringbuf[(bufptr-64+chan->mdxsl)&(32*RINGMAX-1)]
                     +state->ringbuf[(bufptr-64+chan->mdysl)&(32*RINGMAX-1)])/2;
         smp<<=0xA; // associate cycle with 1024
@@ -2261,7 +2297,7 @@ static uint32 generate_samples(
       s = (s_next * f) + (s_cur * (0x4000-f));
       s >>= 14; // s is 16-bit
       // Apply filter, if we want it
-      if(!(chan->lpoff)) {
+      if(!lpoff) {
         uint32 fv = chan->lpflevel;
         uint32 qv = chan->q & 0x1F;
         sint32 f = (((fv & 0xFF) | 0x100) << 4) >> ((fv >> 8) ^ 0x1F);
@@ -2275,15 +2311,15 @@ static uint32 generate_samples(
         chan->lpp1 = s;
       }
       // Apply attenuation, if we want it
-      if(!(chan->voff)) {
+      if(!voff) {
         uint32 attenuation;
         sint32 linearvol;
-        attenuation = ((uint32)(chan->tl)) << 2;
+        attenuation = tl4;
         attenuation += ((uint32)(chan->envlevel)) & ((uint32)(chan->envlevelmask[chan->envstate]));
         // LFO amplitude modulation
-        if(chan->alfos) {
+        if(alfos) {
           uint32 att_wave_y = 0;
-          switch(chan->alfows) {
+          switch(alfows) {
           case 0: // sawtooth
             att_wave_y = ((uint32)(chan->lfophase)) >> 24;
             break;
@@ -2298,7 +2334,7 @@ static uint32 generate_samples(
             att_wave_y = yamrand16(state) & 0xFF;
             break;
           }
-          attenuation += (att_wave_y >> (7 - (chan->alfos)));
+          attenuation += (att_wave_y >> (7 - alfos));
         }
         if(attenuation >= 0x3C0) {
           s = 0;
@@ -2309,7 +2345,7 @@ static uint32 generate_samples(
         }
       }
       // Store in ring modulation buffer, if we're SCSP and it's enabled
-      if(is_scsp && !chan->stwinh) {
+      if(ringwrite) {
         state->ringbuf[bufptr] = s;
       }
       // Write output
@@ -2330,7 +2366,7 @@ static uint32 generate_samples(
     //
     // Advance amplitude envelope
     //
-    { uint32 effectiverate = env_adjustrate(chan, chan->ar[chan->envstate]);
+    { uint32 effectiverate = env_effrate[chan->envstate & 3];
       if(env_needstep(effectiverate, odometer)) {
         switch(chan->envstate) {
         case 0: // attack
@@ -2380,9 +2416,9 @@ static uint32 generate_samples(
       //
       // LFO pitch shifting
       //
-      if(chan->plfos) {
+      if(plfos) {
         uint32 pitch_wave_y = 0;
-        switch(chan->plfows) {
+        switch(plfows) {
         case 0: // sawtooth
           pitch_wave_y = chan->lfophase ^ 0x80000000;
           break;
@@ -2399,7 +2435,7 @@ static uint32 generate_samples(
           pitch_wave_y = yamrand16(state) << 16;
           break;
         }
-        { uint32 maxvary = base_phaseinc >> (10-(chan->plfos));
+        { uint32 maxvary = base_phaseinc >> (10-plfos);
           uint32 scaled_pitch_wave_y =
             (((uint64)(maxvary*2)) * ((uint64)pitch_wave_y)) >> 32;
           realphaseinc = base_phaseinc + scaled_pitch_wave_y - maxvary;
@@ -2566,16 +2602,13 @@ static void __fastcall dsp_sample_interpret(struct YAM_STATE *state) {
     //
     // Input write
     //
-    state->inputs[op->iwa] = state->mem_in_data[op->step & 3];
+    state->inputs[op->iwa] = state->mem_in_data[op->in_slot];
     //
-    // B selection (TEMP, ACC, ZERO, ZERO_ACC)
+    // B selection (TEMP, ACC, ZERO, ZERO_ACC): at most one mask is set
     //
-    b = (op->bsel == 1) ? acc : ((op->bsel & 2) ? 0 : tempval);
-    {
-      sint32 negb = (flags & DSPOP_NEGB) ? (-1) : 0;
-      b ^= negb;
-      b -= negb;
-    }
+    b = (acc & op->bacc) | (tempval & op->btemp);
+    b ^= op->negb;
+    b -= op->negb;
     //
     // X selection (TEMP or INPUTS)
     //
@@ -2587,11 +2620,11 @@ static void __fastcall dsp_sample_interpret(struct YAM_STATE *state) {
     //
     // Shift of previous accumulator
     //
-    shifted = acc << ((flags & DSPOP_SHIFT) ? 1 : 0);
-    if(flags & DSPOP_SAT) {
-      if(shifted > ( 0x7FFFFF)) { shifted = ( 0x7FFFFF); }
-      if(shifted < (-0x800000)) { shifted = (-0x800000); }
-    }
+    // (an unsaturated step's bounds are the full sint32 range, so the clamp
+    // leaves it unchanged)
+    shifted = acc << op->shift;
+    if(shifted > op->sat_hi) { shifted = op->sat_hi; }
+    if(shifted < op->sat_lo) { shifted = op->sat_lo; }
     //
     // Multiply and accumulate
     //
@@ -2642,7 +2675,7 @@ static void __fastcall dsp_sample_interpret(struct YAM_STATE *state) {
         sint32 memdata = *((sint16*)(ram + a));
         if(!(flags & DSPOP_NOFL)) { memdata = float16_to_int24(memdata); }
         else { memdata <<= 8; }
-        state->mem_in_data[(op->step+2)&3] = memdata;
+        state->mem_in_data[op->mrd_slot] = memdata;
       }
       if(flags & DSPOP_MWT) { // MWT
         sint32 memdata = shifted;
