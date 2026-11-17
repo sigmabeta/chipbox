@@ -256,10 +256,15 @@ internal class Biquad(
  *
  * Per-channel circular history of [TAPS_PER_PHASE] previous samples so the polyphase filter
  * can stride backwards through them. State is independent across channels.
+ *
+ * The ring is stored twice over (`hist[j] == hist[j + TAPS_PER_PHASE]`), so the backwards walk
+ * from any head position reads one contiguous run and needs no `%` per tap. That modulo was 96
+ * integer divisions per stereo frame and the hottest part of a render on fast cores. The products
+ * and their summation order are unchanged, so the output is bit-identical.
  */
 internal class TruePeak(private val channels: Int) {
-    private val coefficients: Array<DoubleArray> = buildCoefficients()
-    private val history = Array(channels) { DoubleArray(TAPS_PER_PHASE) }
+    internal val coefficients: Array<DoubleArray> = buildCoefficients()
+    private val history = Array(channels) { DoubleArray(2 * TAPS_PER_PHASE) }
     private val historyPos = IntArray(channels)
 
     var maxAbs: Double = 0.0
@@ -276,18 +281,21 @@ internal class TruePeak(private val channels: Int) {
         val hist = history[channel]
         val pos = historyPos[channel]
         hist[pos] = sample
+        hist[pos + TAPS_PER_PHASE] = sample
 
+        // Tap t is the sample t steps back: ring slot (pos - t) mod TAPS, which the mirrored copy
+        // holds at pos + TAPS - t, always in [1, 2 * TAPS - 1].
+        val newest = pos + TAPS_PER_PHASE
         for (p in 0 until PHASES) {
             val co = coefficients[p]
             var sum = 0.0
             for (t in 0 until TAPS_PER_PHASE) {
-                val idx = ((pos - t) + TAPS_PER_PHASE) % TAPS_PER_PHASE
-                sum += hist[idx] * co[t]
+                sum += hist[newest - t] * co[t]
             }
             val mag = abs(sum)
             if (mag > maxAbs) maxAbs = mag
         }
-        historyPos[channel] = (pos + 1) % TAPS_PER_PHASE
+        historyPos[channel] = if (pos + 1 == TAPS_PER_PHASE) 0 else pos + 1
     }
 
     companion object {
