@@ -57,12 +57,18 @@ regression, so it is deliberately skipped.
   `mem_in_data` slots, so `dsp_sample_interpret` does mask/clamp arithmetic instead
   of testing flag bits per step. Bit-identical on SSF and DSF; about 7% fewer
   instructions per SSF render. Lives on top of the predecode table above.
-- **Register-derived channel settings hoisted in `generate_samples` (`yam.c`)** —
-  `lpoff`, `voff`, `tl`, the ALFO/PLFO settings, the ring-modulation and ring-write
-  conditions, and `env_adjustrate()` of all four `ar[]` rates are read once per call.
-  Only register stores change them and every store flushes first, so they are
-  constant for the call; `readnextsample()` writing through `chan` had forced a
-  reload every sample. Bit-identical on SSF and DSF; about 5% fewer instructions.
+- **Ring conditions hoisted in `generate_samples` (`yam.c`)** — `ringmod` and
+  `ringwrite` (each gates a whole block in the sample loop) plus `env_adjustrate()`
+  of all four `ar[]` rates (`env_effrate`, indexed by `envstate`) are read once per
+  call. Only register stores change them and every store flushes first, so they are
+  constant for the call; `readnextsample()` writing through `chan` had otherwise
+  forced a reload every sample. `env_effrate` is worth ~4-5% of SSF render time.
+  The other register-derived scalars (`lpoff`, `voff`, `tl`, `alfos`, `alfows`,
+  `plfos`, `plfows`) are deliberately **re-read from `chan`** in the loop: caching
+  them as well (PR #76 did) pushed the AICA path — the one that keeps the filter
+  block live — past the arm64 register budget, spilling seven values to the stack
+  and costing ~3% of DSF render time, while SCSP gained nothing from them. The
+  host (x86_64) does not spill, so this only shows up on a device.
 - **DSF ARM fetch-region retention across local branches in `arm.c`** —
   `renew_fetch_region` records `fetchstart` / `fetchvalid`; `branch_pc_changed()`
   keeps a pointer-mapped region across a same-region `B` / `BL` instead of clearing
