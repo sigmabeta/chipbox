@@ -2237,18 +2237,18 @@ static uint32 generate_samples(
   // local also removes the per-sample read/write of the shared pointer: the block rotation is
   // applied once, in render().
   uint32 bufptr = is_scsp ? state->bufptr : 0;
-  // Register-derived channel settings. Only register stores change them, and every store flushes
-  // first, so they are constant for this call. readnextsample() writes through chan, which would
-  // otherwise make the compiler reload each of them every sample.
+  // Ring flags are worth hoisting: each gates a whole block inside the sample loop.
+  //
+  // The other register-derived scalars (lpoff, voff, tl, alfos, alfows, plfos, plfows)
+  // are deliberately re-read from chan inside the loop rather than cached here. Caching
+  // them looks free -- only register stores change them and every store flushes first --
+  // but this function serves both chips, and on arm64 the AICA path (live filter block)
+  // has no registers left for seven more locals: the allocator spilled them back to the
+  // stack and reloaded them every sample, costing ~3% of DSF render time. The SCSP path
+  // is smaller (its filter block is dead code, lpoff forced to 1), keeps them in
+  // registers, and is unaffected. chan is one hot cache line; the reload is cheaper.
   const int ringmod = is_scsp && (chan->mdl!=0 || chan->mdxsl!=0 || chan->mdysl!=0);
   const int ringwrite = is_scsp && !chan->stwinh;
-  const int lpoff = chan->lpoff;
-  const int voff = chan->voff;
-  const uint32 tl4 = ((uint32)(chan->tl)) << 2;
-  const uint8 alfos = chan->alfos;
-  const uint8 alfows = chan->alfows;
-  const uint8 plfos = chan->plfos;
-  const uint8 plfows = chan->plfows;
   // env_adjustrate() of each state's rate; envstate itself still moves per sample.
   uint32 env_effrate[4];
   env_effrate[0] = env_adjustrate(chan, chan->ar[0]);
@@ -2297,7 +2297,7 @@ static uint32 generate_samples(
       s = (s_next * f) + (s_cur * (0x4000-f));
       s >>= 14; // s is 16-bit
       // Apply filter, if we want it
-      if(!lpoff) {
+      if(!(chan->lpoff)) {
         uint32 fv = chan->lpflevel;
         uint32 qv = chan->q & 0x1F;
         sint32 f = (((fv & 0xFF) | 0x100) << 4) >> ((fv >> 8) ^ 0x1F);
@@ -2311,15 +2311,15 @@ static uint32 generate_samples(
         chan->lpp1 = s;
       }
       // Apply attenuation, if we want it
-      if(!voff) {
+      if(!(chan->voff)) {
         uint32 attenuation;
         sint32 linearvol;
-        attenuation = tl4;
+        attenuation = ((uint32)(chan->tl)) << 2;
         attenuation += ((uint32)(chan->envlevel)) & ((uint32)(chan->envlevelmask[chan->envstate]));
         // LFO amplitude modulation
-        if(alfos) {
+        if(chan->alfos) {
           uint32 att_wave_y = 0;
-          switch(alfows) {
+          switch(chan->alfows) {
           case 0: // sawtooth
             att_wave_y = ((uint32)(chan->lfophase)) >> 24;
             break;
@@ -2334,7 +2334,7 @@ static uint32 generate_samples(
             att_wave_y = yamrand16(state) & 0xFF;
             break;
           }
-          attenuation += (att_wave_y >> (7 - alfos));
+          attenuation += (att_wave_y >> (7 - (chan->alfos)));
         }
         if(attenuation >= 0x3C0) {
           s = 0;
@@ -2416,9 +2416,9 @@ static uint32 generate_samples(
       //
       // LFO pitch shifting
       //
-      if(plfos) {
+      if(chan->plfos) {
         uint32 pitch_wave_y = 0;
-        switch(plfows) {
+        switch(chan->plfows) {
         case 0: // sawtooth
           pitch_wave_y = chan->lfophase ^ 0x80000000;
           break;
@@ -2435,7 +2435,7 @@ static uint32 generate_samples(
           pitch_wave_y = yamrand16(state) << 16;
           break;
         }
-        { uint32 maxvary = base_phaseinc >> (10-plfos);
+        { uint32 maxvary = base_phaseinc >> (10-(chan->plfos));
           uint32 scaled_pitch_wave_y =
             (((uint64)(maxvary*2)) * ((uint64)pitch_wave_y)) >> 32;
           realphaseinc = base_phaseinc + scaled_pitch_wave_y - maxvary;
