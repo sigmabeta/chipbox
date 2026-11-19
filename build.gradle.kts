@@ -55,11 +55,10 @@ plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin>
 //    webpack-dev-server) does `require('uuid').v4()`; uuid 11 keeps a CommonJS `require` export
 //    (package.json `exports.node.require` + `main` both point at dist/cjs), so sockjs is unaffected.
 plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+    // Kotlin 2.4 moved `download` off YarnRootExtension onto the shared YarnRootEnvSpec, which is
+    // what each project's YarnEnvSpec reads. Without it Kotlin looks for a downloaded yarn in
+    // ~/.gradle/yarn instead of the system one.
     the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().download.set(false)
-    // Same per-project convention problem as Node: the root YarnRootExtension is what each
-    // project's YarnEnvSpec reads. Without it Kotlin looks for a downloaded yarn in ~/.gradle/yarn.
-    @Suppress("DEPRECATION_ERROR")
-    the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().download = false
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
         resolution("serialize-javascript", "^7.0.5")
         resolution("diff", "^8.0.4")

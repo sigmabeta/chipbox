@@ -4,8 +4,8 @@ Current-state map of the KMP layout. The Android→KMP migration is complete; th
 doc is the end-state reference. Trust the code when it disagrees.
 
 Targets: `androidTarget` + `jvm()` everywhere; some modules also add
-`js { nodejs() }` as a purity-enforcement target. JVM 17. compileSdk 36 /
-minSdk 26.
+`js { nodejs() }` as a purity-enforcement target. JVM 17. compileSdk 37 /
+minSdk 26, targetSdk 36.
 
 ## Top-level layout
 

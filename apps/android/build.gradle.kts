@@ -37,7 +37,7 @@ metro {
 
 android {
     namespace = "net.sigmabeta.chipbox"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "net.sigmabeta.chipbox"
