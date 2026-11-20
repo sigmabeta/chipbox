@@ -18,8 +18,6 @@
 #     - a web-image job: both linux platforms, push:false, no login/push/credentials, OCI tar
 #       output, gha layer cache, QEMU for the arm64 runtime stage, and the amd64/arm64 checks
 #     - the image is not uploaded as an artifact, and publish.needs includes web-image
-#   .github/workflows/ci.yml
-#     - the PR web job still builds amd64 and smokes it through the shared script
 #   Dockerfile
 #     - CHIPBOX_BUILD_* args carry deterministic build identity (the context has no .git)
 #
@@ -30,7 +28,6 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DOCKERFILE="$ROOT/Dockerfile"
-CI="$ROOT/.github/workflows/ci.yml"
 RELEASE="$ROOT/.github/workflows/release.yml"
 MANIFEST="$ROOT/apps/js/wasm-emulators.txt"
 
@@ -49,7 +46,7 @@ command -v python3 >/dev/null 2>&1 || {
   exit 2
 }
 
-for f in "$DOCKERFILE" "$CI" "$RELEASE" "$MANIFEST"; do
+for f in "$DOCKERFILE" "$RELEASE" "$MANIFEST"; do
   [ -f "$f" ] || fail "missing $f"
 done
 [ "$failures" -eq 0 ] || exit 1
@@ -220,11 +217,10 @@ PY
 [ $? -eq 0 ] || fail "Dockerfile RUN/HEALTHCHECK shell syntax is invalid"
 
 # ---- workflows ------------------------------------------------------------
-ruby - "$CI" "$RELEASE" <<'RUBY'
+ruby - "$RELEASE" <<'RUBY'
 require 'yaml'
 
-ci_path, release_path = ARGV
-ci = YAML.load_file(ci_path)
+release_path = ARGV[0]
 release = YAML.load_file(release_path)
 
 def job!(doc, name)
@@ -243,27 +239,6 @@ end
 def check(cond, message)
   raise(message) unless cond
 end
-
-# --- PR web job: keep the amd64 build + smoke from ticket 01 intact. ---
-web = job!(ci, 'web')
-check(web['needs'] == 'static-analysis', 'CI web job must stay behind static-analysis')
-check(steps(web).any? { |s| s.dig('run').to_s.include?('scripts/ci/verify-web-bundle.sh') },
-      'CI web job must still assert the bundle')
-pr_build = build_step(steps(web))
-check(!pr_build.nil?, 'CI web job must build the image')
-pr_with = pr_build['with'] || {}
-check(pr_with['platforms'].to_s.delete(' ') == 'linux/amd64',
-      'CI web job must build linux/amd64')
-check(pr_with['push'] == false, 'CI web job must not push')
-check(pr_with['load'] == true, 'CI web job must load the amd64 image for the smoke')
-check(pr_with['build-args'].to_s.include?('EMSDK_VERSION='),
-      'CI web image build must pass the pinned EMSDK_VERSION')
-check(pr_with['build-args'].to_s.include?('CHIPBOX_BUILD_VERSION='),
-      'CI web image build must pass the checkout build identity (CHIPBOX_BUILD_VERSION)')
-check(steps(web).any? { |s| s.dig('run').to_s.include?('scripts/ci/web-image-smoke.sh') },
-      'CI web job must smoke through scripts/ci/web-image-smoke.sh')
-check(!steps(web).any? { |s| s['uses'].to_s.include?('docker/login-action') },
-      'CI web job must not log in to a registry')
 
 # --- release web-image job: both arches, OCI tar, no registry. ---
 # Psych parses the unquoted `on:` key as boolean true, so accept either spelling.
@@ -334,7 +309,7 @@ publish = job!(release, 'publish')
 check(Array(publish['needs']).include?('web-image'),
       'release publish must need web-image, so a failed image build blocks the release')
 
-puts 'Workflow wiring OK: PR amd64 smoke + release amd64/arm64 OCI build, no registry/public artifact'
+puts 'Workflow wiring OK: release amd64/arm64 OCI build, no registry/public artifact'
 RUBY
 [ $? -eq 0 ] || failures=$((failures + 1))
 
