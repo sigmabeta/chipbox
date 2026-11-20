@@ -43,9 +43,11 @@ android {
     experimentalProperties["android.experimental.self-instrumenting"] = true
 
     buildTypes {
-        // Match the :app benchmark variant by name.
+        // Match the :app benchmark variant by name. Not debuggable: the audio and cache axes run
+        // their Kotlin code (JNI wrappers, WAV writing, signal analysis, pure-Kotlin cores) inside
+        // this APK's own process, and ART runs a debuggable app's code several times slower.
         create("benchmark") {
-            isDebuggable = true
+            isDebuggable = false
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
         }

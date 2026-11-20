@@ -61,7 +61,13 @@ shared storage is only verifiable on hardware.
 
 - **Target:** a Macrobenchmark instrumentation test against `net.sigmabeta.chipbox`,
   built into the `benchmark` build variant (matching `:apps:android`'s
-  `benchmark` variant: `release`-based, non-debuggable, profileable).
+  `benchmark` variant: `release`-based, non-debuggable, profileable). This
+  module's own `benchmark` build type is **non-debuggable too**, and must stay
+  so: the audio and cache axes run in this APK's process, not the app's, and ART
+  runs a debuggable app's Kotlin several times slower. Before 2026-11 it was
+  debuggable, which made every audio-axis RTF 2–6× too low (libgme SPC on a
+  Pixel 7: about 40× debuggable, 235× not). Audio and cache results from before
+  that change can't be compared with later ones.
 - **Run:** `./gradlew :benchmark:connectedBenchmarkAndroidTest` on a **physical
   device** — numbers aren't representative on an emulator
   (`androidx.benchmark.suppressErrors = EMULATOR` lets it run there anyway, but
