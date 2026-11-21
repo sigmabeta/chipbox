@@ -49,23 +49,46 @@ class EbuR128(
 
     private val truePeak = TruePeak(channels)
 
+    /** One channel of the current buffer: raw samples, then K-weighted in place. */
+    private var channelSamples = DoubleArray(0)
+
+    /** Per frame of the current buffer: the sum over channels of the K-weighted squares. */
+    private var frameSquares = DoubleArray(0)
+
     /**
      * Feed [frameCount] interleaved frames from [buffer] into the measurer. `frameCount * channels`
      * must not exceed `buffer.size`. Safe to call with `frameCount <= 0`.
+     *
+     * Works one channel at a time over the whole buffer, so each filter keeps its state in locals
+     * instead of object fields. Every value is still computed from the same operands in the same
+     * order as a frame-by-frame walk (the per-frame channel sum adds channels in index order, and
+     * the sub-block sums add frames in time order), so the results are bit-identical to it.
      */
     fun process(buffer: ShortArray, frameCount: Int) {
         if (frameCount <= 0) return
-        var i = 0
-        for (f in 0 until frameCount) {
-            var weightedSquareSum = 0.0
-            for (c in 0 until channels) {
-                val raw = buffer[i + c].toDouble() * INV_FULL_SCALE
-                truePeak.process(c, raw)
-                val kw = rlbFilters[c].process(preFilters[c].process(raw))
-                weightedSquareSum += kw * kw
+        if (channelSamples.size < frameCount) {
+            channelSamples = DoubleArray(frameCount)
+            frameSquares = DoubleArray(frameCount)
+        }
+        val samples = channelSamples
+        val squares = frameSquares
+        squares.fill(0.0, 0, frameCount)
+        for (c in 0 until channels) {
+            var i = c
+            for (f in 0 until frameCount) {
+                samples[f] = buffer[i].toDouble() * INV_FULL_SCALE
+                i += channels
             }
-            i += channels
-            subBlockSums[subBlockPosition] += weightedSquareSum
+            truePeak.process(c, samples, frameCount)
+            preFilters[c].processInPlace(samples, frameCount)
+            rlbFilters[c].processInPlace(samples, frameCount)
+            for (f in 0 until frameCount) {
+                val kw = samples[f]
+                squares[f] += kw * kw
+            }
+        }
+        for (f in 0 until frameCount) {
+            subBlockSums[subBlockPosition] += squares[f]
             subBlockFrameCounter++
             if (subBlockFrameCounter >= subBlockFrames) rotateSubBlock()
         }
@@ -166,24 +189,39 @@ class EbuR128(
  * "RLB" high-pass). Stateful: instances are not reusable across measurements without [reset].
  */
 internal class Biquad(
-    private val b0: Double,
-    private val b1: Double,
-    private val b2: Double,
-    private val a1: Double,
-    private val a2: Double,
+    internal val b0: Double,
+    internal val b1: Double,
+    internal val b2: Double,
+    internal val a1: Double,
+    internal val a2: Double,
 ) {
     private var x1 = 0.0
     private var x2 = 0.0
     private var y1 = 0.0
     private var y2 = 0.0
 
-    fun process(x0: Double): Double {
-        val y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
-        x2 = x1
-        x1 = x0
-        y2 = y1
-        y1 = y0
-        return y0
+    /**
+     * Filter the first [count] values of [samples] in place, continuing from the state the last
+     * call left. The state lives in locals for the loop and is written back once at the end.
+     */
+    fun processInPlace(samples: DoubleArray, count: Int) {
+        var in1 = x1
+        var in2 = x2
+        var out1 = y1
+        var out2 = y2
+        for (i in 0 until count) {
+            val in0 = samples[i]
+            val out0 = b0 * in0 + b1 * in1 + b2 * in2 - a1 * out1 - a2 * out2
+            in2 = in1
+            in1 = in0
+            out2 = out1
+            out1 = out0
+            samples[i] = out0
+        }
+        x1 = in1
+        x2 = in2
+        y1 = out1
+        y2 = out2
     }
 
     fun reset() {
@@ -254,53 +292,102 @@ internal class Biquad(
  * each pair of inputs. Coefficients are a Blackman-windowed sinc designed at construction so
  * the filter passes the original band ([0, fs/2]) and attenuates the alias band ([fs/2, 2·fs]).
  *
- * Per-channel circular history of [TAPS_PER_PHASE] previous samples so the polyphase filter
- * can stride backwards through them. State is independent across channels.
+ * Input arrives a channel-buffer at a time. Each channel carries the last `TAPS_PER_PHASE - 1`
+ * samples of its previous buffer, which are copied ahead of the new samples into one contiguous
+ * window, so tap t of the sample at window index k is simply `window[k - t]`. State is
+ * independent across channels.
  *
- * The ring is stored twice over (`hist[j] == hist[j + TAPS_PER_PHASE]`), so the backwards walk
- * from any head position reads one contiguous run and needs no `%` per tap. That modulo was 96
- * integer divisions per stereo frame and the hottest part of a render on fast cores. The products
- * and their summation order are unchanged, so the output is bit-identical.
+ * ### Skipping work that cannot change the peak
+ * An interpolated sample is a 12-tap dot product, so its magnitude is at most the phase's L1
+ * coefficient norm times the loudest of those 12 samples. Each chunk of [SKIP_CHUNK_FRAMES] is
+ * checked against that bound first: if even the bound for every sample in the chunk (and its 11
+ * leading history samples) is at or below the running [maxAbs], no candidate in the chunk can raise
+ * it, and the 48 multiply-adds per sample are skipped. The bound carries [BOUND_SLACK] of headroom,
+ * which is far more than the rounding a 12-term sum can accumulate, so a skipped chunk is exactly
+ * one whose filtered output would have left [maxAbs] unchanged. Filtered chunks use the same
+ * products in the same order as a per-sample walk. Either way the result is bit-identical.
  */
 internal class TruePeak(private val channels: Int) {
     internal val coefficients: Array<DoubleArray> = buildCoefficients()
-    private val history = Array(channels) { DoubleArray(2 * TAPS_PER_PHASE) }
-    private val historyPos = IntArray(channels)
+
+    /** The largest phase L1 norm, padded by [BOUND_SLACK]. Phases sum to 1, so this is >= 1. */
+    private val gainBound = coefficients.maxOf { phase -> phase.sumOf { abs(it) } } * (1.0 + BOUND_SLACK)
+
+    /** Per channel: the last [HISTORY] samples fed, oldest first. Zero before any input. */
+    private val history = Array(channels) { DoubleArray(HISTORY) }
+
+    /** [HISTORY] samples of carried history followed by the current channel-buffer. */
+    private var window = DoubleArray(HISTORY)
 
     var maxAbs: Double = 0.0
         private set
 
     /**
-     * Feed one raw sample [sample] for [channel]. Updates [maxAbs] with the larger of the raw
-     * sample and the 4 polyphase-interpolated outputs.
+     * Feed the first [count] samples of [samples], all for [channel], in time order. Updates
+     * [maxAbs] with the largest of the raw samples and their 4 polyphase-interpolated outputs.
      */
-    fun process(channel: Int, sample: Double) {
-        val a = abs(sample)
-        if (a > maxAbs) maxAbs = a
-
+    fun process(channel: Int, samples: DoubleArray, count: Int) {
+        if (count <= 0) return
+        val end = HISTORY + count
+        if (window.size < end) window = DoubleArray(end)
+        val w = window
         val hist = history[channel]
-        val pos = historyPos[channel]
-        hist[pos] = sample
-        hist[pos + TAPS_PER_PHASE] = sample
-
-        // Tap t is the sample t steps back: ring slot (pos - t) mod TAPS, which the mirrored copy
-        // holds at pos + TAPS - t, always in [1, 2 * TAPS - 1].
-        val newest = pos + TAPS_PER_PHASE
-        for (p in 0 until PHASES) {
-            val co = coefficients[p]
-            var sum = 0.0
-            for (t in 0 until TAPS_PER_PHASE) {
-                sum += hist[newest - t] * co[t]
-            }
-            val mag = abs(sum)
-            if (mag > maxAbs) maxAbs = mag
+        hist.copyInto(w, destinationOffset = 0)
+        samples.copyInto(w, destinationOffset = HISTORY, startIndex = 0, endIndex = count)
+        var start = HISTORY
+        while (start < end) {
+            val chunkEnd = minOf(start + SKIP_CHUNK_FRAMES, end)
+            if (!cannotRaisePeak(w, start, chunkEnd)) filter(w, start, chunkEnd)
+            start = chunkEnd
         }
-        historyPos[channel] = if (pos + 1 == TAPS_PER_PHASE) 0 else pos + 1
+        w.copyInto(hist, destinationOffset = 0, startIndex = end - HISTORY, endIndex = end)
+    }
+
+    /** True when no sample in `w[from until to]`, raw or interpolated, can exceed [maxAbs]. */
+    private fun cannotRaisePeak(w: DoubleArray, from: Int, to: Int): Boolean {
+        var windowMax = 0.0
+        for (k in from - HISTORY until to) {
+            val a = abs(w[k])
+            if (a > windowMax) windowMax = a
+        }
+        return windowMax * gainBound <= maxAbs
+    }
+
+    /** The full oversampler over `w[from until to]`; tap t of index k is `w[k - t]`. */
+    private fun filter(w: DoubleArray, from: Int, to: Int) {
+        var peak = maxAbs
+        for (k in from until to) {
+            val a = abs(w[k])
+            if (a > peak) peak = a
+            for (p in 0 until PHASES) {
+                val co = coefficients[p]
+                var sum = 0.0
+                for (t in 0 until TAPS_PER_PHASE) {
+                    sum += w[k - t] * co[t]
+                }
+                val mag = abs(sum)
+                if (mag > peak) peak = mag
+            }
+        }
+        maxAbs = peak
     }
 
     companion object {
         private const val PHASES = 4
         private const val TAPS_PER_PHASE = 12
+        private const val HISTORY = TAPS_PER_PHASE - 1
+
+        /**
+         * Frames per skip decision. Smaller chunks skip more of a buffer once the peak is
+         * established, at the cost of re-reading [HISTORY] samples per chunk for the bound.
+         */
+        private const val SKIP_CHUNK_FRAMES = 256
+
+        /**
+         * Relative headroom on the skip bound. A 12-term double dot product rounds by well under
+         * 1e-14 of the sum of its absolute terms, so 1e-9 can never let a real peak through.
+         */
+        private const val BOUND_SLACK = 1e-9
 
         // Blackman window: w[n] = a0 − a1·cos(2πn/(N−1)) + a2·cos(4πn/(N−1)). The harmonic 4 names
         // the second cosine's multiplier; the `2` of the first term is detekt-ignored.
