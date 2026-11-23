@@ -158,11 +158,12 @@ class UiScrollBenchmark {
         const val FLINGS_PER_DIRECTION = 3
         const val FLING_ATTEMPTS = 3
         const val GESTURE_MARGIN_DIVISOR = 5
-        const val GRID_SETTLE_POLL_MS = 100L
-        const val ARTIST_SCROLL_TIMEOUT_MS = 30_000L
-        const val ARTIST_SCROLL_FROM = 0.80f
-        const val ARTIST_SCROLL_TO = 0.28f
-        const val ARTIST_SCROLL_STEPS = 10
+        const val SEARCH_FIELD_CLASS = "android.widget.EditText"
+        const val SEARCH_RESULTS_TIMEOUT_MS = 15_000L
+        const val SEARCH_SETTLE_POLL_MS = 100L
+        const val SEARCH_SCROLL_ATTEMPTS = 6
+        const val SEARCH_SCROLL_FRACTION = 0.5f
+        const val SEARCH_TILE_TAPS = 2
         const val ARTIST_DETAIL_CTA = "Play All"
         const val SCROLL_TOP_FRACTION = 0.25f
         const val SCROLL_STEPS = 10
@@ -170,6 +171,12 @@ class UiScrollBenchmark {
         const val ARTIST_DETAIL_SCROLL_FRACTION = 0.6f
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
+
+        /**
+         * The section headers the Search results grid renders. Their absence is what distinguishes
+         * the history view (which also lists query text) from the submitted results.
+         */
+        val SEARCH_SECTION_HEADERS = listOf("Games", "Songs", "Artists")
 
         /**
          * The scenarios, built by mapping [UiScenario.all] through an exhaustive `when`, so every
@@ -243,21 +250,14 @@ class UiScrollBenchmark {
                     // records `CrossfadeImage` and, unlike the grids, no `GridImage`.
                     traceSections = listOf("CrossfadeImage"),
                     navigate = {
+                        // Search, not Browse by Artist: the artist grid is dozens of screens long
+                        // and its tiles only exist while composed, so scrolling to the target raced
+                        // the grid settling and could spend the whole budget without a match. A
+                        // name query matches the Artists section directly, wherever it sorts.
                         (
-                            device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
-                            ?: error("Could not find the 'Library' tab")
+                            device.wait(Until.findObject(By.text("Search")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find the 'Search' tab")
                         ).click()
-                        (
-                            device.wait(Until.findObject(By.text("Browse by Artist")), NAV_TIMEOUT_MS)
-                            ?: error("Could not find 'Browse by Artist' on Library screen")
-                        ).click()
-
-                        // The Library menu is itself a scrollable list, so wait until it is gone before
-                        // resolving "the grid" — otherwise By.scrollable could still match the menu.
-                        device.wait(Until.gone(By.text("Favorites")), NAV_TIMEOUT_MS)
-                        val grid = device.wait(Until.findObject(By.scrollable(true)), NAV_TIMEOUT_MS)
-                            ?: error("Browse by Artist did not show its grid")
-                        awaitPopulatedGrid(device, grid)
 
                         // Open an artist with many tracks: the alphabetically-first artist can have a
                         // single track, whose detail page fits on screen and exposes no scrollable node
@@ -265,8 +265,8 @@ class UiScrollBenchmark {
                         // this run is pinned to, so it tracks the corpus rather than a hard-coded name.
                         val artist = BenchmarkArtists.richestArtistName(DeviceBenchmark.snapshotFile())
                             ?: error("Could not read an artist from the pushed library snapshot")
-                        check(openArtist(device, artist)) {
-                            "Could not open artist '$artist' from the artist grid"
+                        check(openArtistBySearch(device, artist)) {
+                            "Could not open artist '$artist' from search results"
                         }
                         device.waitForIdle()
                     },
@@ -337,61 +337,166 @@ class UiScrollBenchmark {
                 ?: error("No vertical scrollable container")
 
         /**
-         * Waits until [grid] shows real tiles rather than `LoadingType.SQUARE` placeholders. A
-         * populated `GridImage` tile is clickable, whereas a loading placeholder is not, so the
-         * first clickable node inside the grid's bounds is the signal — it needs no knowledge of
-         * the data-dependent artist name.
+         * Opens [name] through Search instead of the Browse-by-Artist grid, and reports whether
+         * artist detail appeared.
+         *
+         * The query goes into the Compose `BasicTextField`, which surfaces to accessibility as an
+         * `android.widget.EditText`: `setText` (ACTION_SET_TEXT) is the fast path, with shell
+         * `input text` for a field that ignores it. Either way the field is read back, so a dropped
+         * edit fails here instead of looking like a missing artist.
+         *
+         * Recent searches are the hazard: while `submittedQuery` is blank the grid lists history
+         * rows, and one can read exactly [name] (each earlier iteration records this query after
+         * a 3 s linger). Results and history share one grid, so the first `By.text(name)` match can
+         * be a history row whose tap only refills the query. [awaitArtistTile] waits for a results
+         * header first, which the history view never renders.
          */
-        fun awaitPopulatedGrid(device: UiDevice, grid: UiObject2) {
-            val gridBounds = grid.visibleBounds
+        fun openArtistBySearch(device: UiDevice, name: String): Boolean {
+            val field = awaitSearchField(device)
+            val searchBarBottom = field?.let { runCatching { it.visibleBounds.bottom }.getOrDefault(0) } ?: 0
+            return field != null &&
+                enterSearchQuery(device, field, name) &&
+                tapArtistTile(device, name, searchBarBottom)
+        }
+
+        /** The search box as the accessibility tree currently exposes it, re-resolved per poll. */
+        fun searchField(device: UiDevice): UiObject2? =
+            device.findObject(By.clazz(SEARCH_FIELD_CLASS))
+                ?: device.findObjects(By.focused(true)).firstOrNull()
+
+        /** Blocks until the Search screen's field is composed, then returns it (`null` on timeout). */
+        fun awaitSearchField(device: UiDevice): UiObject2? {
             val deadline = SystemClock.uptimeMillis() + NAV_TIMEOUT_MS
-            while (SystemClock.uptimeMillis() < deadline) {
-                val tile = device.findObjects(By.clickable(true))
-                    .firstOrNull { gridBounds.contains(it.visibleBounds) }
-                if (tile != null) return
-                device.waitForIdle(GRID_SETTLE_POLL_MS)
+            var field = searchField(device)
+            while (field == null && SystemClock.uptimeMillis() < deadline) {
+                SystemClock.sleep(SEARCH_SETTLE_POLL_MS)
+                field = searchField(device)
             }
-            error("Browse-by-Artist grid never showed a tappable artist tile")
+            return field
         }
 
         /**
-         * Scrolls the artist grid toward its end until [name]'s tile is on screen, taps it, and
-         * confirms artist detail opened (the `"Play All"` CTA). A raw finger-up `drag` advances the
-         * name-ordered grid without fling momentum, so a step cannot skip the tile between checks, and
-         * needs no scrollable node. A tile is only tapped once it is fully within the display and the
-         * grid has settled: a `LazyVerticalGrid` composes items a little outside the viewport, and a
-         * tap during an in-flight scroll is absorbed as a scroll-stop rather than a click. A
-         * visible-but-unopened tile is re-tapped rather than scrolled past. Capped by
-         * [ARTIST_SCROLL_TIMEOUT_MS].
+         * Enters [query] into [field] and waits until it holds the text. `setText` is one
+         * ACTION_SET_TEXT; a field that rejects it gets an IME-level `input text` into the focused
+         * field instead, which needs spaces written as `%s` (see [inputTextArgument]).
          */
-        fun openArtist(device: UiDevice, name: String): Boolean {
-            val deadline = SystemClock.uptimeMillis() + ARTIST_SCROLL_TIMEOUT_MS
-            while (SystemClock.uptimeMillis() < deadline) {
-                val tile = device.findObject(By.text(name))
-                val bounds = tile?.let { runCatching { it.visibleBounds }.getOrNull() }
-                val onScreen = bounds != null && bounds.height() > 0 &&
-                    bounds.top >= 0 && bounds.bottom <= device.displayHeight
-                if (onScreen) {
-                    // Let any in-flight scroll settle so the tap is not swallowed as a scroll-stop.
-                    device.waitForIdle()
-                    val cell = device.findObjects(By.clickable(true)).firstOrNull {
-                        runCatching { it.visibleBounds.contains(bounds.centerX(), bounds.centerY()) }
-                            .getOrDefault(false)
-                    }
-                    runCatching { (cell ?: tile).click() }
-                    if (device.wait(Until.hasObject(By.text(ARTIST_DETAIL_CTA)), NAV_TIMEOUT_MS)) return true
-                } else {
-                    device.drag(
-                        device.displayWidth / 2,
-                        (device.displayHeight * ARTIST_SCROLL_FROM).toInt(),
-                        device.displayWidth / 2,
-                        (device.displayHeight * ARTIST_SCROLL_TO).toInt(),
-                        ARTIST_SCROLL_STEPS,
-                    )
-                }
-                device.waitForIdle(GRID_SETTLE_POLL_MS)
+        fun enterSearchQuery(device: UiDevice, field: UiObject2, query: String): Boolean {
+            runCatching { field.setText(query) }
+            if (awaitSearchFieldText(device, query)) return true
+            runCatching { field.click() }
+            device.executeShellCommand("input text ${inputTextArgument(query)}")
+            return awaitSearchFieldText(device, query)
+        }
+
+        /** Whether the search field now holds [expected] — re-resolved, since typing recomposes it. */
+        fun awaitSearchFieldText(device: UiDevice, expected: String): Boolean {
+            val deadline = SystemClock.uptimeMillis() + NAV_TIMEOUT_MS
+            var text: String? = null
+            while (text != expected && SystemClock.uptimeMillis() < deadline) {
+                text = searchField(device)?.let { runCatching { it.text }.getOrNull() }
+                if (text != expected) SystemClock.sleep(SEARCH_SETTLE_POLL_MS)
             }
-            return false
+            return text == expected
+        }
+
+        /**
+         * [query] as an `adb shell input text` argument: `input` splits the command into arguments
+         * unless each space is written `%s`, and the string is single-quoted (embedded quotes
+         * escaped) so names with apostrophes reach the field verbatim.
+         */
+        fun inputTextArgument(query: String): String =
+            "'" + query.replace(" ", "%s").replace("'", "'\\''") + "'"
+
+        /**
+         * Waits for, then taps, the artist result labelled [name]. The tap is retried once: one
+         * that lands while the results grid is still settling is absorbed as a scroll-stop rather
+         * than a click.
+         */
+        fun tapArtistTile(device: UiDevice, name: String, searchBarBottom: Int): Boolean {
+            var opened = device.hasObject(By.text(ARTIST_DETAIL_CTA))
+            var attempt = 0
+            while (!opened && attempt < SEARCH_TILE_TAPS) {
+                val tile = awaitArtistTile(device, name, searchBarBottom)
+                opened = (tile != null && tapResultTile(device, tile)) ||
+                    device.hasObject(By.text(ARTIST_DETAIL_CTA))
+                attempt++
+            }
+            return opened
+        }
+
+        /**
+         * Waits out the query's ~300 ms debounce and the results flows, then returns the tile for
+         * [name] (`null` if it never appears, e.g. the snapshot's artist is not in this library).
+         *
+         * A section header is the "results are in" signal: the history view renders rows and an
+         * empty prompt but never one, and the grid scrolls back to item 0 on a query change, so the
+         * first header of a result set is on screen when it appears. Only after that does the tile
+         * lookup run, so a same-named history row cannot be mistaken for the result.
+         *
+         * A title-matching query can push the Artists section below the fold, where a lazy grid has
+         * not composed it yet; a bounded run of plain drags (no fling momentum, so the single-row
+         * Artists section cannot be skipped) reaches it.
+         */
+        fun awaitArtistTile(device: UiDevice, name: String, searchBarBottom: Int): UiObject2? {
+            val deadline = SystemClock.uptimeMillis() + SEARCH_RESULTS_TIMEOUT_MS
+            var resultsShown = false
+            while (!resultsShown && SystemClock.uptimeMillis() < deadline) {
+                resultsShown = SEARCH_SECTION_HEADERS.any { device.hasObject(By.text(it)) }
+                if (!resultsShown) SystemClock.sleep(SEARCH_SETTLE_POLL_MS)
+            }
+
+            var scrolls = 0
+            while (resultsShown) {
+                val tile = resultTile(device, name, searchBarBottom)
+                if (tile != null) return tile
+                if (scrolls >= SEARCH_SCROLL_ATTEMPTS) break
+                scrollSearchResults(device)
+                scrolls++
+                SystemClock.sleep(SEARCH_SETTLE_POLL_MS)
+            }
+            return null
+        }
+
+        /**
+         * The first fully-visible result tile labelled [name], below the search bar. The search
+         * box's own node carries the query (which is [name] here), so [searchBarBottom] is what
+         * keeps the field out of the match; a clipped tile is skipped so the tap does not land
+         * off-screen or under the keyboard.
+         */
+        fun resultTile(device: UiDevice, name: String, searchBarBottom: Int): UiObject2? =
+            device.findObjects(By.text(name)).firstOrNull { node ->
+                val bounds = runCatching { node.visibleBounds }.getOrNull()
+                bounds != null && bounds.height() > 0 && bounds.top > searchBarBottom &&
+                    bounds.bottom <= device.displayHeight
+            }
+
+        /**
+         * Taps [tile] — or the clickable cell containing its centre, since a grid tile's semantics
+         * may sit on the cell rather than on its caption — and reports whether artist detail
+         * opened. Settles first: a tap during an in-flight scroll is absorbed as a scroll-stop.
+         */
+        fun tapResultTile(device: UiDevice, tile: UiObject2): Boolean {
+            device.waitForIdle()
+            val bounds = runCatching { tile.visibleBounds }.getOrNull() ?: return false
+            val cell = device.findObjects(By.clickable(true)).firstOrNull {
+                runCatching { it.visibleBounds.contains(bounds.centerX(), bounds.centerY()) }
+                    .getOrDefault(false)
+            }
+            runCatching { (cell ?: tile).click() }
+            return device.wait(Until.hasObject(By.text(ARTIST_DETAIL_CTA)), NAV_TIMEOUT_MS)
+        }
+
+        /**
+         * Drags the search-results grid toward its end by [SEARCH_SCROLL_FRACTION] of the screen.
+         * The grid is lazy, so an artist section below the fold is not in the accessibility tree
+         * until it composes; a `scroll` (no fling momentum) cannot jump over a single-row section.
+         */
+        fun scrollSearchResults(device: UiDevice) {
+            runCatching {
+                val grid = verticalScroller(device)
+                grid.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
+                grid.scroll(Direction.UP, SEARCH_SCROLL_FRACTION)
+            }
         }
     }
 }
