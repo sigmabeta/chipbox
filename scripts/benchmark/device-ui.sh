@@ -9,7 +9,7 @@
 # Runs on every attached device.
 #
 # Usage:
-#   scripts/benchmark/device-ui.sh <corpus-dir> [--record] [--threshold <ratio>]
+#   scripts/benchmark/device-ui.sh <corpus-dir> [--record [--record-runs <n>]] [--threshold <ratio>]
 #
 # Environment:
 #   CHIPBOX_PERF_BASELINE   baseline root (default build/perfbench-baseline/device)

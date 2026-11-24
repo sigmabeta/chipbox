@@ -94,6 +94,7 @@ class LibraryStartupBenchmark {
             startupMode = mode,
             setupBlock = {
                 DeviceBenchmark.grantStorageAccess(device)
+                DeviceBenchmark.lockPortrait(device)
                 pressHome()
             },
         ) {

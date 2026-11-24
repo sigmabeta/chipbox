@@ -143,7 +143,7 @@ fun compareRuns(baseline: PerfResult, current: PerfResult): DiffOutcome {
 }
 
 /** The first reason the two runs are not comparable, or `null` when every guard passes. */
-private fun comparabilityRefusal(baseline: PerfResult, current: PerfResult): DiffRefusal? {
+internal fun comparabilityRefusal(baseline: PerfResult, current: PerfResult): DiffRefusal? {
     val baselineClass = baseline.machine.fingerprintClass
     val currentClass = current.machine.fingerprintClass
     val baselineScenarios = baseline.scenarioKeys()
@@ -190,7 +190,7 @@ private fun Axis.resultKeys(): List<String> = when (this) {
 }
 
 /** One axis's primary cost metric: what its ratios are computed from, and how to label it. */
-private data class PrimaryMetric(val label: String, val values: Map<String, Double>)
+internal data class PrimaryMetric(val label: String, val values: Map<String, Double>)
 
 /**
  * The single per-axis metric lookup: the headline cost of each axis's scenarios, lower-is-better.
@@ -203,7 +203,7 @@ private data class PrimaryMetric(val label: String, val values: Map<String, Doub
  * [Axis] is sealed, so a new axis cannot be added without this `when` failing to compile — there is
  * one place, not a cascade, that decides what each axis is measured by.
  */
-private fun Axis.primaryMetric(): PrimaryMetric = when (this) {
+internal fun Axis.primaryMetric(): PrimaryMetric = when (this) {
     is AudioAxis -> PrimaryMetric(
         label = "render wall median (s)",
         values = results.filter { it.error == null }.associate { it.path to it.median!! },

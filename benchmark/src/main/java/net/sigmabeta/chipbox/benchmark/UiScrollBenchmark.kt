@@ -113,9 +113,11 @@ class UiScrollBenchmark {
             startupMode = StartupMode.WARM,
             setupBlock = {
                 DeviceBenchmark.grantStorageAccess(device)
+                DeviceBenchmark.lockPortrait(device)
                 pressHome()
                 startActivityAndWait()
                 scenario.navigate(this)
+                scenario.warmUp(this)
             },
         ) {
             scenario.gesture(this)
@@ -140,9 +142,13 @@ class UiScrollBenchmark {
         )
 
     /**
-     * One scroll scenario's device recipe: how to navigate to its screen, the gesture to run inside
-     * the measured loop, and the trace sections that screen emits. Keeping all three together makes
-     * adding a screen a local change.
+     * One scroll scenario's device recipe: how to navigate to its screen, an optional unmeasured
+     * [warmUp] run after navigating, the gesture to run inside the measured loop, and the trace
+     * sections that screen emits. Keeping them together makes adding a screen a local change.
+     *
+     * [warmUp] runs in the setup block before every iteration, so each measured pass starts from the
+     * same state. Without it the first iteration decodes the screen's images into a cold cache and
+     * the rest hit a warm one.
      */
     private class UiScrollScenario(
         val scenario: UiScenario,
@@ -150,13 +156,14 @@ class UiScrollBenchmark {
         val traceSections: List<String>,
         val navigate: MacrobenchmarkScope.() -> Unit,
         val gesture: MacrobenchmarkScope.() -> Unit,
+        val warmUp: MacrobenchmarkScope.() -> Unit = {},
     )
 
     private companion object {
         const val NAV_TIMEOUT_MS = 10_000L
         const val SCENARIO_ARG = "scenario"
         const val FLINGS_PER_DIRECTION = 3
-        const val FLING_ATTEMPTS = 3
+        const val GESTURE_ATTEMPTS = 3
         const val GESTURE_MARGIN_DIVISOR = 5
         const val SEARCH_FIELD_CLASS = "android.widget.EditText"
         const val SEARCH_RESULTS_TIMEOUT_MS = 15_000L
@@ -165,10 +172,19 @@ class UiScrollBenchmark {
         const val SEARCH_SCROLL_FRACTION = 0.5f
         const val SEARCH_TILE_TAPS = 2
         const val ARTIST_DETAIL_CTA = "Play All"
-        const val SCROLL_TOP_FRACTION = 0.25f
-        const val SCROLL_STEPS = 10
-        const val SCROLL_CYCLES = 3
-        const val ARTIST_DETAIL_SCROLL_FRACTION = 0.6f
+
+        /** Stroke length, as a share of the scroller's gesture area: far enough to dispose the strip. */
+        const val ARTIST_DETAIL_SCROLL_PERCENT = 1.0f
+
+        /** Stroke speed in dp/s, scaled by density so each stroke takes about as long on any phone. */
+        const val ARTIST_DETAIL_SCROLL_DP_PER_SECOND = 1_200f
+
+        /** Down-and-back cycles per measured pass; more cycles mean more frames per iteration. */
+        const val ARTIST_DETAIL_SCROLL_CYCLES = 6
+
+        /** Unmeasured cycles in the setup block, so every pass sees the same warm image cache. */
+        const val ARTIST_DETAIL_WARM_UP_CYCLES = 1
+
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
 
@@ -270,56 +286,96 @@ class UiScrollBenchmark {
                         }
                         device.waitForIdle()
                     },
-                    gesture = { scrollDownAndBack(ARTIST_DETAIL_SCROLL_FRACTION) },
+                    warmUp = { scrollDownAndBack(ARTIST_DETAIL_WARM_UP_CYCLES) },
+                    gesture = {
+                        checkAtArtistDetailTop("before the measured pass")
+                        scrollDownAndBack(ARTIST_DETAIL_SCROLL_CYCLES)
+                    },
                 )
             }
         }
 
-        /** Flings the scenario screen's outer vertical list toward its end, then back to its start. */
+        /**
+         * Flings the scenario screen's outer vertical list toward its end, then back to its start.
+         *
+         * uiautomator's `fling(direction)` names where the content goes, so [Direction.DOWN] moves
+         * toward the end of the list. Flinging UP first, from the top, is a no-op.
+         */
         fun MacrobenchmarkScope.flingVertically() {
-            repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.UP) }
             repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.DOWN) }
+            repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.UP) }
         }
 
         /**
-         * Scrolls the outer vertical list toward its end by [fraction] of the screen and back,
-         * [SCROLL_CYCLES] times. Unlike [flingVertically] this is a bounded, symmetric drag: on a very
-         * long page (an artist with hundreds of songs) flinging to the end and back does not return to
-         * the top, so the game strip stays disposed and its `CrossfadeImage` trace reads zero. A
-         * bounded cycle leaves and re-enters the top region, recomposing the strip within the measured
-         * window.
+         * Scrolls the outer vertical list toward its end and back, [cycles] times, as a fixed
+         * workload: the same strokes, from the same offset, every pass.
+         *
+         * Unlike [flingVertically] the cycle is bounded and symmetric. On a very long page (an artist
+         * with hundreds of songs), flinging to the end and back does not return to the top, so the
+         * game strip stays disposed and its `CrossfadeImage` trace reads zero. A bounded cycle leaves
+         * and re-enters the top region, so the strip recomposes inside the measured window.
+         *
+         * Each stroke is a `UiObject2.scroll`: a constant-speed drag that holds still for 250 ms
+         * before lifting, so the release velocity is zero and the list does not fling. `device.drag`
+         * cannot do that: it moves in a few 5 ms steps and lifts at full speed, so the page flung and
+         * the next drag caught it at a random offset, and the frame count per pass varied by 7–17%.
+         * Each stroke then waits for idle, and each cycle must end back at the top.
          */
-        fun MacrobenchmarkScope.scrollDownAndBack(fraction: Float) {
-            val centerX = device.displayWidth / 2
-            val top = (device.displayHeight * SCROLL_TOP_FRACTION).toInt()
-            val bottom = (top + device.displayHeight * fraction).toInt()
-            repeat(SCROLL_CYCLES) {
-                device.drag(centerX, bottom, centerX, top, SCROLL_STEPS)
-                device.drag(centerX, top, centerX, bottom, SCROLL_STEPS)
+        fun MacrobenchmarkScope.scrollDownAndBack(cycles: Int) {
+            val density = InstrumentationRegistry.getInstrumentation().context.resources.displayMetrics.density
+            val speed = (ARTIST_DETAIL_SCROLL_DP_PER_SECOND * density).toInt()
+            repeat(cycles) { cycle ->
+                // `scroll` names the content direction: DOWN moves toward the end, UP back to the top.
+                scrollOnce(Direction.DOWN, speed)
+                scrollOnce(Direction.UP, speed)
+                checkAtArtistDetailTop("after scroll cycle ${cycle + 1} of $cycles")
             }
         }
 
+        /** One no-fling scroll stroke on a freshly resolved scroller, then waits for the list to settle. */
+        fun MacrobenchmarkScope.scrollOnce(direction: Direction, speed: Int) {
+            withVerticalScroller("Scroll $direction") { it.scroll(direction, ARTIST_DETAIL_SCROLL_PERCENT, speed) }
+            device.waitForIdle()
+        }
+
         /**
-         * One fling on a freshly resolved scroller, retrying if the node detached between lookup and
-         * gesture. A `LazyColumn` recomposes as it settles — artist detail in particular composes a
-         * hero and a game strip after navigating — so a node found a moment earlier can go stale
-         * (`StaleObjectException`) before `fling` reads its bounds. Re-resolving per fling survives
-         * that; a genuinely stale-but-refindable screen does not fail the run.
+         * Fails unless artist detail is scrolled back to its top, which is where [ARTIST_DETAIL_CTA]
+         * is visible. A pass that starts anywhere else measures a different workload, so the run
+         * fails instead of recording it.
          */
+        fun MacrobenchmarkScope.checkAtArtistDetailTop(whenChecked: String) {
+            check(device.hasObject(By.text(ARTIST_DETAIL_CTA))) {
+                "Artist detail is not at its top $whenChecked ('$ARTIST_DETAIL_CTA' is not visible)"
+            }
+        }
+
+        /** One fling on a freshly resolved scroller. */
         fun MacrobenchmarkScope.flingOnce(direction: Direction) {
+            withVerticalScroller("Fling $direction") { it.fling(direction) }
+        }
+
+        /**
+         * Runs [gesture] on a freshly resolved scroller, retrying if the node detached between lookup
+         * and gesture. A `LazyColumn` recomposes as it settles (artist detail in particular composes
+         * a game strip after navigating), so a node found a moment earlier can go stale
+         * (`StaleObjectException`) before the gesture reads its bounds. Re-resolving per gesture
+         * survives that, so a screen whose scroller is stale but can be found again does not fail
+         * the run.
+         */
+        fun MacrobenchmarkScope.withVerticalScroller(name: String, gesture: (UiObject2) -> Unit) {
             var lastStale: StaleObjectException? = null
-            repeat(FLING_ATTEMPTS) {
+            repeat(GESTURE_ATTEMPTS) {
                 try {
                     val scroller = verticalScroller(device)
                     scroller.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
-                    scroller.fling(direction)
+                    gesture(scroller)
                     return
                 } catch (stale: StaleObjectException) {
                     lastStale = stale
                     device.waitForIdle()
                 }
             }
-            throw lastStale ?: error("Fling $direction failed after $FLING_ATTEMPTS attempts")
+            throw lastStale ?: error("$name failed after $GESTURE_ATTEMPTS attempts")
         }
 
         /**
@@ -434,8 +490,9 @@ class UiScrollBenchmark {
          * lookup run, so a same-named history row cannot be mistaken for the result.
          *
          * A title-matching query can push the Artists section below the fold, where a lazy grid has
-         * not composed it yet; a bounded run of plain drags (no fling momentum, so the single-row
-         * Artists section cannot be skipped) reaches it.
+         * not composed it yet; a bounded run of `scroll` strokes reaches it. Each stroke pauses
+         * before lifting, so it carries no fling momentum and cannot skip the single-row Artists
+         * section.
          */
         fun awaitArtistTile(device: UiDevice, name: String, searchBarBottom: Int): UiObject2? {
             val deadline = SystemClock.uptimeMillis() + SEARCH_RESULTS_TIMEOUT_MS
@@ -489,7 +546,8 @@ class UiScrollBenchmark {
         /**
          * Drags the search-results grid toward its end by [SEARCH_SCROLL_FRACTION] of the screen.
          * The grid is lazy, so an artist section below the fold is not in the accessibility tree
-         * until it composes; a `scroll` (no fling momentum) cannot jump over a single-row section.
+         * until it composes. A `scroll` pauses 250 ms before lifting, so it carries no fling momentum
+         * and cannot jump over a single-row section.
          */
         fun scrollSearchResults(device: UiDevice) {
             runCatching {

@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.perfbench
 /**
  * `perfbench` — the host-side performance benchmarking CLI. One entry point, one subcommand per
  * axis; the device axes live in the Android `:benchmark` module instead. It ships `audio`,
- * `cache`, `snapshot`, and `diff`.
+ * `cache`, `snapshot`, `diff`, and `baseline`.
  */
 fun main(rawArgs: Array<String>) {
     val command = rawArgs.firstOrNull()
@@ -21,6 +21,8 @@ fun main(rawArgs: Array<String>) {
         "snapshot" -> runSnapshot(parseSnapshotOptions(options))
 
         "diff" -> runDiff(parseDiffOptions(options))
+
+        "baseline" -> runBaseline(parseBaselineOptions(options))
 
         "reader-parity" -> runReaderParity(parseReaderParityOptions(options))
 
@@ -62,6 +64,7 @@ private val USAGE = """
           perfbench cache --dir <corpus> [options]
           perfbench snapshot --dir <corpus> [--out <snapshot>]
           perfbench diff --a <runA> --b <runB>
+          perfbench baseline --runs <a.json,b.json,...> --out <baseline.json>
           perfbench reader-parity --dir <corpus> [--reference <tsv>] [--reader <ext>] [--no-padding]
 
         audio — measure real-time factor (RTF) over a corpus. Renders every supported corpus file
@@ -108,6 +111,15 @@ private val USAGE = """
           --a <run>            baseline results.json (or the folder holding it)   (required)
           --b <run>            current results.json (or the folder holding it)    (required)
           --json               emit the report as JSON instead of the human table (default: off)
+
+        baseline — merge several recordings of one device into a baseline. Per scenario, it keeps
+        the whole entry of the recording whose diff metric is the median, so one lucky or unlucky
+        run does not become the reference every later run is gated against. It prints each
+        scenario's spread across the recordings, and refuses recordings that diff would not compare.
+
+          --runs <a,b,...>     comma-separated result files, oldest first; the newest one
+                               supplies the fingerprint                           (required)
+          --out <file>         baseline file to write                             (required)
 
         reader-parity — dev-only header-reader parity check (not a CI gate). Runs the registered
         reader for each reference row or corpus file and compares its length + padding against the
