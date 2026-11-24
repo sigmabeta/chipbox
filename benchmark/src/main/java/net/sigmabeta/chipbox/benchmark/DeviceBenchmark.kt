@@ -138,6 +138,24 @@ internal object DeviceBenchmark {
     }
 
     /**
+     * Turns auto-rotate off and pins the display to its natural (portrait) rotation. The UI
+     * scenarios find and scroll portrait layouts; a phone left with auto-rotate on and lying on its
+     * side turns the app to landscape, where e.g. Browse by Game has no vertical scroller and the
+     * first fling fails.
+     *
+     * This holds the lock for the length of the test, even when a run is started straight from
+     * Gradle. It can't make the lock outlast the test: when UiAutomation disconnects it restores the
+     * rotation state it saw at connect, so a phone that started with auto-rotate on gets it back.
+     * `scripts/benchmark/device-common.sh` and sagefarm therefore lock the phone from the host
+     * before the instrumentation starts, and nothing turns auto-rotate back on. Call this in each UI
+     * benchmark's `setupBlock`, before the launch.
+     */
+    fun lockPortrait(device: UiDevice) {
+        device.executeShellCommand("settings put system accelerometer_rotation 0")
+        device.executeShellCommand("settings put system user_rotation 0")
+    }
+
+    /**
      * Assembles one run's `results.json` shell — the fingerprint, commits and corpus block every
      * device axis shares — around the axis-specific [config] and [axes].
      */

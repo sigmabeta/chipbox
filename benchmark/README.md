@@ -57,6 +57,22 @@ and the snapshot hash. That makes a device run *corpus-pinned*: the `diff` guard
 refuses a baseline measured over a different corpus. The device-side read of
 shared storage is only verifiable on hardware.
 
+The UI and startup benchmarks need **auto-rotate off**: their scenarios drive
+portrait layouts, and a phone lying on its side with auto-rotate on turns the app
+to landscape, where e.g. Browse by Game has no vertical scroller.
+`scripts/benchmark/device-common.sh` (and sagefarm) turn it off and pin the
+natural rotation before the run starts
+(`settings put system accelerometer_rotation 0`, `user_rotation 0`), and nothing
+turns it back on, so the phone stays locked. Each benchmark's `setupBlock` sets
+the same lock again, which holds it during a bare Gradle run. That in-test lock
+can't outlast the test: UiAutomation restores the rotation state it saw at
+connect when it disconnects. For a bare Gradle run on a phone that may have
+auto-rotate on, lock it first:
+```sh
+adb shell settings put system accelerometer_rotation 0
+adb shell settings put system user_rotation 0
+```
+
 ## What this builds / how to run it
 
 - **Target:** a Macrobenchmark instrumentation test against `net.sigmabeta.chipbox`,
@@ -167,6 +183,16 @@ one device regresses. The baseline is never committed; the first run (or
 `build/perfbench-baseline/device/<model>-<abi>/results-<axis>.json`, keyed by the
 device's hardware identity so a new device records a fresh baseline rather than
 gating one device's numbers against another's.
+
+`--record` measures **three passes** by default (`--record-runs <n>` changes it)
+and records, per scenario, the pass whose gate metric is the median
+(`perfbench baseline`). It keeps that pass's whole entry, so the baseline's p50,
+p90 and frame count all come from one real run. A single recording is one draw
+from a noisy distribution. If it happens to be a fast draw, every later run
+looks like a regression against it. The passes are kept under
+`<baseline>/records/`, and the record step prints each scenario's spread across
+them, so a noisy scenario shows up when it is recorded. A first run with no
+baseline still records its single pass, and flags that it did.
 
 A phone attached over two transports at once (mDNS *and* IP) would be run twice
 and collide, so the scripts group the online serials by `ro.serialno` and **skip**
@@ -295,7 +321,10 @@ trace-section set:
   image grid up/down. Records `GridImage` + `CrossfadeImage`.
 - `ui.home_scroll` — the app opens on Home; waits for a stable section header,
   then flings the outer vertical list (which nests horizontal image rows).
-  Records `GridImage` + `CrossfadeImage`.
+  Records `GridImage` + `CrossfadeImage`. The benchmark build pins what Home
+  shows: its sampled rows use a fixed `SampleSeed` and Game of the day a fixed
+  `HomeDay` (both bound in `AndroidAppModule`), so every pass and every night
+  scroll the same games.
 - `ui.browse_all_tracks_scroll` — Library tab → **Browse All Tracks**; flings the
   track list up/down. Its rows are text-only, so it records **no** trace sections.
 - `ui.artist_detail_scroll` — Search tab → the artist credited on the most tracks;
@@ -318,10 +347,22 @@ as the fallback, and is read back before searching. Recent searches are a trap:
 history rows are shown while the query is unsubmitted and can read the same text
 as the artist, so the benchmark waits for a results section header (which history
 never renders) before tapping the tile. It confirms the tap opened artist detail
-by the `"Play All"` CTA. The page is very long, so the gesture drags a bounded
+by the `"Play All"` CTA. The page is very long, so the gesture scrolls a bounded
 distance toward the end and back — enough to dispose and recompose the game strip
 — rather than flinging to the end, which on a hundreds-of-songs page does not
 return to the top and would read a zero `CrossfadeImage`.
+
+The artist-detail pass is a **fixed workload**, because its frame count is what
+the percentiles are pooled over. Each stroke is a `UiObject2.scroll` at a
+density-scaled constant speed that pauses before lifting, so the list never
+flings. Each stroke waits for idle, and each cycle must end back at the top
+(`"Play All"` visible), which is also checked before every measured pass. A
+pass that starts anywhere else fails the run rather than recording a different
+workload. The setup block runs one unmeasured cycle after navigating, so the
+first iteration sees the same warm image cache as the rest. Each pass runs six
+cycles, so the scenario pools enough frames for stable percentiles. The earlier
+`device.drag` version flung on every stroke and caught the page at a random
+offset, so its frame count per run varied by 7–17%.
 
 Home nests horizontal `LazyRow`s inside its vertical `LazyColumn`, and artist detail
 nests one too, so `By.scrollable` matches several nodes on both; the benchmark
@@ -334,10 +375,14 @@ scroll.
 Each of these cost a device run to find; they are the traps in the `androidx.test.uiautomator`
 driver the scenarios use:
 
-- **`Direction.UP` advances a list toward its end**, `DOWN` toward its start — the gesture starts
-  at the edge it swipes *from*, so a backwards `fling`/`scroll` is a silent no-op at the top.
-- **`fling` carries momentum and can skip a target** between `findObject` checks; when scrolling
-  *to* something use `device.drag` (no momentum) or short symmetric drags that cannot jump over it.
+- **`Direction.DOWN` advances a list toward its end**, `UP` toward its start: `fling`/`scroll`
+  name where the *content* goes, and swipe the finger the opposite way. A backwards gesture is a
+  silent no-op at the top; the fling scenarios once spent half their pass on one.
+- **`fling` carries momentum and can skip a target** between `findObject` checks. **So does a
+  fast `device.drag`**: it moves in a handful of 5 ms steps and lifts at full speed, so the list
+  flings after it. When scrolling *to* something, or when a gesture must be a repeatable workload,
+  use `UiObject2.scroll(direction, percent, speed)`: it moves at a set speed and pauses 250 ms
+  before lifting, so the release velocity is zero.
 - A `UiObject2` found just before a recompose can go **stale** on the next call
   (`StaleObjectException`) — re-resolve the node per gesture, and tap a tile only once its
   `visibleBounds` are fully on screen (a `Lazy` container composes a little outside the viewport).
