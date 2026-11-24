@@ -1,12 +1,12 @@
 package net.sigmabeta.chipbox.features.home.modules
 
 import dev.zacsweers.metro.Inject
-import kotlin.time.Clock
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import net.sigmabeta.chipbox.features.home.HomeAction
+import net.sigmabeta.chipbox.features.home.module.HomeDay
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.models.Game
@@ -20,15 +20,17 @@ import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.StringProvider
 
 /**
- * Surfaces a single date-seeded "game of the day". The seed is derived from the current epoch-day
- * (UTC), so the pick is stable across in-day re-mounts and rolls over once per day. The section
- * emits exactly one item, which makes [net.sigmabeta.chipbox.features.home.HomeState] render it
- * full-width rather than wrapping it in a horizontal scroller.
+ * Surfaces a single date-seeded "game of the day". The seed is the [HomeDay] (by default the current
+ * UTC epoch day), so the pick is stable across in-day re-mounts and rolls over once per day. The
+ * section emits exactly one item, which makes [net.sigmabeta.chipbox.features.home.HomeState] render
+ * it full-width rather than wrapping it in a horizontal scroller.
  */
 class GameOfTheDayHomeModule @Inject constructor(
     private val repository: Repository,
     private val scanner: Scanner,
     private val stringProvider: StringProvider,
+    // Optional dependency: graphs that bind no HomeDay get the system clock.
+    private val homeDay: HomeDay = HomeDay.System,
 ) : HomeModule {
 
     override val id = ID
@@ -50,7 +52,7 @@ class GameOfTheDayHomeModule @Inject constructor(
     private suspend fun pickOfTheDay(): LCE<HomeModuleSection> {
         val count = repository.getGameCount()
         if (count == 0) return LCE.Uninitialized
-        val index = ((Clock.System.now().toEpochMilliseconds() / MILLIS_PER_DAY) % count).toInt()
+        val index = (homeDay.epochDay() % count).toInt()
         val pick = repository.getGameAtIndex(index) ?: return LCE.Uninitialized
         return sectionFrom(pick)
     }
@@ -83,6 +85,5 @@ class GameOfTheDayHomeModule @Inject constructor(
 
         // Cap the full-width hero so it stays a reasonable size on tablets / desktop.
         const val MAX_WIDTH_DP = 400f
-        const val MILLIS_PER_DAY = 86_400_000L
     }
 }

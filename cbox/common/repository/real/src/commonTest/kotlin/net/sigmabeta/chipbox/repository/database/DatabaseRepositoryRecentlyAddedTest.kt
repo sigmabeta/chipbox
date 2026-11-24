@@ -9,9 +9,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import net.sigmabeta.chipbox.database.dao.seededOrderKey
 import net.sigmabeta.chipbox.database.fake.FakeDatabase
 import net.sigmabeta.chipbox.entities.GameEntity
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.SampleSeed
 import net.sigmabeta.sage.logging.BluntHatchet
 
 /**
@@ -62,6 +64,34 @@ class DatabaseRepositoryRecentlyAddedTest {
         assertTrue(settled is Data.Empty)
     }
 
+    @Test
+    fun `a fixed sample seed returns the same games every query`() = runTest {
+        val db = FakeDatabase()
+        val repo = repo(db, SampleSeed.fixed(SEED))
+        repeat(15) { db.gameDao.insert(gameAddedDaysAgo("Game$it", 1)) }
+
+        val queries = List(3) {
+            (repo.getRecentlyAddedGames(limit = 5, withinMs = oneWeekMs).first { it !is Data.Loading } as Data.Succeeded)
+                .data.map { it.id }
+        }
+
+        val expected = db.games.keys.sortedWith(compareBy({ seededOrderKey(it, SEED) }, { it })).take(5)
+        assertEquals(List(3) { expected }, queries)
+    }
+
+    @Test
+    fun `draws a sample seed for every query`() = runTest {
+        val db = FakeDatabase()
+        var draws = 0
+        val repo = repo(db, SampleSeed { draws++.toLong() })
+        db.gameDao.insert(gameAddedDaysAgo("Fresh", 1))
+
+        repeat(2) { repo.getRecentlyAddedGames(limit = 5, withinMs = oneWeekMs).first { it !is Data.Loading } }
+        repo.getUnplayedGames(playedGameIds = emptyList(), limit = 5).first { it !is Data.Loading }
+
+        assertEquals(3, draws)
+    }
+
     private fun gameAddedDaysAgo(title: String, days: Int) = GameEntity(
         title = title,
         photoUrl = null,
@@ -70,7 +100,7 @@ class DatabaseRepositoryRecentlyAddedTest {
         dateAdded = now - days * oneDayMs,
     )
 
-    private fun repo(db: FakeDatabase) = DatabaseRepository(
+    private fun repo(db: FakeDatabase, sampleSeed: SampleSeed = SampleSeed.Random) = DatabaseRepository(
         artistDao = db.artistDao,
         gameDao = db.gameDao,
         trackDao = db.trackDao,
@@ -79,5 +109,10 @@ class DatabaseRepositoryRecentlyAddedTest {
         searchHistoryDao = db.searchHistoryDao,
         hatchet = BluntHatchet(),
         dispatcher = UnconfinedTestDispatcher(),
+        sampleSeed = sampleSeed,
     )
+
+    private companion object {
+        const val SEED = 20_261_124L
+    }
 }

@@ -41,6 +41,7 @@ import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.repository.SampleSeed
 import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -64,6 +65,9 @@ class DatabaseRepository(
     gameCacheSize: Int = DEFAULT_GAME_CACHE_SIZE,
     artistCacheSize: Int = DEFAULT_ARTIST_CACHE_SIZE,
     trackListCacheSize: Int = DEFAULT_TRACK_LIST_CACHE_SIZE,
+    // Seeds the sampled Home rows (recently added, unplayed). The benchmark build fixes it so
+    // every launch shows the same games; everything else draws a fresh one per query.
+    private val sampleSeed: SampleSeed = SampleSeed.Random,
 ) : Repository {
 
     // Hydration fans out one DAO roundtrip per row. The leaf entities — artists and games — are
@@ -180,12 +184,12 @@ class DatabaseRepository(
     )
 
     override fun getRecentlyAddedGames(limit: Int, withinMs: Long) = setupFlow(
-        { gameDao.getRecentlyAdded(currentTimeMillis() - withinMs, limit) },
+        { gameDao.getRecentlyAdded(currentTimeMillis() - withinMs, limit, sampleSeed.next()) },
         { list -> list.suspendMap { it.toGame() } }
     )
 
     override fun getUnplayedGames(playedGameIds: List<Long>, limit: Int) = setupFlow(
-        { gameDao.getUnplayed(playedGameIds, limit) },
+        { gameDao.getUnplayed(playedGameIds, limit, sampleSeed.next()) },
         { list -> list.suspendMap { it.toGame() } }
     )
 
