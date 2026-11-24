@@ -15,7 +15,9 @@ import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
 import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
+import net.sigmabeta.chipbox.features.home.module.HomeDay
 import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
+import net.sigmabeta.chipbox.repository.SampleSeed
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import java.io.File
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
@@ -42,6 +44,23 @@ object AndroidAppModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideScanRefreshInterval(): ScanRefreshInterval = ScanRefreshInterval(ScanRefreshInterval.PRODUCTION_MILLIS)
+
+    // The device benchmark measures Home on every pass, so the benchmark build pins what Home
+    // shows: the sampled rows use one seed and "Game of the day" one day. Other builds sample
+    // afresh per query and follow the clock.
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSampleSeed(): SampleSeed =
+        if (BuildConfig.BENCHMARK) SampleSeed.fixed(BENCHMARK_SAMPLE_SEED) else SampleSeed.Random
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideHomeDay(): HomeDay = if (BuildConfig.BENCHMARK) HomeDay.fixed(BENCHMARK_EPOCH_DAY) else HomeDay.System
+
+    private const val BENCHMARK_SAMPLE_SEED = 20_261_124L
+
+    // 2026-11-24, UTC.
+    private const val BENCHMARK_EPOCH_DAY = 20_781L
 
     @Provides
     @SingleIn(AppScope::class)

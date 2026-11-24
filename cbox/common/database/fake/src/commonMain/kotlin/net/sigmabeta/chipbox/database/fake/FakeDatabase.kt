@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.database.dao.GameSignatureRow
 import net.sigmabeta.chipbox.database.dao.SearchHistoryDao
 import net.sigmabeta.chipbox.database.dao.TrackArtistDao
 import net.sigmabeta.chipbox.database.dao.TrackDao
+import net.sigmabeta.chipbox.database.dao.seededOrderKey
 import net.sigmabeta.chipbox.entities.ArtistEntity
 import net.sigmabeta.chipbox.entities.GameEntity
 import net.sigmabeta.chipbox.entities.SearchHistoryEntity
@@ -173,14 +174,14 @@ class FakeDatabase(private val random: Random = Random(0)) {
             val gameIds = tracks.values.filter { it.platform == platformName }.map { it.gameId }.toSet()
             games.values.filter { it.id in gameIds }.sortedBy { it.title.lowercase() }
         }
-        override fun getRecentlyAdded(threshold: Long, limit: Int): Flow<List<GameEntity>> = observe {
-            // Mirror SQLite: WHERE date_added >= threshold ORDER BY RANDOM() LIMIT limit.
-            games.values.filter { it.dateAdded >= threshold }.shuffled(random).take(limit)
+        override fun getRecentlyAdded(threshold: Long, limit: Int, seed: Long): Flow<List<GameEntity>> = observe {
+            // Mirror SQLite: WHERE date_added >= threshold ORDER BY SEEDED_ORDER LIMIT limit.
+            games.values.filter { it.dateAdded >= threshold }.sortedSeeded(seed).take(limit)
         }
-        override fun getUnplayed(playedIds: List<Long>, limit: Int): Flow<List<GameEntity>> = observe {
-            // Mirror SQLite: WHERE id NOT IN (playedIds) ORDER BY RANDOM() LIMIT limit.
+        override fun getUnplayed(playedIds: List<Long>, limit: Int, seed: Long): Flow<List<GameEntity>> = observe {
+            // Mirror SQLite: WHERE id NOT IN (playedIds) ORDER BY SEEDED_ORDER LIMIT limit.
             val excluded = playedIds.toHashSet()
-            games.values.filter { it.id !in excluded }.shuffled(random).take(limit)
+            games.values.filter { it.id !in excluded }.sortedSeeded(seed).take(limit)
         }
         override fun searchGamesByTitle(title: String): Flow<List<GameEntity>> = observe {
             games.values.filter { sqlLike(title, it.title) }.sortedBy { it.title.lowercase() }
@@ -368,5 +369,9 @@ class FakeDatabase(private val random: Random = Random(0)) {
             val unwrapped = pattern.removePrefix("%").removeSuffix("%")
             return value.contains(unwrapped, ignoreCase = true)
         }
+
+        /** Mirrors `ORDER BY SEEDED_ORDER`: the seeded hash, ties broken by id. */
+        fun Collection<GameEntity>.sortedSeeded(seed: Long): List<GameEntity> =
+            sortedWith(compareBy({ seededOrderKey(it.id, seed) }, { it.id }))
     }
 }

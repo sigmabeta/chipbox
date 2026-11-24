@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.repository.SampleSeed
 import net.sigmabeta.chipbox.repository.database.DatabaseRepository
 import net.sigmabeta.chipbox.repository.memory.MemoryRepository
 import net.sigmabeta.chipbox.repository.memory.RandomMemoryRepository
@@ -37,7 +38,11 @@ object DatabaseRepositoryModule {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideDatabaseRepository(database: ChipboxDatabase, hatchet: Hatchet): DatabaseRepository =
+    fun provideDatabaseRepository(
+        database: ChipboxDatabase,
+        hatchet: Hatchet,
+        sampleSeed: SampleSeed,
+    ): DatabaseRepository =
         DatabaseRepository(
             database.artistDao(),
             database.gameDao(),
@@ -46,5 +51,6 @@ object DatabaseRepositoryModule {
             database.trackArtistDao(),
             database.searchHistoryDao(),
             hatchet,
+            sampleSeed = sampleSeed,
         )
 }

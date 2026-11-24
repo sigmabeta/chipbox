@@ -7,6 +7,24 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.entities.GameEntity
 
+/**
+ * A seeded shuffle for the sampled Home rows: `((id XOR :seed) * 2654435761) mod 2^32`.
+ *
+ * SQLite's `RANDOM()` cannot be seeded. This orders rows by a hash of their id mixed with
+ * `:seed`, so one seed always gives the same order and different seeds give different ones.
+ * SQLite has no XOR operator, so it is written as `(a | b) - (a & b)`. The multiplier is Knuth's
+ * multiplicative-hash constant and the mask keeps the low 32 bits. With `id` and `:seed` both
+ * below 2^31 the product stays below 2^63, so SQLite never promotes it to a float.
+ * [seededOrderKey] is the same expression in Kotlin, for fakes that mirror these queries.
+ */
+const val SEEDED_ORDER = "((((id | :seed) - (id & :seed)) * 2654435761) & 4294967295), id"
+
+/** [SEEDED_ORDER]'s sort key for one row, so a fake can order rows exactly as SQLite does. */
+fun seededOrderKey(id: Long, seed: Long): Long = ((id xor seed) * SEEDED_ORDER_MULTIPLIER) and SEEDED_ORDER_MASK
+
+private const val SEEDED_ORDER_MULTIPLIER = 2_654_435_761L
+private const val SEEDED_ORDER_MASK = 0xFFFF_FFFFL
+
 @Dao
 interface GameDao {
     @Query("SELECT * FROM game WHERE id = :gameId")
@@ -92,18 +110,19 @@ interface GameDao {
     @Query("SELECT * FROM game ORDER BY id LIMIT 1 OFFSET :offset")
     suspend fun getAtOffset(offset: Int): GameEntity?
 
-    // Home "recently added" row: a random sample of games added at/after :threshold, capped by
+    // Home "recently added" row: a seeded sample of games added at/after :threshold, capped by
     // :limit. The date_added index serves the range filter, so this stays surgical instead of
-    // scanning the whole table. RANDOM() shuffles only the (small) in-window set.
-    @Query("SELECT * FROM game WHERE date_added >= :threshold ORDER BY RANDOM() LIMIT :limit")
-    fun getRecentlyAdded(threshold: Long, limit: Int): Flow<List<GameEntity>>
+    // scanning the whole table. The seeded order (see SEEDED_ORDER) shuffles only the (small)
+    // in-window set.
+    @Query("SELECT * FROM game WHERE date_added >= :threshold ORDER BY $SEEDED_ORDER LIMIT :limit")
+    fun getRecentlyAdded(threshold: Long, limit: Int, seed: Long): Flow<List<GameEntity>>
 
-    // Home "New to You" row: a random sample of games the user hasn't played. Play counts live in a
+    // Home "New to You" row: a seeded sample of games the user hasn't played. Play counts live in a
     // separate (history) database, so the caller passes the played game ids to exclude. SQLite treats
     // `id NOT IN ()` as true for every row, so an empty :playedIds (nothing played yet) yields a
-    // random sample of the whole library — exactly what we want for a brand-new library.
-    @Query("SELECT * FROM game WHERE id NOT IN (:playedIds) ORDER BY RANDOM() LIMIT :limit")
-    fun getUnplayed(playedIds: List<Long>, limit: Int): Flow<List<GameEntity>>
+    // sample of the whole library — exactly what we want for a brand-new library.
+    @Query("SELECT * FROM game WHERE id NOT IN (:playedIds) ORDER BY $SEEDED_ORDER LIMIT :limit")
+    fun getUnplayed(playedIds: List<Long>, limit: Int, seed: Long): Flow<List<GameEntity>>
 
     @Insert
     suspend fun insert(game: GameEntity): Long
