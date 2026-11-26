@@ -42,9 +42,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon as SageIcon
+import net.sigmabeta.sage.ui.composables.CrossfadeText
+import net.sigmabeta.sage.ui.composables.subs.CrossfadeImage
 import net.sigmabeta.sage.ui.vector
 
 private val CARD_HEIGHT = 200.dp
