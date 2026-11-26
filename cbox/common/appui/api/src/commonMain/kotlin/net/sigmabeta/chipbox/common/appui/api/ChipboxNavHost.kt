@@ -70,7 +70,7 @@ import net.sigmabeta.chipbox.common.playerstatus.api.PlayerStatusReservedHeight
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
-import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
+import net.sigmabeta.sage.ui.composables.CrossfadeText
 import net.sigmabeta.chipbox.webroutes.allowsNavigation
 import net.sigmabeta.sage.ui.list.LocalListBottomInset
 

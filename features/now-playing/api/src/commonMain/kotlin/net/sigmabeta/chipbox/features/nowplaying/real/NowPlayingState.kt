@@ -99,7 +99,7 @@ data class NowPlayingState(
     /**
      * The setlist queue as reorderable rows. The active row is the currently-playing track. Built
      * as plain [NameCaptionValueListModel]s so the inline reorderable list can render them with
-     * [net.sigmabeta.chipbox.common.ui.components.api.NameCaptionValueListItem] — the same row the
+     * [net.sigmabeta.sage.ui.composables.NameCaptionValueListItem] — the same row the
      * standalone setlist screen uses.
      */
     private fun setlistRows(): List<NameCaptionValueListModel> = setlistSlots.map { slot ->

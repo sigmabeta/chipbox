@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
+import net.sigmabeta.sage.ui.composables.CrossfadeText
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListEntry
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text

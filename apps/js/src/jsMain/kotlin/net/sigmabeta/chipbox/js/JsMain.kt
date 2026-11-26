@@ -58,7 +58,7 @@ import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.KeyboardEvent
-import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import net.sigmabeta.chipbox.common.ui.components.api.ProvideChipboxText
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.sage.ui.perf.LocalLogger
@@ -159,58 +159,59 @@ fun main() {
         document.getElementById("splash")?.remove()
 
         ComposeViewport(document.body!!) {
-            CompositionLocalProvider(
-                LocalMetroViewModelFactory provides graph.metroViewModelFactory,
-                LocalChipboxStringProvider provides graph.stringProvider,
-                LocalLogger provides graph.hatchet,
-            ) {
-                // Arrow keys -> directional focus movement, the way Android's D-pad does it natively.
-                // Compose's web (ComposeViewport) target, like desktop, only wires Tab/Shift-Tab to
-                // focus traversal, so without this focus never moves with the arrow keys. `onKeyEvent`
-                // is the bubble-phase handler: the focused composable sees each key first (text fields
-                // keep Left/Right for the caret, a focused list item ignores arrows), and only
-                // unconsumed keys reach here. `moveFocus` returns whether focus actually moved — we
-                // return that so an at-the-edge press isn't swallowed, and so LazyColumn's
-                // beyond-bounds composition kicks in when stepping past the last visible row.
-                val focusManager = LocalFocusManager.current
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .onKeyEvent { event ->
-                            if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
-                            val direction = when (event.key) {
-                                Key.DirectionUp -> FocusDirection.Up
-                                Key.DirectionDown -> FocusDirection.Down
-                                Key.DirectionLeft -> FocusDirection.Left
-                                Key.DirectionRight -> FocusDirection.Right
-                                else -> return@onKeyEvent false
-                            }
-                            focusManager.moveFocus(direction)
-                        },
+            ProvideChipboxText(stringProvider = graph.stringProvider) {
+                CompositionLocalProvider(
+                    LocalMetroViewModelFactory provides graph.metroViewModelFactory,
+                    LocalLogger provides graph.hatchet,
                 ) {
-                    ChipboxAppUi(
-                        onOpenUrl = { url -> window.open(url, "_blank") },
-                        onCopyToClipboard = { _, text -> window.navigator.clipboard.writeText(text) },
-                        backKeyEvents = backKeyEvents,
-                        // Corrupt/older data and localStorage quota failures are non-fatal: the
-                        // stores fall back to empty and surface a one-line snackbar here. Player
-                        // errors share the same host — a failed track (missing WASM, worklet
-                        // failure) must be visible app-wide, not only in the NowPlaying log that
-                        // may not be on screen.
-                        messages = merge(
-                            graph.browserStateEvents.userMessages,
-                            graph.director.errorEvents().map { event ->
-                                event.track?.title?.takeIf { it.isNotBlank() }?.let { title ->
-                                    "$title: ${event.message}"
-                                } ?: event.message
+                    // Arrow keys -> directional focus movement, the way Android's D-pad does it natively.
+                    // Compose's web (ComposeViewport) target, like desktop, only wires Tab/Shift-Tab to
+                    // focus traversal, so without this focus never moves with the arrow keys. `onKeyEvent`
+                    // is the bubble-phase handler: the focused composable sees each key first (text fields
+                    // keep Left/Right for the caret, a focused list item ignores arrows), and only
+                    // unconsumed keys reach here. `moveFocus` returns whether focus actually moved — we
+                    // return that so an at-the-edge press isn't swallowed, and so LazyColumn's
+                    // beyond-bounds composition kicks in when stepping past the last visible row.
+                    val focusManager = LocalFocusManager.current
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onKeyEvent { event ->
+                                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                                val direction = when (event.key) {
+                                    Key.DirectionUp -> FocusDirection.Up
+                                    Key.DirectionDown -> FocusDirection.Down
+                                    Key.DirectionLeft -> FocusDirection.Left
+                                    Key.DirectionRight -> FocusDirection.Right
+                                    else -> return@onKeyEvent false
+                                }
+                                focusManager.moveFocus(direction)
                             },
-                        ),
-                        // URL mirroring + browser Back/Forward/deep links (ADR-0003).
-                        browserNavigation = browserNavigation,
-                        // The server owns the library and debug surfaces are hidden; Error Log
-                        // stays reachable under Settings > Diagnostics.
-                        capabilities = graph.appCapabilities,
-                    )
+                    ) {
+                        ChipboxAppUi(
+                            onOpenUrl = { url -> window.open(url, "_blank") },
+                            onCopyToClipboard = { _, text -> window.navigator.clipboard.writeText(text) },
+                            backKeyEvents = backKeyEvents,
+                            // Corrupt/older data and localStorage quota failures are non-fatal: the
+                            // stores fall back to empty and surface a one-line snackbar here. Player
+                            // errors share the same host — a failed track (missing WASM, worklet
+                            // failure) must be visible app-wide, not only in the NowPlaying log that
+                            // may not be on screen.
+                            messages = merge(
+                                graph.browserStateEvents.userMessages,
+                                graph.director.errorEvents().map { event ->
+                                    event.track?.title?.takeIf { it.isNotBlank() }?.let { title ->
+                                        "$title: ${event.message}"
+                                    } ?: event.message
+                                },
+                            ),
+                            // URL mirroring + browser Back/Forward/deep links (ADR-0003).
+                            browserNavigation = browserNavigation,
+                            // The server owns the library and debug surfaces are hidden; Error Log
+                            // stays reachable under Settings > Diagnostics.
+                            capabilities = graph.appCapabilities,
+                        )
+                    }
                 }
             }
         }

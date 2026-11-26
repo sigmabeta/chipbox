@@ -57,6 +57,7 @@ val harnessDependencies: KotlinDependencyHandler.() -> Unit = {
     implementation(libs.okio.fakefilesystem)
     implementation(projects.cbox.common.models.api)
     implementation(projects.cbox.common.ui.list.api)
+    implementation(projects.cbox.common.ui.components.api)
     implementation(projects.cbox.common.ui.chrome.api)
     implementation(projects.cbox.common.ui.theme.api)
     implementation(projects.cbox.common.appcomm.api)

@@ -35,9 +35,9 @@ import androidx.compose.ui.unit.dp
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 import kotlinx.coroutines.flow.collect
-import net.sigmabeta.chipbox.common.ui.components.api.DraggableListItem
-import net.sigmabeta.chipbox.common.ui.components.api.IconNameListItem
-import net.sigmabeta.chipbox.common.ui.components.api.NameCaptionValueListItem
+import net.sigmabeta.sage.ui.composables.DraggableListItem
+import net.sigmabeta.sage.ui.composables.IconNameListItem
+import net.sigmabeta.sage.ui.composables.NameCaptionValueListItem
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.NameCaptionValueListModel

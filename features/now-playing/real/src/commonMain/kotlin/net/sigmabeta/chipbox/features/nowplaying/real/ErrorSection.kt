@@ -23,8 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.toImmutableList
-import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
-import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
+import net.sigmabeta.sage.ui.composables.CrossfadeText
+import net.sigmabeta.sage.ui.composables.utils.FocusAreaShape
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon as SageIcon
 import net.sigmabeta.sage.ui.vector

@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import net.sigmabeta.chipbox.common.strings.real.generated.resources.Res
 import net.sigmabeta.chipbox.common.strings.real.generated.resources.allStringResources
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.sage.ui.SageComponentStringId
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -45,6 +46,9 @@ fun rememberChipboxStringProvider(): StringProvider {
             for (id in ChipboxStringId.entries) {
                 placeholders[id] = id.name
             }
+            for (id in SageComponentStringId.entries) {
+                placeholders[id] = id.name
+            }
             ChipboxStringProvider(placeholders)
         }
     }
@@ -53,6 +57,9 @@ fun rememberChipboxStringProvider(): StringProvider {
     CompositionLocalProvider(LocalResourceReader provides ClasspathResourceReader) {
         val strings = mutableMapOf<SageStringId, String>()
         for (id in ChipboxStringId.entries) {
+            strings[id] = stringResource(Res.allStringResources.getValue(id.name.lowercase()))
+        }
+        for (id in SageComponentStringId.entries) {
             strings[id] = stringResource(Res.allStringResources.getValue(id.name.lowercase()))
         }
         provider = ChipboxStringProvider(strings)

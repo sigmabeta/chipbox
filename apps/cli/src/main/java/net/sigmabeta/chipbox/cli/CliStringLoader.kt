@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.cli
 
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
+import net.sigmabeta.sage.ui.SageComponentStringId
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
 import java.net.JarURLConnection
@@ -50,6 +51,10 @@ private fun loadChipboxStringsFromCvr(): Map<SageStringId, String> {
     // SageStringId key type drive the element type to SageStringId (which has no `name`).
     val strings = mutableMapOf<SageStringId, String>()
     for (id in ChipboxStringId.entries) {
+        val key = id.name.lowercase()
+        strings[id] = byKey[key] ?: error("Missing string for ${id.name} (key '$key') in packaged .cvr files")
+    }
+    for (id in SageComponentStringId.entries) {
         val key = id.name.lowercase()
         strings[id] = byKey[key] ?: error("Missing string for ${id.name} (key '$key') in packaged .cvr files")
     }

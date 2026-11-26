@@ -432,6 +432,7 @@ kotlin {
                 // builds clean.
                 implementation(projects.cbox.common.ui.vm.api)
                 implementation(projects.cbox.common.ui.list.api)
+                implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.ui.freeform.api)
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.capabilities.api)
