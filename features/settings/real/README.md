@@ -44,7 +44,8 @@ Everything else depends on `:api` for the route key, actions, and state. The VM
 registers itself into the Metro graph via `@ContributesIntoMap`, so no `:di`
 module is needed. `:real` also pulls in the route keys of the screens settings
 navigates to (`playback-status`, `error-log`, `crash-log`, `component-library`,
-`manage-library`, `rescan-status`, and `folder-picker` per platform).
+`manage-library`, `rescan-status`, and `folder-picker` per platform). The `component-library`
+entry is a single route key: the gallery is one screen, so Settings has no per-mode rows.
 
 ## Using it
 

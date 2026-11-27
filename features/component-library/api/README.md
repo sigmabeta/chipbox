@@ -1,45 +1,37 @@
 # `:features:component-library:api`
 
-> Route keys for the debug-only in-app gallery of reusable Chipbox UI components.
+> The route key and list state for the debug-only component gallery.
 
-The `:api` half of the `component-library` feature: it exports the Voyager route
-keys (`@Serializable` destinations) and the `LibraryMode` enum that other modules
-reference to navigate to the gallery. `:api` modules hold only types — interfaces,
-route keys, value enums — and stay KMP so the desktop UI builds the same screen.
+The `:api` half of the `component-library` feature. The catalog itself lives in SAGE
+(`:common:ui:component-library`): every built-in renderer in list, grid and detail-style layouts,
+live style controls, and the loading/empty/error states. Chipbox only supplies its own cards.
+`:api` modules hold only types and stay KMP so the desktop UI builds the same screen.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
-| `ComponentLibrary.kt` | `@Serializable data object ComponentLibrary` — the landing-menu route key (reached from Settings' debug section, gated behind `shouldShowDebug`). |
-| `ComponentLibraryMode.kt` | `@Serializable data class ComponentLibraryMode(val mode: LibraryMode)` — a single parameterized destination backing all three gallery modes; `mode` is threaded into the ViewModel via assisted injection. |
-| `LibraryMode.kt` | `@Serializable enum class LibraryMode { LIST, GRID, COLUMNS }` — which layout the gallery renders. |
-| `ComponentLibraryState.kt` | `ComponentLibraryState : ListState` — the landing menu, one row per `LibraryMode`. |
-| `ComponentLibraryModeState.kt` | `ComponentLibraryModeState : ListState` — maps the mode to its `ColumnType` and builds the showcase rows. |
-| `ComponentLibraryAction.kt` | `ComponentLibraryAction : ChipboxAction` — open a mode, expand a dropdown. |
-| `SampleContent.kt` | `SampleContent` — the deterministic text/name/caption set held in state. |
+| `ComponentLibrary.kt` | `@Serializable data object ComponentLibrary` — the route key (reached from Settings' debug section, gated behind `shouldShowDebug`). |
+| `real/ComponentLibraryState.kt` | `ComponentLibraryState(config) : ListState` — holds SAGE's `ComponentLibraryConfig`, reports `config.layout.columnType`, and returns `componentLibraryItems(config, chipboxSampleCards())`. |
+| `real/ChipboxSampleCards.kt` | `chipboxSampleCards()` — Chipbox's own `ListModel`s for the gallery's "App rows" section: `NowPlayingHomeCardListModel` (playing, paused, buffering, error) and `ScanStatusCardListModel` (scanning, complete, failed). Plain English text (debug-only), synthetic artwork (the host forces preview art), ids from `componentLibraryExtraId`. |
+
+Gallery actions are SAGE's `ComponentLibraryAction`; there is no Chipbox action type.
 
 ## Why depend on this module
 
-Depend on `:features:component-library:api` when you need to navigate to the
-gallery (e.g. `:features:settings:real` emits `ChipboxEvent.NavigateTo(ComponentLibrary)`)
-or to map the route key to a `Screen` in `ChipboxScreens.kt`. The app wires the
-implementation via `:features:component-library:real`, which itself depends on
-this module for the route keys and `LibraryMode`.
+Depend on `:features:component-library:api` to navigate to the gallery (e.g. `:features:settings:real`
+emits `ChipboxEvent.NavigateTo(ComponentLibrary)`) or to map the key to a `Screen` in
+`ChipboxScreens.kt`. `:features:component-library:real` implements the screen.
 
 ## Using it
 
 ```kotlin
-// Open the gallery menu from another screen's ViewModel:
 emit(ChipboxEvent.NavigateTo(ComponentLibrary))
-
-// Open a specific mode directly:
-emit(ChipboxEvent.NavigateTo(ComponentLibraryMode(LibraryMode.GRID)))
 ```
 
 ## Module facts
 
 - **Plugin:** `chipbox.feature.api`
-- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.api` plugin transitively applies `sage.kmp.js`)
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** the public dependencies of the State/Action types, declared in `build.gradle.kts`; `kotlinx.serialization` comes from the convention plugin
+- **Dependencies:** `libs.sage.common.ui.component.library` (re-exported), `:cbox:common:ui:components:api` (the Home cards), plus the public SAGE types the state exposes.

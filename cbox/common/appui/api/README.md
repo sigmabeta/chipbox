@@ -34,7 +34,8 @@ Grouped by role (commonMain unless noted):
   `:cbox:common:webroutes` (`NavigationPolicy.kt`) so the browser's URL decoder and the
   in-app sinks share one policy: library-administration destinations require
   `canManageLibrary`; Playback Status / Crash Log / Component Library require
-  `showDebugSection`; Error Log requires `showErrorLog` only.
+  `showDebugSection`; Error Log requires `showErrorLog` only. Component Library is a single
+  route key (`ComponentLibrary`) mapped to one screen: SAGE's gallery switches layouts in place.
 
 - **Browser-history seam** — `BrowserNavigation.kt`: `ShellTab`, `ShellTarget`
   (`Tab` / `Deep`), `ShellNavigation` (host → shell: apply a decoded target), and
