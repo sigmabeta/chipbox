@@ -31,8 +31,9 @@ data class NowPlayingHomeCardListModel(
     // having to know what reaction it triggers (e.g. suppressing the bottom mini-player).
     val appearAction: SageAction,
     val disappearAction: SageAction,
+    // Single-instance on Home, so the default id is fixed; the debug component gallery passes
+    // distinct ids to show several variants at once.
+    override val dataId: Long = 0L,
 ) : ListModel() {
-    // Single-instance model — there's only ever one "now playing" card on Home at a time.
-    override val dataId: Long = 0L
     override val columns: Int = 1
 }

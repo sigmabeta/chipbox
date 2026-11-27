@@ -1,45 +1,22 @@
 package net.sigmabeta.chipbox.uitest
 
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
-import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibraryMode
-import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
 import kotlin.test.Test
 
-/** The debug component gallery menu — three rows, each opening that gallery mode. */
+/** The debug component gallery: one screen, SAGE's catalog plus Chipbox's own cards. */
 class ComponentLibraryTest {
     @Test
-    fun showsModeMenu() = runChipboxUiTest {
+    fun showsItsTitle() = runChipboxUiTest {
         startAtScreen(ComponentLibrary)
 
-        assertIconNameItemDisplayed("List")
-        assertIconNameItemDisplayed("Grid")
-        assertIconNameItemDisplayed("Columns")
+        assertTitle("Component library")
     }
 
     @Test
-    fun listRowNavigates() = runChipboxUiTest {
+    fun showsTheLayoutControls() = runChipboxUiTest {
         startAtScreen(ComponentLibrary)
 
-        click("List")
-
-        assertNavigationEvent(ComponentLibraryMode(LibraryMode.LIST))
-    }
-
-    @Test
-    fun gridRowNavigates() = runChipboxUiTest {
-        startAtScreen(ComponentLibrary)
-
-        click("Grid")
-
-        assertNavigationEvent(ComponentLibraryMode(LibraryMode.GRID))
-    }
-
-    @Test
-    fun columnsRowNavigates() = runChipboxUiTest {
-        startAtScreen(ComponentLibrary)
-
-        click("Columns")
-
-        assertNavigationEvent(ComponentLibraryMode(LibraryMode.COLUMNS))
+        assertSectionHeader("Controls")
+        assertDisplayed("Layout: List")
     }
 }

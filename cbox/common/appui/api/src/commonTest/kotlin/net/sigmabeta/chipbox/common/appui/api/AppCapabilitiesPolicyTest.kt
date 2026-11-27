@@ -2,8 +2,6 @@ package net.sigmabeta.chipbox.common.appui.api
 
 import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
-import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibraryMode
-import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
 import net.sigmabeta.chipbox.features.crashlog.CrashLog
 import net.sigmabeta.chipbox.features.errorlog.ErrorLog
 import net.sigmabeta.chipbox.features.folderpicker.FolderPicker
@@ -65,7 +63,6 @@ class AppCapabilitiesPolicyTest {
             PlaybackStatus,
             CrashLog,
             ComponentLibrary,
-            ComponentLibraryMode(LibraryMode.LIST),
         )
     }
 }

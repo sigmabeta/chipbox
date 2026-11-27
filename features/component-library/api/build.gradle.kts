@@ -11,6 +11,9 @@ kotlin {
                 api(projects.cbox.common.appcomm.api)
                 api(libs.sage.common.appcomm)
                 api(libs.sage.common.ui.components)
+                api(libs.sage.common.ui.component.library)
+                // The Home cards the gallery shows as its own rows.
+                api(projects.cbox.common.ui.components.api)
                 api(libs.sage.common.images)
                 api(libs.sage.common.list)
                 api(libs.sage.common.ui.iconsApi)

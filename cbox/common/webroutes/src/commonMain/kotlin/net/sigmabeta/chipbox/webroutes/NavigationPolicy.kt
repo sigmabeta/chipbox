@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.webroutes
 
 import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
-import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibraryMode
 import net.sigmabeta.chipbox.features.crashlog.CrashLog
 import net.sigmabeta.chipbox.features.errorlog.ErrorLog
 import net.sigmabeta.chipbox.features.folderpicker.FolderPicker
@@ -26,6 +25,5 @@ fun AppCapabilities.allowsNavigation(destination: Any): Boolean = when (destinat
     ManageLibrary, FolderPicker, RescanStatus -> canManageLibrary
     ErrorLog -> showErrorLog
     PlaybackStatus, CrashLog, ComponentLibrary -> showDebugSection
-    is ComponentLibraryMode -> showDebugSection
     else -> true
 }
