@@ -469,8 +469,8 @@ jobs:
             --generate-notes $PRERELEASE
           echo "Published: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
       # Keep the landing site's download links in sync with this release: regenerate download.md from
-      # the published Releases (latest stable + newer prerelease, so a beta tag never hides stable or
-      # vice versa), commit it to the release branch, then dispatch the Pages deploy from that same
+      # the published Releases (latest stable + newer prerelease, so a prerelease tag never hides
+      # stable or vice versa), commit it to the release branch, then dispatch the Pages deploy from that same
       # branch. (A GITHUB_TOKEN commit doesn't trigger the push-based Pages build — hence the explicit
       # workflow_dispatch, which is exempt from that recursion rule.)
       - name: Refresh + deploy the download page

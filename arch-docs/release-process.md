@@ -164,10 +164,10 @@ the **Release** assets are the raw files.
 
 1. `scripts/ci/gen-download-page.sh` regenerates `docs/download.md` from the
    published Releases (via `gh`). The page has two channel tabs: **Stable** (the newest
-   non-prerelease) and **Beta** (the newest prerelease, shown only while it is newer
-   than Stable). Each tab links that Release's **actual** asset filenames (so the APK
-   `.commits` suffix is picked up, and a platform with no asset — e.g. macOS — is
-   simply omitted).
+   non-prerelease) and **Prerelease** (the newest alpha/beta/rc, shown only while it
+   is newer than Stable). Each tab links that Release's **actual** asset filenames (so
+   the APK `.commits` suffix is picked up, and a platform with no asset, such as macOS,
+   is simply omitted).
 2. The refreshed page is committed to the tag's **release branch** (`3.0.0` →
    `release/3.0`), not `beta`.
 3. `pages.yml` is dispatched from that same branch to redeploy.
