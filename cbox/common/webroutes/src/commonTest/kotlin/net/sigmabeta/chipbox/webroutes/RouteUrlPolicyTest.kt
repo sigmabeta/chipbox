@@ -10,8 +10,6 @@ import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
-import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibraryMode
-import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
 import net.sigmabeta.chipbox.features.crashlog.CrashLog
 import net.sigmabeta.chipbox.features.errorlog.ErrorLog
 import net.sigmabeta.chipbox.features.favorites.Favorites
@@ -55,8 +53,6 @@ class RouteUrlPolicyTest {
             PlaybackStatus,
             CrashLog,
             ComponentLibrary,
-            ComponentLibraryMode(LibraryMode.LIST),
-            ComponentLibraryMode(LibraryMode.GRID),
         ).forEach {
             assertNull(RouteUrl.encode(ChipboxTarget.Deep(it)), "$it must not be encodable")
         }
@@ -71,7 +67,6 @@ class RouteUrlPolicyTest {
             "/playback-status",
             "/crash-log",
             "/component-library",
-            "/component-library/LIST",
             "/library/manage",
             "/library/rescan",
         ).forEach {
@@ -97,7 +92,7 @@ class RouteUrlPolicyTest {
             assertEquals(true, full.allowsNavigation(it))
             assertEquals(false, webCapabilities.allowsNavigation(it))
         }
-        listOf(PlaybackStatus, CrashLog, ComponentLibrary, ComponentLibraryMode(LibraryMode.LIST)).forEach {
+        listOf(PlaybackStatus, CrashLog, ComponentLibrary).forEach {
             assertEquals(true, full.allowsNavigation(it))
             assertEquals(false, webCapabilities.allowsNavigation(it))
         }

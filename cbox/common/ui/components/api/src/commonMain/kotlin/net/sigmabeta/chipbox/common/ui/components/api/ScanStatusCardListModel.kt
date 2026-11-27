@@ -37,9 +37,10 @@ data class ScanStatusCardListModel(
     // When non-null, a tap anywhere on the card dispatches this — used to dismiss the card once the
     // scan has settled (complete/failed). Null while scanning, so in-progress taps don't dismiss.
     val dismissAction: SageAction? = null,
+    // Single-instance on Home, so the default id is fixed; the debug component gallery passes
+    // distinct ids to show several variants at once.
+    override val dataId: Long = DATA_ID,
 ) : ListModel() {
-    // Single-instance card — only one scan status on Home at a time.
-    override val dataId: Long = DATA_ID
     override val columns: Int = ListModel.COLUMNS_ALL
 
     private companion object {

@@ -1,47 +1,29 @@
 # `:features:component-library:real`
 
-> The debug-only component gallery screen: every reusable `ListModel` rendered in each layout mode.
+> The debug-only component gallery screen: SAGE's component library hosting Chipbox's own cards.
 
-> The screen's `State`/`Action` value types live in `:features:component-library:api`; this module holds the ViewModel, Route and runtime helpers.
+> The state and the Chipbox cards live in `:features:component-library:api`; this module holds the ViewModel and Route.
 
-The `:real` half of the `component-library` feature: the ViewModels, Route
-composables, and sample-content generator that implement the gallery whose
-route keys live in `:features:component-library:api`. `:real` modules hold the
-screen implementation (`ChipboxListViewModel`s wired into the Metro `AppScope`
-graph, Compose content); the app includes this module. There is no `:screenshot`
-companion for this feature.
-
-The gallery is a developer aid: it renders one of (most) every SAGE/Chipbox
-`ListModel` so they can be eyeballed under each list layout. Reached from the
-Settings debug section (gated behind `shouldShowDebug`).
+The `:real` half of the `component-library` feature. The catalog lives in SAGE
+(`:common:ui:component-library`); Chipbox only supplies its cards (`chipboxSampleCards()`) and wires
+the screen into the Metro `AppScope` graph. One screen switches list, grid and columns in place
+through a dropdown, so there is no menu and no per-mode sub-screen. Reached from the Settings debug
+section (gated behind `shouldShowDebug`). There is no `:screenshot` companion for this feature.
 
 ## Contents
 
-- **ViewModels** — `ComponentLibraryViewModel` (`@ContributesIntoMap`+`@ViewModelKey`+`@Inject`) drives the landing menu and emits `NavigateTo(ComponentLibraryMode(...))` when a row is tapped; `ComponentLibraryModeViewModel` (`@AssistedInject` + `Factory`) takes the chosen `LibraryMode`, seeds a stable sample set in `init`, and handles the one interactive control (the dropdown).
-- **States** (in `:api`) — `ComponentLibraryState` builds the menu (one `IconNameListModel` per `LibraryMode`); `ComponentLibraryModeState` maps the mode to a `ColumnType` (`One`/`Regular`/`Staggered`) and emits the showcase rows (`listItems`/`gridItems`/`columnItems`).
-- **Action** (in `:api`) — `ComponentLibraryAction` (`OpenMode`, `DropdownExpandClicked`); sample rows otherwise use `SageAction.Noop`.
-- **Routes** — `ComponentLibraryRoute` (menu) and `ComponentLibraryModeRoute`; the latter forces `LocalInspectionMode = true` so the synthetic `sourceInfo` strings render deterministic `BitmapGenerator` gradients instead of failing image loads.
-- **Sample content** (`expect`/`actual`) — `generateSampleContent`; the `SampleContent` data type lives in `:api`, while the JVM/Android `actual` (`src/main/java`) uses SAGE's `StringGenerator` and the JS `actual` returns deterministic placeholders.
+- **ViewModel** — `ComponentLibraryViewModel` (`@ContributesIntoMap` + `@ViewModelKey` + `@Inject`), a `ChipboxListViewModel<ComponentLibraryState>`. `handleAction` forwards SAGE's `ComponentLibraryAction`s to the pure `config.reduce(action)` and ignores everything else.
+- **Route** — `ComponentLibraryRoute` collects `uiStateActual` and renders `ComponentLibraryHost(state.listItems) { ChipboxListEntry(...) }`. The host reads the live style from the catalog's carrier row, forces `LocalInspectionMode` (so synthetic `SourceInfo`s draw preview art) and keeps the app's `contentFor`/`previewImage`.
+- **Tests** — `ComponentLibraryViewModelTest` (action changes config, column type follows layout, Chipbox cards present, no duplicate ids).
 
 ## Why depend on this module
 
-Only the app's navigation wiring (`ChipboxScreens.kt`) depends on `:real`, to map
-the `ComponentLibrary`/`ComponentLibraryMode` route keys to Voyager `Screen`s.
-Everything else depends on `:api` for the route keys. The ViewModels register
-themselves into the Metro graph via `@ContributesIntoMap`, so no `:di` module is
-needed.
-
-## Using it
-
-```kotlin
-// In ChipboxScreens.kt — the route keys map to Screens that wrap these Routes:
-ComponentLibrary -> ComponentLibraryMenuScreen          // ComponentLibraryRoute(...)
-is ComponentLibraryMode -> ComponentLibraryModeScreen(destination.mode)  // ComponentLibraryModeRoute(mode, ...)
-```
+Only the app's navigation wiring (`ChipboxScreens.kt`) depends on `:real`, to map the
+`ComponentLibrary` route key to a Voyager `Screen`. Everything else depends on `:api`.
 
 ## Module facts
 
-- **Plugin:** `chipbox.feature.real`
-- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
-- **Source set:** `commonMain` (ViewModels, routes); `src/main/java` (`jvmSharedMain`) for the `StringGenerator`-backed sample `actual`; `jsMain` for the placeholder `actual`
-- **SAGE/module dependencies:** `:features:component-library:api`; `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`; `sage.common.images`, `sage.common.ui.components`, `sage.common.ui.strings` (jvmShared), `kotlinx.collections.immutable`
+- **Plugin:** `chipbox.feature.real` (+ `chipbox.kmp.test`)
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the SAGE module has its own JS actual)
+- **Source set:** `commonMain` only
+- **Dependencies:** `:features:component-library:api`; `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`; `libs.sage.common.ui.component.library`
