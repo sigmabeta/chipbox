@@ -14,38 +14,22 @@ kotlin {
     sourceSets {
         named("commonMain") {
             dependencies {
-                api(libs.sage.common.ui.components)
+                // Re-exported so consumers get SAGE's ListModel vocabulary, the string/action seams,
+                // and the shared renderer suite's entry points (ListModel.Content, SageRenderers,
+                // CrossfadeText/CrossfadeImage, ...).
+                api(libs.sage.common.ui.composables)
 
-                implementation(libs.sage.common.appcomm)
-                implementation(libs.sage.common.images)
-
-                implementation(libs.sage.common.ui.perfCompose)
+                // `Icon.vector()` (NowPlayingHomeCard's art placeholder + controls); the Icon type
+                // itself arrives transitively through composables -> common.ui.components.
                 implementation(libs.sage.common.ui.iconsReal)
 
+                // ProvideChipboxText installs LocalChipboxStringProvider alongside the SAGE locals.
                 implementation(projects.cbox.common.strings.api)
-                implementation(projects.cbox.common.ui.fonts.api)
-                implementation(projects.cbox.common.perf.api)
-
-                implementation(libs.coil.kt.core)
-                implementation(libs.coil.kt.compose)
             }
         }
         named("androidMain") {
             dependencies {
-                implementation(projects.cbox.android.ui.theme.api)
-                implementation(libs.androidx.compose.ui.tooling.preview)
-                // ComposeViewAdapter (the renderer Android Studio's preview panel loads) lives in
-                // ui-tooling, not ui-tooling-preview. Without it on the android classpath the
-                // preview surface throws ClassNotFoundException. The KMP android target has no
-                // debug-only source set, so it rides on androidMain alongside the annotations.
-                implementation(libs.androidx.compose.ui.tooling)
-                // rememberChipboxStringProvider() loads the single multiplatform string source
-                // (composeResources) through the @Composable stringResource API — the same machinery
-                // Font(FontResource) already uses under Paparazzi — so the preview wrapper
-                // (ChipboxPreview) installs a real StringProvider into LocalChipboxStringProvider,
-                // letting M9-slice-6c composables render in @Preview / Paparazzi as at runtime.
-                implementation(projects.cbox.common.strings.real)
-                // BitmapGenerator (android.graphics gradient) for the inspection-mode FakeImage
+                // BitmapGenerator (android.graphics gradient) for the inspection-mode previewImage
                 // actual — reused so recorded Paparazzi goldens stay byte-identical to pre-6f.
                 implementation(projects.cbox.android.images.api)
             }

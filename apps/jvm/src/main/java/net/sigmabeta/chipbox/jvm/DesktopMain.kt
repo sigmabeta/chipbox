@@ -32,8 +32,8 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
+import net.sigmabeta.chipbox.common.ui.components.api.ProvideChipboxText
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
-import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.ui.perf.LocalLogger
 import java.awt.Desktop
@@ -98,40 +98,41 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
         // content first composes — the real UI is up. getSplashScreen() is null when no splash
         // was launched (IDE run without the flag, headless), so this is a safe, idempotent no-op.
         LaunchedEffect(Unit) { SplashScreen.getSplashScreen()?.close() }
-        CompositionLocalProvider(
-            LocalMetroViewModelFactory provides graph.metroViewModelFactory,
-            LocalChipboxStringProvider provides graph.stringProvider,
-            LocalLogger provides graph.hatchet,
-        ) {
-            // Arrow keys -> directional focus movement, the way Android's D-pad does it natively.
-            // Compose Desktop only wires Tab/Shift-Tab to focus traversal out of the box, so without
-            // this, focus never moves with the arrow keys. `onKeyEvent` is the bubble-phase handler:
-            // the focused composable sees each key first (text fields keep Left/Right for the caret,
-            // a focused list item ignores arrows), and only unconsumed keys reach here. `moveFocus`
-            // returns whether focus actually moved — we return that so an at-the-edge press isn't
-            // swallowed, and so LazyColumn's beyond-bounds composition kicks in when stepping past
-            // the last visible row (the same foundation path Android exercises).
-            val focusManager = LocalFocusManager.current
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onKeyEvent { event ->
-                        if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
-                        val direction = when (event.key) {
-                            Key.DirectionUp -> FocusDirection.Up
-                            Key.DirectionDown -> FocusDirection.Down
-                            Key.DirectionLeft -> FocusDirection.Left
-                            Key.DirectionRight -> FocusDirection.Right
-                            else -> return@onKeyEvent false
-                        }
-                        focusManager.moveFocus(direction)
-                    },
+        ProvideChipboxText(stringProvider = graph.stringProvider) {
+            CompositionLocalProvider(
+                LocalMetroViewModelFactory provides graph.metroViewModelFactory,
+                LocalLogger provides graph.hatchet,
             ) {
-                ChipboxAppUi(
-                    onOpenUrl = { url -> openUrlIfSupported(url) },
-                    onCopyToClipboard = { _, text -> copyToClipboard(text) },
-                    backKeyEvents = backKeyEvents,
-                )
+                // Arrow keys -> directional focus movement, the way Android's D-pad does it natively.
+                // Compose Desktop only wires Tab/Shift-Tab to focus traversal out of the box, so without
+                // this, focus never moves with the arrow keys. `onKeyEvent` is the bubble-phase handler:
+                // the focused composable sees each key first (text fields keep Left/Right for the caret,
+                // a focused list item ignores arrows), and only unconsumed keys reach here. `moveFocus`
+                // returns whether focus actually moved — we return that so an at-the-edge press isn't
+                // swallowed, and so LazyColumn's beyond-bounds composition kicks in when stepping past
+                // the last visible row (the same foundation path Android exercises).
+                val focusManager = LocalFocusManager.current
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onKeyEvent { event ->
+                            if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                            val direction = when (event.key) {
+                                Key.DirectionUp -> FocusDirection.Up
+                                Key.DirectionDown -> FocusDirection.Down
+                                Key.DirectionLeft -> FocusDirection.Left
+                                Key.DirectionRight -> FocusDirection.Right
+                                else -> return@onKeyEvent false
+                            }
+                            focusManager.moveFocus(direction)
+                        },
+                ) {
+                    ChipboxAppUi(
+                        onOpenUrl = { url -> openUrlIfSupported(url) },
+                        onCopyToClipboard = { _, text -> copyToClipboard(text) },
+                        backKeyEvents = backKeyEvents,
+                    )
+                }
             }
         }
     }

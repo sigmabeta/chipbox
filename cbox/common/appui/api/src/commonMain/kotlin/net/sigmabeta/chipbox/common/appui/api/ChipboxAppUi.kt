@@ -23,7 +23,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.chrome.api.TitleBarController
-import net.sigmabeta.chipbox.common.ui.components.api.subs.LocalForceFakeImages
+import net.sigmabeta.sage.ui.composables.subs.LocalForceFakeImages
 import net.sigmabeta.chipbox.common.ui.list.api.LocalScreenLifecycleOwner
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId

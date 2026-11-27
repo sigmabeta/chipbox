@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.strings.real
 import net.sigmabeta.chipbox.common.strings.real.generated.resources.Res
 import net.sigmabeta.chipbox.common.strings.real.generated.resources.allStringResources
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.sage.ui.SageComponentStringId
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
 import org.jetbrains.compose.resources.getString
@@ -37,6 +38,11 @@ class ChipboxStringProvider(private val strings: Map<SageStringId, String>) : St
 suspend fun loadChipboxStrings(): Map<SageStringId, String> {
     val strings = mutableMapOf<SageStringId, String>()
     for (id in ChipboxStringId.entries) {
+        strings[id] = getString(Res.allStringResources.getValue(id.name.lowercase()))
+    }
+    // SAGE's shared renderers resolve these eight accessibility labels through the same provider;
+    // the XML keys already exist, so map them by the same lowercased name.
+    for (id in SageComponentStringId.entries) {
         strings[id] = getString(Res.allStringResources.getValue(id.name.lowercase()))
     }
     return strings

@@ -206,6 +206,7 @@ dependencies {
     implementation(projects.features.settings.real)
     implementation(projects.features.library.real)
     implementation(projects.cbox.common.ui.list.api)
+    implementation(projects.cbox.common.ui.components.api)
     implementation(projects.cbox.common.ui.chrome.api)
     // RealDirector — needed by every feature VM that depends on player.director.api
     // (NowPlaying, GameDetail, ArtistDetail, GamesForPlatform, BrowseAllTracks). All wired

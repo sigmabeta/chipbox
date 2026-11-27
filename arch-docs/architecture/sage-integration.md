@@ -35,6 +35,9 @@ chipbox commit that depends on them must also stage the updated submodule pointe
 - `list` — `ListState` (abstract), `ListStateActual`, `ColumnType`, `WidthClass`.
 - `ui/components` — `ListModel` sealed hierarchy + `TitleBarModel`,
   `LoadingItemListModel`, `ErrorStateListModel`, `IconNameListModel`, etc.
+- `ui/composables` — the shared `ListModel` renderer suite (`ListModel.Content`
+  dispatch, `SageRenderers`/`ProvideSageRenderers`, `CrossfadeText`/`CrossfadeImage`
+  and the row composables). Chipbox plugs its own rows in via `contentFor`.
 - `ui/list-screens` — the `ListScreen` / `GridScreen` Compose-Multiplatform
   renderers + `LocalListBottomInset`.
 - `ui/strings` — `StringProvider` interface + `SageStringId`.
@@ -58,7 +61,10 @@ JVM classpath.
   sage's lifecycle `ViewModel`; feature `<Name>State` extends sage's `ListState`;
   feature `<Name>Action` extends sage's `SageAction`; rows are sage `ListModel`s;
   rendering goes `ListState.toActual()` → `ListStateActual` →
-  `ChipboxListEntry` → sage `ListScreen`/`GridScreen` → `ListModel.Content()`.
+  `ChipboxListEntry` → sage `ListScreen`/`GridScreen` → `ListModel.Content()`
+  (which consults chipbox's `ChipboxRenderers.contentFor` for the Chipbox-owned
+  rows — `NowPlayingHomeCardListModel`, `ScanStatusCardListModel` — and falls
+  through to SAGE's built-in renderers for the rest).
   See `feature-screens.md`.
 - **Strings**: chipbox defines `ChipboxStringId` (enum) and injects sage's
   `StringProvider`. Android impl reads compiled Compose Multiplatform
@@ -103,7 +109,7 @@ JVM classpath.
 |---|---|---|
 | Logging | `Hatchet` + `AndroidHatchet` | injects it everywhere |
 | Build | `sage.*` plugins, `libs.versions.toml` | `chipbox.*` plugins layered on top |
-| List UI | `ListState`, `ListModel`, `ListScreen`/`GridScreen`, `StringProvider`, `Icon` | `ChipboxListViewModel`, `<Name>State/Action`, `ChipboxListEntry`, `ChipboxStringId` |
+| List UI | `ListState`, `ListModel`, `ListScreen`/`GridScreen`, the `ui/composables` renderer suite, `StringProvider`, `Icon` | `ChipboxListViewModel`, `<Name>State/Action`, `ChipboxListEntry`, `ChipboxStringId`, `ChipboxRenderers` (own rows via `contentFor`) |
 | DI | `AppScope` marker | `ChipboxAppGraph` + 21 binding containers (Metro) |
 | Nav | `RouteDescriptor`/`ArgType` contracts | Voyager wiring in `ChipboxScreens.kt` |
 | Theme | `SageMaterial` | `ChipboxTheme` (palette + pixel fonts) |

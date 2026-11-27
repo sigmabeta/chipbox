@@ -59,7 +59,7 @@ class ChipboxAppUiViewModel @Inject constructor(
      * Whether the UI should render generated gradient art instead of fetching real cover art —
      * driven by the debug "image loader" setting (FAKE). Unlike the audio/data source switches (DI
      * singletons read once at launch), this is a Compose-level toggle, so it applies live. Provided
-     * as [net.sigmabeta.chipbox.common.ui.components.api.subs.LocalForceFakeImages] by the shell.
+     * as [net.sigmabeta.sage.ui.composables.subs.LocalForceFakeImages] by the shell.
      */
     val forceFakeImages: StateFlow<Boolean> = debugSettingsManager.getImageLoaderSource()
         .map { it == ImageLoaderSource.FAKE }

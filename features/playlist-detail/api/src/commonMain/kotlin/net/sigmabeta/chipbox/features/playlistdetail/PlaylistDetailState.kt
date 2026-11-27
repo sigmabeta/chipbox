@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.features.playlistdetail
 
-import net.sigmabeta.chipbox.common.ui.components.api.DismissibleListModel
-import net.sigmabeta.chipbox.common.ui.components.api.DraggableListModel
+import net.sigmabeta.sage.ui.composables.DismissibleListModel
+import net.sigmabeta.sage.ui.composables.DraggableListModel
 import net.sigmabeta.chipbox.models.Playlist
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId

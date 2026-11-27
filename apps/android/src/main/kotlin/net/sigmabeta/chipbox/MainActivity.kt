@@ -21,9 +21,9 @@ import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.flow.MutableSharedFlow
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
-import net.sigmabeta.chipbox.common.ui.components.api.subs.LocalFirstContentReporter
+import net.sigmabeta.chipbox.common.ui.components.api.ProvideChipboxText
 import net.sigmabeta.chipbox.services.api.ChipboxPlaybackService
-import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import net.sigmabeta.sage.ui.composables.subs.LocalFirstContentReporter
 import net.sigmabeta.sage.ui.perf.LocalLogger
 
 class MainActivity : ComponentActivity() {
@@ -55,17 +55,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val appGraph = (application as ChipboxApplication).appGraph
         setContent {
-            CompositionLocalProvider(
-                LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
-                LocalChipboxStringProvider provides appGraph.stringProvider,
-                LocalLogger provides appGraph.hatchet,
-                LocalFirstContentReporter provides firstContentReporter,
-            ) {
-                ChipboxAppUi(
-                    onOpenUrl = { url -> openUrl(url) },
-                    onCopyToClipboard = { label, text -> copyToClipboard(label, text) },
-                    backKeyEvents = backKeyEvents,
-                )
+            ProvideChipboxText(stringProvider = appGraph.stringProvider) {
+                CompositionLocalProvider(
+                    LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
+                    LocalLogger provides appGraph.hatchet,
+                    LocalFirstContentReporter provides firstContentReporter,
+                ) {
+                    ChipboxAppUi(
+                        onOpenUrl = { url -> openUrl(url) },
+                        onCopyToClipboard = { label, text -> copyToClipboard(label, text) },
+                        backKeyEvents = backKeyEvents,
+                    )
+                }
             }
         }
     }

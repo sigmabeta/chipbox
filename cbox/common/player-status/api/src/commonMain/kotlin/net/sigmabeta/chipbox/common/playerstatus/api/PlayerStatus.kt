@@ -46,7 +46,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
+import net.sigmabeta.sage.ui.composables.subs.CrossfadeImage
 import net.sigmabeta.chipbox.strings.api.playPauseContentDescription
 import net.sigmabeta.sage.ui.Icon as SageIcon
 import net.sigmabeta.sage.ui.vector

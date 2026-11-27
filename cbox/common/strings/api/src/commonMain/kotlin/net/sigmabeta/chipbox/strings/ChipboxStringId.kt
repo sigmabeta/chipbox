@@ -5,14 +5,6 @@ import net.sigmabeta.sage.ui.SageStringId
 
 @Serializable
 enum class ChipboxStringId : SageStringId {
-    ACCY_OCL_CHECKBOX,
-    ACCY_OCL_DROPDOWN,
-    ACCY_OCL_RATING,
-    ACCY_OCL_SINGLE_LINE,
-    ACCY_OCL_VALUE,
-    ACCY_ST_DESC_CHECKED,
-    ACCY_ST_DESC_LOADING,
-    ACCY_ST_DESC_UNCHECKED,
     ACCY_CDESC_TOPBAR_BACK,
     ACCY_CDESC_SEARCH_CLEAR,
     ACCY_CDESC_PLAY,

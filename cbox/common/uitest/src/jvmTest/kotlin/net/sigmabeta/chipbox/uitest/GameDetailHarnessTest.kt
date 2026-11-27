@@ -18,7 +18,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.TitleBarController
 import net.sigmabeta.chipbox.features.gamedetail.GameDetailRoute
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
-import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import net.sigmabeta.chipbox.common.ui.components.api.ProvideChipboxText
 import net.sigmabeta.chipbox.ui.theme.api.ChipboxTheme
 import net.sigmabeta.chipbox.uitest.harness.createTestAppGraph
 import net.sigmabeta.sage.ui.perf.LocalLogger
@@ -54,18 +54,19 @@ class GameDetailHarnessTest {
 
         setContent {
             ChipboxTheme {
-                CompositionLocalProvider(
-                    LocalMetroViewModelFactory provides graph.metroViewModelFactory,
-                    LocalViewModelStoreOwner provides storeOwner,
-                    LocalTitleBarController provides titleBarController,
-                    LocalChipboxStringProvider provides graph.stringProvider,
-                    LocalLogger provides graph.hatchet,
-                ) {
-                    Column {
-                        // The screen pushes its title to the TitleBarController (no top bar here),
-                        // so render it as a node the assertion can find.
-                        Text(titleBarController.state.title.orEmpty())
-                        GameDetailRoute(gameId = gameId, onEvent = {})
+                ProvideChipboxText(stringProvider = graph.stringProvider) {
+                    CompositionLocalProvider(
+                        LocalMetroViewModelFactory provides graph.metroViewModelFactory,
+                        LocalViewModelStoreOwner provides storeOwner,
+                        LocalTitleBarController provides titleBarController,
+                        LocalLogger provides graph.hatchet,
+                    ) {
+                        Column {
+                            // The screen pushes its title to the TitleBarController (no top bar here),
+                            // so render it as a node the assertion can find.
+                            Text(titleBarController.state.title.orEmpty())
+                            GameDetailRoute(gameId = gameId, onEvent = {})
+                        }
                     }
                 }
             }

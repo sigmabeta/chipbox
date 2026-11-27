@@ -47,7 +47,7 @@ import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
-import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import net.sigmabeta.chipbox.common.ui.components.api.ProvideChipboxText
 import net.sigmabeta.chipbox.uitest.harness.createTestAppGraph
 import net.sigmabeta.chipbox.uitest.harness.platformTestArgument
 import net.sigmabeta.chipbox.uitest.harness.writeFailureArtifacts
@@ -132,19 +132,20 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
             }
         }
         compose.setContent {
-            CompositionLocalProvider(
-                LocalMetroViewModelFactory provides graph.metroViewModelFactory,
-                LocalViewModelStoreOwner provides storeOwner,
-                LocalLifecycleOwner provides lifecycleOwner,
-                LocalChipboxStringProvider provides graph.stringProvider,
-                LocalLogger provides graph.hatchet,
-            ) {
-                ChipboxAppUi(
-                    onOpenUrl = {},
-                    onCopyToClipboard = { _, _ -> },
-                    activeTabDestinations = destinations,
-                    onNavigate = { navigations += it },
-                )
+            ProvideChipboxText(stringProvider = graph.stringProvider) {
+                CompositionLocalProvider(
+                    LocalMetroViewModelFactory provides graph.metroViewModelFactory,
+                    LocalViewModelStoreOwner provides storeOwner,
+                    LocalLifecycleOwner provides lifecycleOwner,
+                    LocalLogger provides graph.hatchet,
+                ) {
+                    ChipboxAppUi(
+                        onOpenUrl = {},
+                        onCopyToClipboard = { _, _ -> },
+                        activeTabDestinations = destinations,
+                        onNavigate = { navigations += it },
+                    )
+                }
             }
         }
         compose.waitForIdle()

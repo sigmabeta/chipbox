@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.appcomm.ActionSink
+import net.sigmabeta.sage.ui.composables.Content
 
 /**
  * Renders [ScanStatusCardListModel] as a bounded two-column card. Left: coarse status + the file

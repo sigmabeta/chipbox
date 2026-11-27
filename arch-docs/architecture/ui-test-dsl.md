@@ -67,8 +67,9 @@ Key reference points in the codebase:
   (`cbox/common/appui/api/.../ChipboxAppUiViewModel.kt`); event type
   `ChipboxEvent.NavigateTo(destination: Any)` in
   `cbox/common/appcomm/api/.../ChipboxEvent.kt`.
-- Item dispatch: `ListModel.Content()` `when(model)` in
-  `cbox/common/ui/components/api/.../ComposableMapping.kt`.
+- Item dispatch: `ListModel.Content()` `when(model)` in SAGE
+  `common/ui/composables/.../ComposableMapping.kt`; chipbox's own rows plug in via
+  `ChipboxRenderers.contentFor` (`cbox/common/ui/components/api/.../ChipboxRenderers.kt`).
 - Click path: `ActionSink.sendAction` → `ChipboxListViewModel.sendAction` →
   `handleAction` (subclass).
 - Data seeding: `MemoryRepository.upsertGame(RawGame)` in

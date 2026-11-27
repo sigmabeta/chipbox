@@ -16,9 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import net.sigmabeta.chipbox.common.ui.components.api.ProvideChipboxText
 import net.sigmabeta.chipbox.strings.real.rememberChipboxStringProvider
-import net.sigmabeta.chipbox.common.ui.components.api.Content
+import net.sigmabeta.sage.ui.composables.Content
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
 import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW
 import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW
@@ -54,27 +54,25 @@ fun ListScreenPreview(
     val state = screenState.toActual(stringProvider)
 
     AppTheme(darkTheme = darkTheme) {
-        CompositionLocalProvider(
-            LocalInspectionMode provides true,
-            LocalLogger provides BasicHatchet(),
-            // Composables swapped to LocalChipboxStringProvider in M9 slice 6c (SearchBar +
-            // 6 ui/components) read it directly; provide the same Android-resource-backed
-            // StringProvider the preview already uses to build list items.
-            LocalChipboxStringProvider provides stringProvider,
-        ) {
-            PreviewChrome(titleBarModel = state.title) { innerPadding ->
-                Box(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .background(MaterialTheme.colorScheme.background)
-                        .fillMaxSize(),
-                ) {
-                    WithMeasurementScreen(
-                        "${state.title.title ?: "Unknown"} ($syntheticWidthClass)",
-                        DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW,
-                        DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW,
+        ProvideChipboxText(stringProvider = stringProvider) {
+            CompositionLocalProvider(
+                LocalInspectionMode provides true,
+                LocalLogger provides BasicHatchet(),
+            ) {
+                PreviewChrome(titleBarModel = state.title) { innerPadding ->
+                    Box(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .background(MaterialTheme.colorScheme.background)
+                            .fillMaxSize(),
                     ) {
-                        ListContent(state, syntheticWidthClass, actionSink)
+                        WithMeasurementScreen(
+                            "${state.title.title ?: "Unknown"} ($syntheticWidthClass)",
+                            DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW,
+                            DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW,
+                        ) {
+                            ListContent(state, syntheticWidthClass, actionSink)
+                        }
                     }
                 }
             }
@@ -98,22 +96,23 @@ fun ScreenPreview(
     val stringProvider = rememberChipboxStringProvider()
 
     AppTheme(darkTheme = darkTheme) {
-        CompositionLocalProvider(
-            LocalInspectionMode provides true,
-            LocalLogger provides BasicHatchet(),
-            LocalChipboxStringProvider provides stringProvider,
-        ) {
-            Box(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.background)
-                    .fillMaxSize(),
+        ProvideChipboxText(stringProvider = stringProvider) {
+            CompositionLocalProvider(
+                LocalInspectionMode provides true,
+                LocalLogger provides BasicHatchet(),
             ) {
-                WithMeasurementScreen(
-                    "$screenName ($syntheticWidthClass)",
-                    DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW,
-                    DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW,
+                Box(
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .fillMaxSize(),
                 ) {
-                    content(stringProvider)
+                    WithMeasurementScreen(
+                        "$screenName ($syntheticWidthClass)",
+                        DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW,
+                        DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW,
+                    ) {
+                        content(stringProvider)
+                    }
                 }
             }
         }

@@ -16,8 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.common.ui.components.api.IconNameListItem
-import net.sigmabeta.chipbox.common.ui.components.api.utils.ImageSize
+import net.sigmabeta.sage.ui.composables.IconNameListItem
+import net.sigmabeta.sage.ui.composables.utils.ImageSize
 import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction

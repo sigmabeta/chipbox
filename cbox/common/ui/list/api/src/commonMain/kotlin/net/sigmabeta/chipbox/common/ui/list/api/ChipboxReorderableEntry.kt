@@ -8,11 +8,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
-import net.sigmabeta.chipbox.common.ui.components.api.Content
-import net.sigmabeta.chipbox.common.ui.components.api.DismissibleListModel
-import net.sigmabeta.chipbox.common.ui.components.api.DraggableListItem
-import net.sigmabeta.chipbox.common.ui.components.api.DraggableListModel
-import net.sigmabeta.chipbox.common.ui.components.api.SwipeToRemoveBox
+import net.sigmabeta.sage.ui.composables.Content
+import net.sigmabeta.sage.ui.composables.DismissibleListModel
+import net.sigmabeta.sage.ui.composables.DraggableListItem
+import net.sigmabeta.sage.ui.composables.DraggableListModel
+import net.sigmabeta.sage.ui.composables.SwipeToRemoveBox
 import net.sigmabeta.sage.ui.list.ReorderableScreen
 
 /**

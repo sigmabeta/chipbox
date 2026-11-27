@@ -34,9 +34,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
-import net.sigmabeta.chipbox.common.ui.components.api.previews.CoverArtConstants
-import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
+import net.sigmabeta.sage.ui.composables.CrossfadeText
+import net.sigmabeta.sage.ui.composables.previews.CoverArtConstants
+import net.sigmabeta.sage.ui.composables.subs.CrossfadeImage
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
 
