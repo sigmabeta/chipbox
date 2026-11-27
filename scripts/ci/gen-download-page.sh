@@ -1,77 +1,119 @@
 #!/usr/bin/env bash
-# Generate docs/download.md for a published release. Called by release.yml's publish job so the
-# download page's links track each release automatically — no hand-editing per version.
+# Generate docs/download.md from the repo's published GitHub Releases. Called by release.yml's
+# publish job so the download page's links track each release automatically — no hand-editing.
 #
-#   scripts/ci/gen-download-page.sh <tag> <assets-dir>   # prints the page to stdout
+#   scripts/ci/gen-download-page.sh            # prints the page to stdout
 #
-# <assets-dir> holds the actual published asset files; links are built from their real names, so the
-# APKs' app-versioning "<tag>.<commits>" suffix is picked up without reconstructing it, and a
-# platform with no asset this release (e.g. macOS) is simply omitted.
+# The page has two channels, each a content tab:
+#   - Stable: the newest non-prerelease Release.
+#   - Beta:   the newest prerelease (alpha/beta/rc), shown only when it is newer than Stable —
+#             a beta that a stable release already superseded is stale, not a channel.
+# Both are resolved from the Releases API on every run, so publishing a beta no longer replaces the
+# stable links (and vice versa). Links are built from each Release's real asset names, so the APKs'
+# app-versioning "<tag>.<commits>" suffix is picked up without reconstructing it, and a platform
+# with no asset in that Release (e.g. macOS) is simply omitted.
+#
+# Needs an authenticated `gh` (GH_TOKEN in CI). GH_REPO overrides the repo (default
+# sigmabeta/chipbox).
 set -euo pipefail
 
-TAG="${1:?usage: gen-download-page.sh <tag> <assets-dir>}"
-DIR="${2:?usage: gen-download-page.sh <tag> <assets-dir>}"
-BASE="https://github.com/sigmabeta/chipbox/releases/download/$TAG"
+REPO="${GH_REPO:-sigmabeta/chipbox}"
+RELEASES="https://github.com/$REPO/releases"
 
-# First asset filename matching a regex (empty if none). `|| true` so a no-match (e.g. no .dmg
-# this release) doesn't trip `set -e`/`pipefail`.
-pick() { find "$DIR" -maxdepth 1 -type f -printf '%f\n' 2>/dev/null | grep -E "$1" | sort | head -1 || true; }
+# Newest-first list of published (non-draft) Releases as "<tag> <isPrerelease>" lines.
+list=$(gh release list --repo "$REPO" --exclude-drafts --limit 100 \
+  --json tagName,isPrerelease --jq '.[] | "\(.tagName) \(.isPrerelease)"')
 
-apk_universal=$(pick 'universal\.apk$')
-apk_arm64=$(pick 'arm64-v8a\.apk$')
-apk_x86=$(pick 'x86_64\.apk$')
-deb=$(pick '\.deb$')
-rpm=$(pick '\.rpm$')
-msi=$(pick '\.msi$')
-dmg=$(pick '\.dmg$')
+stable=$(awk '$2 == "false" { print $1; exit }' <<<"$list")
+# The newest Release overall, if it's a prerelease, is the beta channel; otherwise there's no beta
+# newer than stable.
+beta=$(awk 'NR == 1 && $2 == "true" { print $1 }' <<<"$list")
 
-# button <label> <filename> [extra-classes]
-button() { printf '[%s](%s/%s){ .md-button%s }\n' "$1" "$BASE" "$2" "${3:-}"; }
+[ -n "$stable" ] || [ -n "$beta" ] || { echo "ERROR: no published releases in $REPO" >&2; exit 1; }
+
+# render_channel <tag> — the Android + Desktop sections for one Release, unindented.
+render_channel() {
+  local tag="$1" base="$RELEASES/download/$1" assets
+  assets=$(gh release view "$tag" --repo "$REPO" --json assets --jq '.assets[].name' | sort)
+
+  # First asset name matching a regex (empty if none).
+  pick() { grep -E "$1" <<<"$assets" | head -1 || true; }
+  # button <label> <filename> [extra-classes]
+  button() { printf '[%s](%s/%s){ .md-button%s }\n' "$1" "$base" "$2" "${3:-}"; }
+
+  local apk_universal apk_arm64 apk_x86 deb rpm msi dmg
+  apk_universal=$(pick 'universal\.apk$')
+  apk_arm64=$(pick 'arm64-v8a\.apk$')
+  apk_x86=$(pick 'x86_64\.apk$')
+  deb=$(pick '\.deb$')
+  rpm=$(pick '\.rpm$')
+  msi=$(pick '\.msi$')
+  dmg=$(pick '\.dmg$')
+
+  printf 'Release **[%s](%s/tag/%s)** — changelog and every asset on its release page.\n' "$tag" "$RELEASES" "$tag"
+
+  printf '\n### Android\n\nAndroid 8.0 (API 26) or newer. The universal APK runs on any device; the\nper-architecture builds are smaller.\n\n'
+  [ -n "$apk_universal" ] && button ":material-android: Download APK (universal) :material-download:" "$apk_universal" " .md-button--primary"
+  echo "[Build it yourself](build.md){ .md-button }"
+
+  if [ -n "$apk_arm64" ] || [ -n "$apk_x86" ]; then
+    echo
+    local line="Smaller per-architecture builds:"
+    [ -n "$apk_arm64" ] && line="$line [arm64-v8a]($base/$apk_arm64)"
+    [ -n "$apk_arm64" ] && [ -n "$apk_x86" ] && line="$line ·"
+    [ -n "$apk_x86" ] && line="$line [x86_64]($base/$apk_x86)"
+    echo "$line."
+  fi
+
+  printf '\n### Desktop\n\nSelf-contained installers with a bundled Java runtime — nothing else to install.\n'
+  [ -z "$dmg" ] && printf 'macOS isn'\''t supported in this release.\n'
+
+  if [ -n "$msi" ]; then
+    printf '\n#### Windows\n\n'
+    button ":material-microsoft-windows: Download .msi :material-download:" "$msi" " .md-button--primary"
+  fi
+
+  if [ -n "$deb" ] || [ -n "$rpm" ]; then
+    printf '\n#### Linux\n\n'
+    [ -n "$deb" ] && button ":material-debian: .deb — Debian / Ubuntu :material-download:" "$deb" " .md-button--primary"
+    [ -n "$rpm" ] && button ":material-redhat: .rpm — Fedora / RHEL :material-download:" "$rpm"
+  fi
+
+  if [ -n "$dmg" ]; then
+    printf '\n#### macOS\n\n'
+    button ":material-apple: Download .dmg :material-download:" "$dmg" " .md-button--primary"
+  fi
+  return 0
+}
+
+# Tab bodies are indented four spaces (pymdownx.tabbed); blank lines stay empty.
+indent() { sed 's/^\(.\)/    \1/'; }
 
 cat <<EOF
 <!-- Generated by scripts/ci/gen-download-page.sh on each release. Do not edit by hand. -->
 # Download
 
-Current release: **[$TAG](https://github.com/sigmabeta/chipbox/releases/tag/$TAG)**.
-See the changelog and every asset on the
-[releases page](https://github.com/sigmabeta/chipbox/releases).
-
-## Android
-
-Android 8.0 (API 26) or newer. The universal APK runs on any device; the
-per-architecture builds are smaller.
+Pick a channel. **Stable** is the recommended build; **Beta** gets new features first and may
+have rough edges. Older builds are on the [releases page]($RELEASES).
 
 EOF
 
-[ -n "$apk_universal" ] && button ":material-android: Download APK (universal) :material-download:" "$apk_universal" " .md-button--primary"
-echo "[Build it yourself](build.md){ .md-button }"
-
-if [ -n "$apk_arm64" ] || [ -n "$apk_x86" ]; then
+if [ -n "$stable" ]; then
+  printf '=== "Stable — %s"\n\n' "$stable"
+  render_channel "$stable" | indent
   echo
-  line="Smaller per-architecture builds:"
-  [ -n "$apk_arm64" ] && line="$line [arm64-v8a]($BASE/$apk_arm64)"
-  [ -n "$apk_arm64" ] && [ -n "$apk_x86" ] && line="$line ·"
-  [ -n "$apk_x86" ] && line="$line [x86_64]($BASE/$apk_x86)"
-  echo "$line."
 fi
 
-printf '\n## Desktop\n\nSelf-contained installers with a bundled Java runtime — nothing else to install.\n'
-[ -z "$dmg" ] && printf 'macOS isn'\''t supported yet.\n'
-
-if [ -n "$msi" ]; then
-  printf '\n### Windows\n\n'
-  button ":material-microsoft-windows: Download .msi :material-download:" "$msi" " .md-button--primary"
+if [ -n "$beta" ]; then
+  printf '=== "Beta — %s"\n\n' "$beta"
+  {
+    printf '!!! warning "Prerelease"\n'
+    printf '    Betas are less tested than stable releases. Installing a beta over stable keeps your\n'
+    printf '    library, but going back to an older stable APK means uninstalling first, which clears\n'
+    printf '    favorites, playlists and history.\n\n'
+    render_channel "$beta"
+  } | indent
+  echo
 fi
 
-if [ -n "$deb" ] || [ -n "$rpm" ]; then
-  printf '\n### Linux\n\n'
-  [ -n "$deb" ] && button ":material-debian: .deb — Debian / Ubuntu :material-download:" "$deb" " .md-button--primary"
-  [ -n "$rpm" ] && button ":material-redhat: .rpm — Fedora / RHEL :material-download:" "$rpm"
-fi
-
-if [ -n "$dmg" ]; then
-  printf '\n### macOS\n\n'
-  button ":material-apple: Download .dmg :material-download:" "$dmg" " .md-button--primary"
-fi
-
-printf '\nPrefer to build from source? See **[Build from source](build.md)**.\n'
+printf 'Prefer to build from source? See **[Build from source](build.md)**.\n'
